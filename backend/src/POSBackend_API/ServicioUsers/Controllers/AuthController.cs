@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ServicioUsers.Data;
 using ServicioUsers.Dtos;
+using ServicioUsers.Dtos.Auth;
 using ServicioUsers.Services;
 
 namespace ServicioUsers.Controllers
@@ -19,7 +20,7 @@ namespace ServicioUsers.Controllers
             _authService = authService;
         }
 
-        [HttpPost]
+        [HttpPost("login")]
         public async Task<IActionResult> PostLoginUsers(LoginRequestDto credentials)
         {
             try
@@ -44,6 +45,30 @@ namespace ServicioUsers.Controllers
                 });
             }
             
+        }
+
+        [HttpPost("register")]
+        public async Task<IActionResult> PostRegisterUsers(RegisterRequestDto request)
+        {
+            try
+            {
+                var response = await _authService.RegisterAsync(request);
+
+                if (!response.Success)
+                {
+                    return BadRequest(response);
+                }
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    Error = ex.Message,
+                    InnerError = ex.InnerException?.Message,
+                    Stack = ex.StackTrace
+                });
+            }
         }
 
         
