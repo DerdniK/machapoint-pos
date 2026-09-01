@@ -1,0 +1,19 @@
+# 1. Etapa de compilación
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+
+COPY *.csproj ./
+RUN dotnet restore
+
+COPY . ./
+RUN dotnet publish -c Release -o /app/publish
+
+# 2. Etapa de ejecución usando la imagen oficial de AWS Lambda para .NET
+FROM public.ecr.aws/lambda/dotnet:10 AS runtime
+WORKDIR /var/task
+
+# Copiar artefactos a la carpeta de trabajo de Lambda
+COPY --from=build /app/publish ./
+
+# El handler para Web API en Lambda con hosting
+CMD ["ServicioUsers"]

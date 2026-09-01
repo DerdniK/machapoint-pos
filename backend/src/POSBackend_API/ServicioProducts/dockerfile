@@ -1,0 +1,29 @@
+#1 compilaciOn SDK completo
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /app
+
+# se copia el archivo ServicioProductos.csproj de la carpeta en donde esta el dockerfile (./)
+COPY ServicioProductos.csproj ./
+# restauramos las dependencias
+RUN dotnet restore
+
+# Con esto se copea todo lo demas del proyecto
+COPY . ./
+# Se compula en modo release 
+RUN dotnet publish -c Release -o /app/out
+
+#2 se corre ahora con una imagen mas ligera (runtime)
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+WORKDIR /app
+
+# de build copiamos todos los archivos de la carpeta /app/out
+COPY --from=build /app/out ./
+
+# expone el puerto 8080 donde escucha API
+EXPOSE 8081
+
+# variable de entorno para el puerto de ASP.NET Core
+ENV ASPNETCORE_HTTP_PORTS=8081
+
+# comando de inicio 
+ENTRYPOINT ["dotnet", "ServicioProductos.dll"]
