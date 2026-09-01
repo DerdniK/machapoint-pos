@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using ServicioUsers.Data;
 using ServicioUsers.Dtos;
+using ServicioUsers.Dtos.Auth;
 using ServicioUsers.Security;
 
 namespace ServicioUsers.Services
@@ -59,6 +61,27 @@ namespace ServicioUsers.Services
                 {
                     Token = token
                 }
+            };
+        }
+
+        public async Task<RegisterResponseDto> RegisterAsync(RegisterRequestDto request)
+        {
+            var sql = "CALL public.sp_a_insert_users(@p_username, @p_password, @p_firstname, @p_lastname, @p_roleid)";
+
+            await _context.Database.ExecuteSqlRawAsync(sql,
+            new NpgsqlParameter("p_username", request.Username),
+            new NpgsqlParameter("p_password", request.Password),
+            new NpgsqlParameter("p_firstname", request.Firstname),
+            new NpgsqlParameter("p_lastname", request.Lastname),
+            new NpgsqlParameter("p_roleid", request.Roleid)
+            );
+
+            return new RegisterResponseDto
+            {
+                Success = true,
+                Message = "Usuario registrado exitosamente",
+                Roleid = request.Roleid,
+                created_at = DateTime.UtcNow
             };
         }
     }
