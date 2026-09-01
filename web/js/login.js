@@ -14,7 +14,24 @@ function setLoading(isLoading) {
     loginButton.setAttribute('aria-busy', isLoading);
 }
 
+/* ==========================
+   PANTALLA DE CARGA
+========================== */
+window.addEventListener("load", () => {
 
+    const loader = document.getElementById("loader");
+
+    setTimeout(() => {
+
+        loader.classList.add("oculto");
+
+    }, 1500);
+
+});
+
+/* ==========================
+   LOGIN
+========================== */
 
 formulario.addEventListener('submit', async (event) => {
     event.preventDefault();

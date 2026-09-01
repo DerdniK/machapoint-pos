@@ -11,6 +11,13 @@
 
 <body>
 
+      <!-- pantalla de carga -->
+    <div id="loader">
+        <img src="img/logo.png" alt="Logo institucional" class="loader-logo">
+        <div class="spinner"></div>
+    </div>
+
+
   <main class="login-card">
 
     <h1>¡Bienvenido MachaPoint!</h1>
@@ -43,33 +50,6 @@
 
 
 <script src="js/login.js"></script>
-
-<!-- 
-/*
-        ****************  ANTERIOR CÓDIGO PARA CONSULTAR LA VERSIÓN DE LA BASE DE DATOS  ****************
-*/
-// // URL del endpoint expuesto por tu equipo de backend
-//     const API_URL = 'https://lvk5buixqe.execute-api.us-east-1.amazonaws.com/api/health';
-
-//     async function obtenerVersionBD() {
-//       const versionElemento = document.getElementById('version');
-      
-//       try {
-//         const respuesta = await fetch(API_URL);
-//         if (!respuesta.ok) throw new Error('Error en la respuesta de la API');
-        
-//         const datos = await respuesta.json();
-//         // Insertamos el valor '1.0.0' traído de la tabla 'versions'
-//         versionElemento.textContent = datos.version;
-//       } catch (error) {
-//         console.error('Error al consultar la versión:', error);
-//         versionElemento.textContent = 'No disponible';
-//       }
-//     }
-
-//     // Ejecutar la llamada al cargar la página
-//     document.addEventListener('DOMContentLoaded', obtenerVersionBD); -->
-
 
 </body>
 </html>
