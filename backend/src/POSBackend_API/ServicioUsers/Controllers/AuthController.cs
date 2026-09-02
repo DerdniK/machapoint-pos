@@ -1,9 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ServicioUsers.Data;
-using ServicioUsers.Dtos;
-using ServicioUsers.Dtos.Auth;
+using ServicioUsers.Dtos.Auth.Register;
+using ServicioUsers.Dtos.Auth.Login;
 using ServicioUsers.Services;
+using ServicioUsers.Dtos.Auth.Delete;
 
 namespace ServicioUsers.Controllers
 {
@@ -53,6 +54,30 @@ namespace ServicioUsers.Controllers
             try
             {
                 var response = await _authService.RegisterAsync(request);
+
+                if (!response.Success)
+                {
+                    return BadRequest(response);
+                }
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    Error = ex.Message,
+                    InnerError = ex.InnerException?.Message,
+                    Stack = ex.StackTrace
+                });
+            }
+        }
+
+        [HttpDelete("delete")]
+        public async Task<IActionResult> DeleteUsersById(DeleteUserRequestDto request)
+        {
+            try
+            {
+                var response = await _authService.DeleteByIdAsync(request);
 
                 if (!response.Success)
                 {
