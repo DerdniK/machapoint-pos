@@ -1,4 +1,4 @@
-namespace ServicioUsers.Dtos
+namespace ServicioUsers.Dtos.Auth
 {
     public class AuthResponseDto
     {
