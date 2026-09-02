@@ -1,0 +1,1 @@
+INSERT INTO databaseversion (version) VALUES ('1.0.0');
