@@ -104,7 +104,7 @@ namespace ServicioUsers.Services
             return new DeleteUserResponseDto
             {
                 Success = true,
-                Message = "Usuario registrado exitosamente",
+                Message = "Usuario eliminado!",
                 Deletedid = deletedId
             };
         }
