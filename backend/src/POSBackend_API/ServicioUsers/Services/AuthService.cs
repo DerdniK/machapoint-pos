@@ -3,8 +3,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using ServicioUsers.Data;
-using ServicioUsers.Dtos;
 using ServicioUsers.Dtos.Auth;
+using ServicioUsers.Dtos.Auth.Delete;
+using ServicioUsers.Dtos.Auth.Login;
+using ServicioUsers.Dtos.Auth.Register;
 using ServicioUsers.Security;
 
 namespace ServicioUsers.Services
@@ -85,6 +87,25 @@ namespace ServicioUsers.Services
                 Username = request.Username,
                 Roleid = request.Roleid,
                 created_at = DateTime.UtcNow
+            };
+        }
+
+        public async Task<DeleteUserResponseDto> DeleteByIdAsync(DeleteUserRequestDto request)
+        {
+
+            var sql = "SELECT sp_b_delete_user(@p_userid)";
+
+            await _context.Database.ExecuteSqlRawAsync(sql,
+            new NpgsqlParameter("p_userid", request.Userid)
+            );
+
+            var deletedId = request.Userid;
+
+            return new DeleteUserResponseDto
+            {
+                Success = true,
+                Message = "Usuario registrado exitosamente",
+                Deletedid = deletedId
             };
         }
     }
