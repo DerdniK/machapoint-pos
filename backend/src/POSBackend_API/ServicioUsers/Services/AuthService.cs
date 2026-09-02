@@ -66,11 +66,13 @@ namespace ServicioUsers.Services
 
         public async Task<RegisterResponseDto> RegisterAsync(RegisterRequestDto request)
         {
-            var sql = "CALL public.sp_a_insert_users(@p_username, @p_password, @p_firstname, @p_lastname, @p_roleid)";
+            string passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
+
+            var sql = "SELECT sp_a_insert_user(@p_username, @p_password, @p_firstname, @p_lastname, @p_roleid)";
 
             await _context.Database.ExecuteSqlRawAsync(sql,
             new NpgsqlParameter("p_username", request.Username),
-            new NpgsqlParameter("p_password", request.Password),
+            new NpgsqlParameter("p_password", passwordHash),
             new NpgsqlParameter("p_firstname", request.Firstname),
             new NpgsqlParameter("p_lastname", request.Lastname),
             new NpgsqlParameter("p_roleid", request.Roleid)
@@ -80,6 +82,7 @@ namespace ServicioUsers.Services
             {
                 Success = true,
                 Message = "Usuario registrado exitosamente",
+                Username = request.Username,
                 Roleid = request.Roleid,
                 created_at = DateTime.UtcNow
             };
