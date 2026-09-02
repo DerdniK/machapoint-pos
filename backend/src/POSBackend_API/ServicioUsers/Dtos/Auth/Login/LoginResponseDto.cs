@@ -1,4 +1,6 @@
-namespace ServicioUsers.Dtos
+using ServicioUsers.Dtos.Auth;
+
+namespace ServicioUsers.Dtos.Auth.Login
 {
     public class LoginResponseDto
     {

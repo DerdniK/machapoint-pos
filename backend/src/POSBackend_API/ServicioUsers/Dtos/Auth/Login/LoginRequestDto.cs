@@ -1,4 +1,4 @@
-namespace ServicioUsers.Dtos
+namespace ServicioUsers.Dtos.Auth.Login
 {
     public class LoginRequestDto
     {

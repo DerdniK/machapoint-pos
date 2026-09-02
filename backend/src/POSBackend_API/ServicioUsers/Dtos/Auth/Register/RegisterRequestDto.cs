@@ -1,4 +1,4 @@
-namespace ServicioUsers.Dtos.Auth
+namespace ServicioUsers.Dtos.Auth.Register
 {
     public class RegisterRequestDto
     {

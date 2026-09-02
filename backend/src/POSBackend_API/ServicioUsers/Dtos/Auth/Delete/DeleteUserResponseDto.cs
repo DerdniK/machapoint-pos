@@ -4,6 +4,6 @@ namespace ServicioUsers.Dtos.Auth.Delete
     {
         public Guid Deletedid {get; set;}
         public string Message {get; set;}
-        public bool Status {get; set;}
+        public bool Success {get; set;}
     }
 }
