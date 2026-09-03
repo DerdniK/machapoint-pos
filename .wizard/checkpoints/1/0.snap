@@ -9,7 +9,7 @@ using ServicioUsers.Dtos.Auth.Delete;
 namespace ServicioUsers.Controllers
 {
     [ApiController]
-    [Route("api/users/auth")]
+    [Route("api/users/[controller]")] //? Segun yo [controller] va a ser el nombre del archivo en este caso "AuthController"
     
     public class AuthController : ControllerBase
     {
