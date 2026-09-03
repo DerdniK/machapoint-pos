@@ -6,6 +6,7 @@ using ServicioUsers.Dtos.Auth.Login;
 using ServicioUsers.Services;
 using ServicioUsers.Dtos.Auth.Delete;
 using ServicioUsers.Dtos.Auth.Update;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ServicioUsers.Controllers
 {
@@ -49,6 +50,7 @@ namespace ServicioUsers.Controllers
             
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPost("register")]
         public async Task<IActionResult> PostRegisterUsers(RegisterRequestDto request)
         {
@@ -73,6 +75,7 @@ namespace ServicioUsers.Controllers
             }
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpDelete("delete")]
         public async Task<IActionResult> DeleteUsersById(DeleteUserRequestDto request)
         {
@@ -97,6 +100,7 @@ namespace ServicioUsers.Controllers
             }
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPatch("update")] //? Patch actualizacion parcial del recurso
         public async Task<IActionResult> UpdateUserById(UpdateUserRequestDto request)
         {
