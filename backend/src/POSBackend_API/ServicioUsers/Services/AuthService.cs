@@ -7,6 +7,7 @@ using ServicioUsers.Dtos.Auth;
 using ServicioUsers.Dtos.Auth.Delete;
 using ServicioUsers.Dtos.Auth.Login;
 using ServicioUsers.Dtos.Auth.Register;
+using ServicioUsers.Dtos.Auth.Update;
 using ServicioUsers.Security;
 
 namespace ServicioUsers.Services
@@ -106,6 +107,32 @@ namespace ServicioUsers.Services
                 Success = true,
                 Message = "Usuario eliminado!",
                 Deletedid = deletedId
+            };
+        }
+
+        public async Task<UpdateUserResponseDto> UpdateUserByUsernameAsync(UpdateUserRequestDto request)
+        {
+            string passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
+
+            var sql = "SELECT sp_c_update_user(@p_userid, @p_username, @p_password, @p_firstname, @p_lastname, @p_roleid)";
+
+            await _context.Database.ExecuteSqlRawAsync(sql,
+            new NpgsqlParameter("p_userid", request.Userid),
+            new NpgsqlParameter("p_username", request.Username),
+            new NpgsqlParameter("p_password", passwordHash),
+            new NpgsqlParameter("p_firstname", request.Firstname),
+            new NpgsqlParameter("p_lastname", request.Lastname),
+            new NpgsqlParameter("p_roleid", request.Roleid)
+            );
+
+            return new UpdateUserResponseDto
+            {
+                Success = true,
+                Message = "Usuario actualizado!",
+                Username = request.Username,
+                Firstname = request.Firstname,
+                Lastname = request.Lastname,
+                Roleid = request.Roleid
             };
         }
     }
