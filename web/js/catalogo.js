@@ -1,5 +1,5 @@
 const API_URL =
-    'https://lvk5buixqe.execute-api.us-east-1.amazonaws.com/api/products';
+    'https://4upkj2tafvod2ubwcsbnagviyu0feljy.lambda-url.us-east-1.on.aws/api/products';
 
 const productosContainer = document.getElementById('productos');
 const mensaje = document.getElementById('mensaje');

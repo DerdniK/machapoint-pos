@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="styles/usuarios.css">
+
+    <title>MachaPoint - Usuarios</title>
+</head>
+
+<body>
+
+    <main class="barra-superior-container">
+
+        <!-- ============================= -->
+        <!-- BARRA SUPERIOR -->
+        <!-- ============================= -->
+
+        <div id="barra-superior">
+
+            <h1>MachaPoint</h1>
+
+            <!-- Botón hamburguesa -->
+            <div class="hamburger" id="hamburger">
+
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+
+            </div>
+
+
+            <!-- Menú -->
+            <nav class="nav-menu" id="nav-menu">
+
+                <ul>
+
+                    <li>
+                        <a href="catalogo.html">
+                            Catálogo
+                        </a>
+                    </li>
+
+                </ul>
+
+            </nav>
+
+        </div>
+
+
+        <!-- ============================= -->
+        <!-- CONTENIDO -->
+        <!-- ============================= -->
+
+        <div class="contenido">
+
+            <div class="usuarios-header">
+
+                <h2>
+                    Usuarios activos
+                </h2>
+
+
+                <button
+                    type="button"
+                    id="btnAgregarUsuario"
+                    class="btn-agregar"
+                >
+                    Agregar usuario +
+                </button>
+
+            </div>
+
+
+            <!-- Mensajes del sistema -->
+            <div
+                id="mensaje"
+                class="mensaje"
+            ></div>
+
+
+            <!-- ============================= -->
+            <!-- TABLA DE USUARIOS -->
+            <!-- ============================= -->
+
+            <section id="usuarios">
+
+                <div class="tabla-container">
+
+                    <table class="tabla-usuarios">
+
+                        <thead>
+
+                            <tr>
+
+                                <th>
+                                    Usuario
+                                </th>
+
+                                <th>
+                                    Nombre
+                                </th>
+
+                                <th>
+                                    Rol de usuario
+                                </th>
+
+                                <th>
+                                    Editar
+                                </th>
+
+                                <th>
+                                    Eliminar
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody id="listaUsuarios">
+
+                            <!--
+                                Los usuarios serán
+                                generados mediante JavaScript.
+                            -->
+
+                            <tr>
+
+                                <td colspan="5">
+                                    Cargando usuarios...
+                                </td>
+
+                            </tr>
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </section>
+
+        </div>
+
+    </main>
+
+
+    <!-- ======================================= -->
+    <!-- MODAL AGREGAR / EDITAR USUARIO -->
+    <!-- ======================================= -->
+
+    <div
+        id="modalUsuario"
+        class="modal oculto"
+    >
+
+        <div class="modal-contenido">
+
+
+            <!-- Botón cerrar -->
+
+            <button
+                type="button"
+                id="cerrarModal"
+                class="cerrar-modal"
+            >
+                ×
+            </button>
+
+
+            <h2 id="tituloModal">
+                Agregar usuario
+            </h2>
+
+
+            <!-- ================================= -->
+            <!-- FORMULARIO -->
+            <!-- ================================= -->
+
+            <form id="formUsuario">
+
+
+                <!--
+                    ID oculto.
+
+                    Vacío = crear usuario
+                    Con ID = editar usuario
+                -->
+
+                <input
+                    type="hidden"
+                    id="userId"
+                >
+
+
+                <!-- Usuario -->
+
+                <label for="username">
+                    Usuario
+                </label>
+
+                <input
+                    type="text"
+                    id="username"
+                    name="username"
+                    placeholder="Nombre de usuario"
+                    required
+                >
+
+
+                <!-- Contraseña -->
+
+                <label for="password">
+                    Contraseña
+                </label>
+
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    placeholder="Contraseña"
+                >
+
+
+                <!-- Nombre -->
+
+                <label for="firstname">
+                    Nombre
+                </label>
+
+                <input
+                    type="text"
+                    id="firstname"
+                    name="firstname"
+                    placeholder="Nombre"
+                    required
+                >
+
+
+                <!-- Apellidos -->
+
+                <label for="lastname">
+                    Apellidos
+                </label>
+
+                <input
+                    type="text"
+                    id="lastname"
+                    name="lastname"
+                    placeholder="Apellidos"
+                    required
+                >
+
+
+                <!-- Rol -->
+
+                <label for="roleid">
+                    Rol de usuario
+                </label>
+
+                <select
+                    id="roleid"
+                    name="roleid"
+                    required
+                >
+
+                    <option value="">
+                        Selecciona un rol
+                    </option>
+
+                    <option value="1">
+                        Administrador
+                    </option>
+
+                    <option value="2">
+                        Empleado
+                    </option>
+
+                </select>
+
+
+                <!-- Botón guardar -->
+
+                <button
+                    type="submit"
+                    id="btnGuardarUsuario"
+                    class="btn-guardar"
+                >
+                    Guardar usuario
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <!-- ======================================= -->
+    <!-- JAVASCRIPT -->
+    <!-- ======================================= -->
+
+    <script src="js/usuarios.js"></script>
+
+</body>
+
+</html>
