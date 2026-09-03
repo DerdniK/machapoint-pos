@@ -33,7 +33,7 @@ namespace ServicioProducts.Controllers
             }
         }
 
-        [HttpPost]
+        [HttpPost("create")]
         public async Task<IActionResult> CreateProduct(CreateProductRequestDto request)
         {
             try

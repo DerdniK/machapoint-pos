@@ -50,7 +50,7 @@ namespace ServicioProducts.Services
             return new CreateProductResponseDto
             {
               Success = true,
-              Message = "",
+              Message = "Producto creado con exito!",
               SKU = request.SKU
             };
         }
