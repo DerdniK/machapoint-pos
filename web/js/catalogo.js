@@ -138,16 +138,31 @@ if (formCrear) {
         e.preventDefault();
         const token = localStorage.getItem('authToken');
 
+        const nameVal = document.getElementById('prod-name').value.trim();
+        const skuVal = document.getElementById('prod-sku').value.trim();
+        const priceVal = parseFloat(document.getElementById('prod-price').value) || 0;
+        const typeIdVal = parseInt(document.getElementById('prod-type').value, 10) || 1;
+        const imgVal = document.getElementById('prod-img').value.trim();
+
+        // Enviamos nombres en PascalCase y camelCase para cubrir cualquier mapeo de EF/DTO
         const payload = {
-            Name: document.getElementById('prod-name').value,
-            SKU: document.getElementById('prod-sku').value,
-            Price: parseFloat(document.getElementById('prod-price').value),
-            TypeId: parseInt(document.getElementById('prod-type').value, 10),
-            ImageURL: document.getElementById('prod-img').value
+            Name: nameVal,
+            name: nameVal,
+            SKU: skuVal,
+            Sku: skuVal,
+            sku: skuVal,
+            Price: priceVal,
+            price: priceVal,
+            TypeId: typeIdVal,
+            typeId: typeIdVal,
+            ImageUrl: imgVal,
+            ImageURL: imgVal,
+            imageUrl: imgVal
         };
 
         try {
-            msgCreacion.textContent = "Creando producto...";
+            if (msgCreacion) msgCreacion.textContent = "Creando producto...";
+
             const res = await fetch(`${API_URL}/api/products/product/create`, {
                 method: 'POST',
                 headers: {
@@ -157,13 +172,25 @@ if (formCrear) {
                 body: JSON.stringify(payload)
             });
 
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            // Extraer respuesta del backend antes de validar el status
+            const data = await res.json().catch(() => null);
 
-            msgCreacion.textContent = "¡Producto creado con éxito!";
+            if (!res.ok) {
+                console.error("Detalle completo del error 500:", data);
+                const serverMsg = data?.message || data?.Message || data?.error || data?.title || JSON.stringify(data);
+                throw new Error(`HTTP ${res.status}: ${serverMsg}`);
+            }
+
+            console.log("Respuesta creación exitosa:", data);
+            if (msgCreacion) msgCreacion.textContent = "¡Producto creado con éxito!";
             formCrear.reset();
-            cargarProductos(); // Recarga la lista automáticamente
+            
+            if (typeof cargarProductos === 'function') {
+                cargarProductos();
+            }
         } catch (err) {
-            msgCreacion.textContent = "Error al crear: " + err.message;
+            console.error("Error al registrar producto:", err);
+            if (msgCreacion) msgCreacion.textContent = "Error al crear: " + err.message;
         }
     });
 }
