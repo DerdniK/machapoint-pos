@@ -1,24 +1,24 @@
-const API_URL =
-    'https://4upkj2tafvod2ubwcsbnagviyu0feljy.lambda-url.us-east-1.on.aws/api/products';
+const API_URL ='https://4upkj2tafvod2ubwcsbnagviyu0feljy.lambda-url.us-east-1.on.aws';
+// const API_URL ='http://localhost:8081';
 
 const productosContainer = document.getElementById('productos');
 const mensaje = document.getElementById('mensaje');
 
 async function cargarProductos() {
-
     const token = localStorage.getItem('authToken');
 
-    // Verificar que exista el JWT
+    console.log("Token actual en localStorage:", token);
+
     if (!token) {
-        window.location.href = 'index.html';
+        mensaje.textContent = "Error: No hay token guardado en localStorage.";
+        // window.location.href = 'index.html'; // COMENTA ESTO TEMPORALMENTE
         return;
     }
 
     try {
-
         mensaje.textContent = 'Cargando productos...';
 
-        const response = await fetch(API_URL, {
+        const response = await fetch(API_URL + "/api/products/product/get", {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -26,34 +26,33 @@ async function cargarProductos() {
             }
         });
 
-        // Si el token no es válido o no tiene permisos
+        console.log("Status del backend:", response.status);
+
         if (response.status === 401) {
-            localStorage.removeItem('authToken');
-            window.location.href = 'index.html';
+            mensaje.textContent = "Error 401: El backend rechazó el token (Unauthorized).";
+            // localStorage.removeItem('authToken'); // COMENTA ESTO TEMPORALMENTE
+            // window.location.href = 'index.html';
             return;
         }
 
         if (response.status === 403) {
-            mensaje.textContent = 'No tienes permisos para consultar los productos.';
+            mensaje.textContent = "Error 403: Token válido pero sin permisos requeridos (Forbidden).";
             return;
         }
 
-        if (!response.ok) {
-            throw new Error(`Error HTTP: ${response.status}`);
-        }
+        const data = await response.json();
+        console.log("Productos recibidos:", data);
 
-        const productos = await response.json();
+        // Limpiar el mensaje de carga
+        mensaje.textContent = '';
 
-        console.log('Productos recibidos:', productos);
+        // El backend devuelve la lista dentro de data.product
+        const lista = data.product || data.products || (Array.isArray(data) ? data : []);
+        mostrarProductos(lista);
 
-        mostrarProductos(productos);
-
-    } catch (error) {
-
-        console.error('Error al cargar productos:', error);
-
-        mensaje.textContent =
-            'No fue posible cargar el catálogo. Intenta nuevamente.';
+    } catch (err) {
+        console.error("Error en fetch:", err);
+        mensaje.textContent = "Error al conectar: " + err.message;
     }
 }
 
@@ -130,3 +129,41 @@ function agregarEventosBotones() {
 
 // Ejecutar cuando cargue la página
 cargarProductos();
+
+const formCrear = document.getElementById('form-crear-producto');
+const msgCreacion = document.getElementById('mensaje-creacion');
+
+if (formCrear) {
+    formCrear.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const token = localStorage.getItem('authToken');
+
+        const payload = {
+            Name: document.getElementById('prod-name').value,
+            SKU: document.getElementById('prod-sku').value,
+            Price: parseFloat(document.getElementById('prod-price').value),
+            TypeId: parseInt(document.getElementById('prod-type').value, 10),
+            ImageURL: document.getElementById('prod-img').value
+        };
+
+        try {
+            msgCreacion.textContent = "Creando producto...";
+            const res = await fetch(`${API_URL}/api/products/product/create`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+            msgCreacion.textContent = "¡Producto creado con éxito!";
+            formCrear.reset();
+            cargarProductos(); // Recarga la lista automáticamente
+        } catch (err) {
+            msgCreacion.textContent = "Error al crear: " + err.message;
+        }
+    });
+}
