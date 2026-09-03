@@ -1,26 +1,26 @@
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-const supabase = createClient(
-  'https://rbhdpforntgwfbuqychm.supabase.co',
-  'sb_publishable_niMghnGw3H6wuJbE9eV_fg_E_RrLFXm' // pégala aquí, la encuentras en Project Settings > API
-)
+const SUPABASE_URL = 'https://rbhdpforntgwfbuqychm.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_niMghnGw3H6wuJbE9eV_fg_E_RrLFXm';
 
-async function signInWithGoogle() {
-  const { data, error } = await supabase.auth.signInWithOAuth({
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+export async function signInWithGoogle() {
+  const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
       redirectTo: `${window.location.origin}/callback.html`
-
     }
-  })
+  });
 
   if (error) {
-    document.getElementById('mensaje').textContent =
-      'Error al iniciar sesión: ' + error.message
-    console.error(error)
+    const msg = document.getElementById('mensaje');
+    if (msg) msg.textContent = 'Error al iniciar sesión: ' + error.message;
+    console.error('Error Google OAuth:', error);
   }
-  // Si no hay error, Supabase redirige automáticamente a Google
 }
 
-// Se dispara apenas se carga la página
-signInWithGoogle()
+// Si la pantalla de google-login.html es solo una pantalla intermedia de redirección:
+window.addEventListener('DOMContentLoaded', () => {
+  signInWithGoogle();
+});
