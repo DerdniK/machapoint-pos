@@ -8,19 +8,16 @@ using ServicioUsers.Dtos.Auth.Delete;
 using ServicioUsers.Dtos.Auth.Login;
 using ServicioUsers.Dtos.Auth.Register;
 using ServicioUsers.Dtos.Auth.Update;
-using ServicioUsers.Security;
 
 namespace ServicioUsers.Services
 {
     public class AuthService : IAuthService
     {
         private readonly SupaDBContext _context;
-        private readonly JwtTokenGenerator _jwtTokenGenerator;
 
-        public AuthService(SupaDBContext context, JwtTokenGenerator jwtTokenGenerator) //? Inyeccion de dependencias, dynamo y jwt
+        public AuthService(SupaDBContext context) //? Inyeccion de dependencias, dynamo y jwt
         {
             _context = context;
-            _jwtTokenGenerator = jwtTokenGenerator;
         }
 
 
@@ -54,16 +51,11 @@ namespace ServicioUsers.Services
             }
 
 
-            string token = _jwtTokenGenerator.GenerateToken(user);
 
             return new LoginResponseDto
             {
                 Success = true,
-                Message = "Login succesfull!",
-                AuthData = new AuthResponseDto
-                {
-                    Token = token
-                }
+                Message = "Login succesfull!"
             };
         }
 
