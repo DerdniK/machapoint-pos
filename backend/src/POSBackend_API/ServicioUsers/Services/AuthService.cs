@@ -1,6 +1,10 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 using ServicioUsers.Data;
 using ServicioUsers.Dtos.Auth;
@@ -14,50 +18,104 @@ namespace ServicioUsers.Services
     public class AuthService : IAuthService
     {
         private readonly SupaDBContext _context;
+        private readonly IConfiguration _configuration;
 
-        public AuthService(SupaDBContext context) //? Inyeccion de dependencias, dynamo y jwt
+        public AuthService(SupaDBContext context, IConfiguration configuration) //? Inyeccion de dependencias, dynamo y jwt
         {
             _context = context;
+            _configuration = configuration;
         }
 
 
         public async Task<LoginResponseDto> LoginAsync(LoginRequestDto credentials)
+    {
+        if (string.IsNullOrWhiteSpace(credentials.Username))
         {
-            var user = await _context.UserTable //^ Esto trae el username
+            return new LoginResponseDto
+            {
+                Success = false,
+                Message = "You don't introduce a username",
+                AuthData = null
+            };
+        }
+
+        if (string.IsNullOrWhiteSpace(credentials.Password))
+        {
+            return new LoginResponseDto
+            {
+                Success = false,
+                Message = "You don't introduce a password",
+                AuthData = null
+            };
+        }
+
+        var user = await _context.UserTable
             .AsNoTracking()
             .FirstOrDefaultAsync(x => x.Username == credentials.Username);
 
-            if(credentials.Password == "")
-            {
-                return new LoginResponseDto
-            {
-                Success = false,
-                Message = "You don't introduce a password"
-            };
-            }else if(credentials.Username == "")
-            {
-                return new LoginResponseDto
-            {
-                Success = false,
-                Message = "You don't introduce a username"
-            };
-            }else if (user is null || !BCrypt.Net.BCrypt.Verify(credentials.Password, user.PasswordHash))
-            {
-                return new LoginResponseDto
-            {
-                Success = false,
-                Message = "Wrong credentials"
-            };
-            }
-
-
-
+        if (user is null || !BCrypt.Net.BCrypt.Verify(credentials.Password, user.PasswordHash))
+        {
             return new LoginResponseDto
             {
-                Success = true,
-                Message = "Login succesfull!"
+                Success = false,
+                Message = "Wrong credentials",
+                AuthData = null
             };
         }
+
+        // 1. Obtener la clave secreta
+        var secretKey = _configuration["JwtSettings:SecretKey"]
+            ?? Environment.GetEnvironmentVariable("JwtSettings__SecretKey")
+            ?? throw new InvalidOperationException("JwtSettings:SecretKey no configurada");
+
+        byte[] keyBytes;
+        try
+        {
+            keyBytes = Convert.FromBase64String(secretKey);
+        }
+        catch (FormatException)
+        {
+            keyBytes = Encoding.UTF8.GetBytes(secretKey);
+        }
+
+        // 2. Determinar el rol según RoleId
+        string roleName = user.RoleID == 1 ? "Admin" : "Cajero";
+
+        // 3. Crear claims
+        var claims = new[]
+        {
+            new Claim("sub", user.UserId.ToString()),
+            new Claim("username", user.Username),
+            new Claim("role", roleName),
+            new Claim("roleid", user.RoleID.ToString())
+        };
+
+        // 4. Firmar y generar el JWT
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var tokenDescriptor = new SecurityTokenDescriptor
+        {
+            Subject = new ClaimsIdentity(claims),
+            Expires = DateTime.UtcNow.AddHours(8),
+            SigningCredentials = new SigningCredentials(
+                new SymmetricSecurityKey(keyBytes),
+                SecurityAlgorithms.HmacSha256Signature
+            )
+        };
+
+        var securityToken = tokenHandler.CreateToken(tokenDescriptor);
+        var tokenString = tokenHandler.WriteToken(securityToken);
+
+        // 5. Retornar con el AuthData poblado
+        return new LoginResponseDto
+        {
+            Success = true,
+            Message = "login succesfull",
+            AuthData = new AuthResponseDto
+            {
+                Token = tokenString
+            }
+        };
+    }
 
         public async Task<RegisterResponseDto> RegisterAsync(RegisterRequestDto request)
         {
