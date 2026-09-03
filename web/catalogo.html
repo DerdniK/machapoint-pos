@@ -30,6 +30,19 @@
             </nav>
         </div>
 
+        <section class="form-section">
+            <h2>Agregar Nuevo Producto</h2>
+            <form id="form-crear-producto">
+                <input type="text" id="prod-name" placeholder="Nombre" required>
+                <input type="text" id="prod-sku" placeholder="SKU (ej: bc-s-pn)" required>
+                <input type="number" step="0.01" id="prod-price" placeholder="Precio" required>
+                <input type="number" id="prod-type" placeholder="TypeId (ej: 1)" required>
+                <input type="text" id="prod-img" placeholder="URL de imagen" required>
+                <button type="submit">Guardar Producto</button>
+            </form>
+            <p id="mensaje-creacion"></p>
+        </section>
+
         <div class="contenido">
             <h2>Inventario de productos</h2>
 
