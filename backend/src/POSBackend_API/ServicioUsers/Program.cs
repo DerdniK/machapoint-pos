@@ -17,7 +17,7 @@ builder.Configuration.AddEnvironmentVariables();
 // Integración con AWS Lambda (HTTP API)
 builder.Services.AddAWSLambdaHosting(LambdaEventSource.HttpApi);
 
-// CORS
+// CORS para entorno local
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -114,6 +114,10 @@ builder.Services.AddAuthentication(options =>
     options.MapInboundClaims = false;
     options.RequireHttpsMetadata = false;
     options.SaveToken = true;
+
+    // Supabase expone las llaves públicas para verificar firmas ES256
+    options.MetadataAddress = $"{supabaseUrl}/auth/v1/.well-known/openid-configuration";
+
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuerSigningKey = true,
@@ -195,7 +199,7 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// Políticas de autorización por rol
+// Políticas de autorización por rol (incluye "authenticated" para usuarios de Google)
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("AdminOnly", policy => 

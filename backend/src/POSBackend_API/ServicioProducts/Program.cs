@@ -28,14 +28,13 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Conexión a Base de Datos (Supabase PostgreSQL)
+// Conexión a Base de Datos
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
 
 builder.Services.AddDbContext<SupaDBContext>(options =>
     options.UseNpgsql(connectionString));
 
-// Inyección de dependencias
 builder.Services.AddScoped<IProductService, ProductService>();
 
 // Lectura de clave secreta con soporte para Base64 y UTF8 (garantiza paridad con ServicioUsers)
@@ -113,6 +112,10 @@ builder.Services.AddAuthentication(options =>
     options.MapInboundClaims = false;
     options.RequireHttpsMetadata = false;
     options.SaveToken = true;
+
+    // Supabase publica sus llaves públicas en este endpoint estándar
+    options.MetadataAddress = $"{supabaseUrl}/auth/v1/.well-known/openid-configuration";
+
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuerSigningKey = true,
