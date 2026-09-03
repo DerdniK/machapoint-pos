@@ -9,11 +9,12 @@ class ProductType {
 
   factory ProductType.fromJson(Map<String, dynamic> json) {
     return ProductType(
-      typeId: json['typeId'] ?? 0,
-      typeName: json['typeName'] ?? '',
+      typeId: (json['typeId'] as num?)?.toInt() ?? 0,
+      typeName: json['typeName']?.toString() ?? '',
     );
   }
 }
+
 class Product {
   final int productId;
   final String name;
@@ -33,12 +34,12 @@ class Product {
 
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
-      productId: json['productId'] ?? 0,
-      name: json['name'] ?? 0,
-      sku: json['sku'] ?? 0,
+      productId: (json['productId'] as num?)?.toInt() ?? 0,
+      name: json['name']?.toString() ?? '',
+      sku: json['sku']?.toString() ?? '',
       type: json['type'] != null ? ProductType.fromJson(json['type']) : null,
-      price: (json['price'] as num).toDouble() ?? 0.0,
-      imageUrl: json['imageURL'] ?? '',
+      price: (json['price'] as num?)?.toDouble() ?? 0.0,
+      imageUrl: json['imageURL']?.toString() ?? json['imageUrl']?.toString() ?? '',
     );
   }
 }

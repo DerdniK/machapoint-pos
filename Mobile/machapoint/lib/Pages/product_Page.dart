@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/produtos.dart';
 import '../services/auth.dart';
 import '../services/product.dart';
 import 'Login_Page.dart';
+import 'create_user_page.dart'; // <-- 1. Importas la nueva página aquí
 
 class ProductPage extends StatefulWidget {
   const ProductPage({super.key});
@@ -12,32 +14,54 @@ class ProductPage extends StatefulWidget {
 }
 
 class _ProductPageState extends State<ProductPage> {
+  int _currentIndex = 0;
   late Future<List<Product>> _futureProducts;
 
   @override
   void initState() {
     super.initState();
-    _futureProducts = ProductService.getProducts();
+    _futureProducts = _fetchProductsWithRetry();
+  }
+
+  Future<List<Product>> _fetchProductsWithRetry() async {
+    int retries = 0;
+    while (retries < 3) {
+      final token = await AuthService.getToken();
+      if (token != null && token.isNotEmpty) {
+        return await ProductService.getProducts();
+      }
+      await Future.delayed(const Duration(milliseconds: 300));
+      retries++;
+    }
+    return await ProductService.getProducts();
+  }
+
+  void _refreshProducts() {
+    setState(() {
+      _futureProducts = _fetchProductsWithRetry();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     const orangeColor = Color(0xFFF2B04E);
+
+    // El módulo central de usuarios queda oculto temporalmente.
+    final List<Widget> pages = [
+      _buildProductGrid(),
+      const CreateUserPage(),
+    ];
+
     return Scaffold(
-      backgroundColor: Color(0xFFF3E7DF),
+      backgroundColor: const Color(0xFFF3E7DF),
       appBar: AppBar(
         backgroundColor: orangeColor,
         elevation: 0,
-        
-        // leading: IconButton(
-        //   icon: const Icon(Icons.menu, color: Colors.black, size: 28),
-        //   onPressed: () {
-        //     // Acción del menú hamburguesa
-        //   },
-        // ),
-        title: const Text(
-          'MachaPoint POS',
-          style: TextStyle(
+        title: Text(
+          _currentIndex == 0
+              ? 'MachaPoint POS'
+              : 'Usuarios',
+          style: const TextStyle(
             color: Colors.black,
             fontSize: 22,
             fontWeight: FontWeight.bold,
@@ -48,100 +72,135 @@ class _ProductPageState extends State<ProductPage> {
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.black),
             onPressed: () async {
+              await Supabase.instance.client.auth.signOut();
               await AuthService.logout();
+
               if (context.mounted) {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => const LoginPage()),
+                  (route) => false,
                 );
               }
             },
-          )
-        ],
-      ),
-      body: FutureBuilder<List<Product>>(
-        future: _futureProducts,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }else if (snapshot.hasError) {
-  return Center(
-    child: Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(
-            Icons.wifi_off_rounded,
-            size: 64,
-            color: Colors.grey,
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Sin conexión a internet',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Comprueba tu conexión de red e inténtalo de nuevo.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey,
-            ),
-          ),
-          const SizedBox(height: 20),
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFF2B04E),
-              foregroundColor: Colors.black,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            onPressed: () {
-              setState(() {
-                _futureProducts = ProductService.getProducts();
-              });
-            },
-            icon: const Icon(Icons.refresh),
-            label: const Text(
-              'Reintentar',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
           ),
         ],
       ),
-    ),
-  );
-
-          } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-            final products = snapshot.data!;
-
-            return GridView.builder(
-              padding: const EdgeInsets.all(16),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                childAspectRatio: 0.58,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 16,
-              ),
-              itemCount: products.length,
-              itemBuilder: (context, index) {
-                return ProductCard(product: products[index]);
-              },
-            );
-          }
-          return const Center(child: Text('No hay productos disponibles'));
+      body: pages[_currentIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
         },
+        backgroundColor: orangeColor,
+        selectedItemColor: Colors.black,
+        unselectedItemColor: Colors.black54,
+        type: BottomNavigationBarType.fixed,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.inventory_2),
+            label: 'Productos',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_add),
+            label: 'Usuarios',
+          ),
+        ],
       ),
     );
   }
+  
+
+  Widget _buildProductGrid() {
+    return FutureBuilder<List<Product>>(
+      future: _futureProducts,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(
+              color: Color(0xFFF2B04E),
+            ),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.error_outline_rounded,
+                    size: 64,
+                    color: Colors.redAccent,
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Ocurrió un error al cargar datos',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${snapshot.error}',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Colors.black54,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFF2B04E),
+                      foregroundColor: Colors.black,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    onPressed: _refreshProducts,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text(
+                      'Reintentar',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+          final products = snapshot.data!;
+
+          return GridView.builder(
+            padding: const EdgeInsets.all(16),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              childAspectRatio: 0.58,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 16,
+            ),
+            itemCount: products.length,
+            itemBuilder: (context, index) {
+              return ProductCard(product: products[index]);
+            },
+          );
+        }
+
+        return const Center(child: Text('No hay productos disponibles'));
+      },
+    );
+  }
+
 }
+
 class ProductCard extends StatelessWidget {
   final Product product;
 

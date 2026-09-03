@@ -1,7 +1,7 @@
 name: MachaPoint
 description: "A new Flutter project."
 publish_to: 'none'
-version: 0.1.0+2
+version: 0.2.0+4
 
 environment:
   sdk: ^3.11.5
@@ -11,6 +11,9 @@ dependencies:
     sdk: flutter
   http: ^1.2.0
   flutter_secure_storage: ^11.0.0
+  flutter_native_splash: ^2.4.0 
+  supabase_flutter: ^2.17.2
+  google_sign_in: ^7.2.0
 
 dev_dependencies:
   flutter_test:
@@ -18,15 +21,25 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.13.1
 
-
 flutter:
   uses-material-design: true
-  
+
   assets:
     - assets/
 
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/IconApp.jpg" 
+  image_path: "assets/IconApp.png" 
   min_sdk_android: 21 
+
+flutter_native_splash:
+  color: "#d6a74d" 
+  image: assets/LogoInicio.png 
+  
+  color_dark: "#d6a74d"
+  image_dark: assets/LogoInicio.png
+  
+  android_12:
+    image: assets/LogoInicio.png
+    icon_background_color: "#d6a74d"
