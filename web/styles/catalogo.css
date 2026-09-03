@@ -1,0 +1,395 @@
+/* =========================================================
+   MachaPoint POS — Catálogo
+   ========================================================= */
+
+/* @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap'); */
+
+
+/* =========================================================
+   VARIABLES
+   ========================================================= */
+
+:root {
+    --color-primary: #f5a623;
+    --color-primary-dark: #d9880a;
+
+    --color-cream: #fff8ec;
+    --color-surface: #f2eee6;
+
+    --color-ink: #2b2118;
+    --color-ink-soft: #6b5f52;
+
+    --color-line: #e2d9c8;
+
+    --color-mint: #7fc8a9;
+    --color-blush: #f7d9d9;
+
+    --color-error: #c0392b;
+    --color-white: #ffffff;
+
+    --font-display: 'Baloo 2', 'Segoe UI', sans-serif;
+    --font-body: 'Inter', 'Segoe UI', sans-serif;
+
+    --radius-lg: 24px;
+    --radius-md: 14px;
+}
+
+
+/* =========================================================
+   RESET
+   ========================================================= */
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+
+    background: var(--color-cream);
+
+    font-family: var(--font-body);
+    color: var(--color-ink);
+}
+
+
+/* =========================================================
+   BARRA SUPERIOR
+   ========================================================= */
+
+.barra-superior-container {
+    width: 100%;
+}
+
+
+/* =========================================================
+   NAVBAR
+   ========================================================= */
+
+#barra-superior {
+    position: fixed;
+
+    top: 0;
+    left: 0;
+
+    width: 100%;
+    height: 65px;
+    padding: 0 30px;
+
+    background: linear-gradient(
+        160deg,
+        var(--color-primary),
+        var(--color-primary-dark)
+    );
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+}
+
+
+/* =========================================================
+   LOGO / NOMBRE
+   ========================================================= */
+
+#barra-superior h1 {
+    margin: 0;
+    color: var(--color-white);
+    font-family: var(--font-display);
+    font-size: 1.8rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+}
+
+/* =========================================================
+   MENÚ
+   ========================================================= */
+
+.nav-menu ul {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.nav-menu a {
+    display: block;
+    padding: 9px 16px;
+    color: var(--color-white);
+    text-decoration: none;
+    font-weight: 600;
+    border-radius: 10px;
+    transition:
+        background 0.2s ease,
+        transform 0.2s ease;
+}
+
+.nav-menu a:hover {
+    background: rgba(255, 255, 255, 0.18);
+    transform: translateY(-1px);
+}
+
+
+/* =========================================================
+   CONTENIDO PRINCIPAL
+   ========================================================= */
+
+.contenido {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 105px 30px 50px;
+    display: block;
+}
+
+
+
+
+/* =========================================================
+   MENSAJES
+   ========================================================= */
+
+#mensaje {
+    min-height: 25px;
+    margin-top: 15px;
+    text-align: center;
+    color: var(--color-ink-soft);
+    font-size: 0.9rem;
+}
+
+
+/* =========================================================
+   GRID DE PRODUCTOS
+   ========================================================= */
+
+#productos {
+    width: 100%;
+
+    margin-top: 25px;
+
+    display: grid;
+
+    grid-template-columns: repeat(
+        auto-fill,
+        minmax(210px, 1fr)
+    );
+
+    gap: 25px;
+}
+
+
+/* =========================================================
+   TARJETA DE PRODUCTO
+   ========================================================= */
+
+.producto {
+    position: relative;
+
+    background: var(--color-white);
+
+    border: 2px solid var(--color-line);
+
+    border-radius: var(--radius-lg);
+
+    padding: 15px;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 10px;
+
+    box-shadow: 0 5px 15px rgba(43, 33, 24, 0.05);
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        border-color 0.2s ease;
+}
+
+.producto:hover {
+    transform: translateY(-5px);
+
+    border-color: var(--color-primary);
+
+    box-shadow:
+        0 15px 30px rgba(43, 33, 24, 0.12);
+}
+
+
+/* =========================================================
+   IMAGEN DEL PRODUCTO
+   ========================================================= */
+
+.producto-imagen {
+    width: 100%;
+
+    aspect-ratio: 1 / 1;
+
+    object-fit: cover;
+
+    border-radius: var(--radius-md);
+
+    background: var(--color-blush);
+
+    border: 1px solid var(--color-line);
+
+    display: block;
+}
+
+
+/* =========================================================
+   INFORMACIÓN DEL PRODUCTO
+   ========================================================= */
+
+.producto-info {
+    display: flex;
+    flex-direction: column;
+
+    gap: 4px;
+}
+
+.producto-info h3 {
+    margin: 0;
+
+    font-family: var(--font-display);
+
+    font-size: 1.15rem;
+    font-weight: 700;
+
+    line-height: 1.25;
+
+    color: var(--color-ink);
+}
+
+.producto-info p {
+    margin: 0;
+
+    color: var(--color-ink-soft);
+
+    font-size: 0.85rem;
+
+    line-height: 1.4;
+}
+
+
+/* =========================================================
+   PRECIO
+   ========================================================= */
+
+.producto-precio {
+    margin-top: 5px !important;
+
+    font-family: var(--font-display);
+
+    font-size: 1.3rem;
+
+    font-weight: 800;
+
+    color: var(--color-primary-dark) !important;
+}
+
+
+/* =========================================================
+   BOTÓN AGREGAR
+   ========================================================= */
+
+.btn-agregar {
+    width: 100%;
+
+    margin-top: auto;
+
+    padding: 11px 15px;
+
+    border: none;
+
+    border-radius: var(--radius-md);
+
+    background: var(--color-ink);
+
+    color: var(--color-white);
+
+    font-family: var(--font-body);
+
+    font-size: 0.9rem;
+
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        transform 0.2s ease;
+}
+
+.btn-agregar:hover {
+    background: var(--color-primary-dark);
+
+    transform: translateY(-2px);
+}
+
+.btn-agregar:active {
+    transform: translateY(0);
+}
+
+.btn-agregar:focus-visible {
+    outline: 3px solid var(--color-primary);
+
+    outline-offset: 3px;
+}
+
+
+/* =========================================================
+   BOTÓN HAMBURGUESA
+   ========================================================= */
+
+.hamburger {
+    display: none;
+
+    flex-direction: column;
+
+    justify-content: center;
+
+    gap: 5px;
+
+    width: 40px;
+    height: 40px;
+
+    padding: 8px;
+
+    cursor: pointer;
+
+    border-radius: 8px;
+}
+
+.bar {
+    width: 25px;
+    height: 3px;
+
+    background: var(--color-white);
+
+    border-radius: 5px;
+
+    transition: all 0.3s ease;
+}
+
+/* =========================================================
+   REDUCIR ANIMACIONES
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+    * {
+        scroll-behavior: auto !important;
+        transition: none !important;
+        animation: none !important;
+    }
+}

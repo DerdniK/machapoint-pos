@@ -1,0 +1,214 @@
+// este codigo sirve para procesar el callback de google y obtener el token de supabase y guardarlo en localstorage, luego redirige al catalogo.html
+// al inicio de sesion con google se le debe pasar el redirect_uri que es la url de este archivo callback.html
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MachaPoint - Procesando...</title>
+</head>
+
+<body>
+
+    <p id="mensaje">Procesando inicio de sesión con Google...</p>
+
+    <script type="module">
+
+        import { createClient }
+            from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+
+        // ============================================================
+        // CONFIGURACIÓN SUPABASE
+        // ============================================================
+
+        const supabase = createClient(
+            'https://rbhdpforntgwfbuqychm.supabase.co',
+            'sb_publishable_niMghnGw3H6wuJbE9eV_fg_E_RrLFXm'
+        );
+
+
+        // ============================================================
+        // PROCESAR LOGIN
+        // ============================================================
+
+        async function procesarLogin() {
+
+            try {
+
+                document.getElementById("mensaje").textContent =
+                    "Obteniendo sesión...";
+
+
+                // ----------------------------------------------------
+                // 1. Obtener sesión de Supabase
+                // ----------------------------------------------------
+
+                const { data, error } =
+                    await supabase.auth.getSession();
+
+
+                if (error) {
+
+                    console.error(
+                        "Error obteniendo sesión:",
+                        error
+                    );
+
+                    throw error;
+                }
+
+
+                const session = data.session;
+
+
+                // ----------------------------------------------------
+                // 2. Verificar que realmente exista una sesión
+                // ----------------------------------------------------
+
+                if (!session) {
+
+                    console.error(
+                        "No existe una sesión"
+                    );
+                    
+                    window.location.href = "/index.html?error=google_auth";
+
+                    return;
+                }
+
+
+                // ----------------------------------------------------
+                // 3. Obtener información del usuario
+                // ----------------------------------------------------
+
+                const { data: userData, error: userError } =
+                    await supabase.auth.getUser();
+
+
+                if (userError) {
+
+                    console.error(
+                        "Error obteniendo usuario:",
+                        userError
+                    );
+
+                    throw userError;
+                }
+
+
+                const user = userData.user;
+
+
+                console.log(
+                    "Usuario de Supabase:",
+                    user
+                );
+
+                console.log(
+                    "ID:",
+                    user.id
+                );
+
+                console.log(
+                    "Email:",
+                    user.email
+                );
+
+                console.log(
+                    "Nombre:",
+                    user.user_metadata?.full_name
+                );
+
+
+                // ----------------------------------------------------
+                // 4. Enviar datos al backend
+                // ----------------------------------------------------
+
+                const respuesta = await fetch('https://4upkj2tafvod2ubwcsbnagviyu0feljy.lambda-url.us-east-1.on.aws', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: user.email,
+                        supabaseId: user.id,
+                        nombre: user.user_metadata?.full_name
+                    })
+                });
+
+                const responseData = await respuesta.json();
+
+                if (!respuesta.ok) {
+                    throw new Error(responseData?.message || 'Error al autenticar con Google');
+                }
+
+                const accessToken = session.access_token;
+
+                console.log(
+                    "JWT de Supabase:",
+                    accessToken
+                );
+
+
+                // ----------------------------------------------------
+                // 5. Guardar JWT
+                // ----------------------------------------------------
+
+                localStorage.setItem(
+                    "authToken",
+                    responseData?.authData?.token || accessToken
+                );
+
+
+                // ----------------------------------------------------
+                // 6. Guardar información básica del usuario
+                // ----------------------------------------------------
+
+                localStorage.setItem(
+                    "user",
+                    JSON.stringify({
+                        id: user.id,
+                        email: user.email,
+                        nombre: user.user_metadata?.full_name
+                    })
+                );
+
+
+                console.log(
+                    "JWT guardado correctamente"
+                );
+
+
+                // ----------------------------------------------------
+                // 7. Redirigir al catálogo
+                // ----------------------------------------------------
+
+                document.getElementById("mensaje").textContent =
+                    "Inicio de sesión exitoso. Redirigiendo...";
+
+                window.location.href = "/catalogo.html";
+
+            }
+
+            catch (error) {
+
+                console.error(
+                    "Error durante autenticación:",
+                    error
+                );
+
+                localStorage.removeItem("authToken");
+                
+                window.location.href = "/index.html?error=google_auth";
+            }
+        }
+
+
+        // Ejecutar proceso
+        procesarLogin();
+
+    </script>
+
+</body>
+
+</html>

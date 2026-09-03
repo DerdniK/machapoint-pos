@@ -1,0 +1,282 @@
+/* =========================================================
+   MachaPoint POS — Login
+   ========================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --color-primary: #f5a623;
+  --color-primary-dark: #d9880a;
+  --color-cream: #fff8ec;
+  --color-surface: #f2eee6;
+  --color-ink: #2b2118;
+  --color-ink-soft: #6b5f52;
+  --color-line: #e2d9c8;
+  --color-error: #c0392b;
+  --color-white: #ffffff;
+
+  --font-display: 'Baloo 2', 'Segoe UI', sans-serif;
+  --font-body: 'Inter', 'Segoe UI', sans-serif;
+
+  --radius-lg: 28px;
+  --radius-md: 14px;
+  --shadow-card: 0 24px 48px -20px rgba(43, 33, 24, 0.28);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.25rem;
+  background: var(--color-cream);
+  background-image:
+    radial-gradient(circle at 12% 18%, rgba(245, 166, 35, 0.14) 0, transparent 40%),
+    radial-gradient(circle at 88% 82%, rgba(245, 166, 35, 0.12) 0, transparent 45%);
+  font-family: var(--font-body);
+  color: var(--color-ink);
+}
+
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--color-white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  position: relative;
+}
+
+/* Ribbon header — brand strip echoing the mockup's orange bar */
+.login-card > h1 {
+  margin: 0;
+  padding: 2.25rem 2rem 1.5rem;
+  background: linear-gradient(160deg, var(--color-primary), var(--color-primary-dark));
+  color: var(--color-white);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(1.4rem, 5vw, 1.7rem);
+  text-align: center;
+  line-height: 1.25;
+  border-bottom: 3px dashed rgba(255, 255, 255, 0.55);
+}
+
+/* Punch-hole notches at the seam — ticket/tag signature detail */
+.login-card::before,
+.login-card::after {
+  content: '';
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  background: var(--color-cream);
+  border-radius: 50%;
+  top: 130px;
+  z-index: 2;
+}
+
+.login-card::before {
+  left: -11px;
+}
+
+.login-card::after {
+  right: -11px;
+}
+
+.login-card > p {
+  margin: 1.5rem 2rem 0;
+  text-align: center;
+  color: var(--color-ink-soft);
+  font-size: 0.95rem;
+}
+
+form#login {
+  padding: 1.5rem 2rem 2rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.input-login {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 1.25rem;
+}
+
+.input-login label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-ink);
+  letter-spacing: 0.01em;
+}
+
+.input-login input {
+  padding: 0.85rem 1rem;
+  border: 2px solid var(--color-line);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: var(--color-ink);
+  outline: none;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.input-login input::placeholder {
+  color: #b3a794;
+}
+
+.input-login input:focus {
+  border-color: var(--color-primary);
+  background: var(--color-white);
+  box-shadow: 0 0 0 4px rgba(245, 166, 35, 0.2);
+}
+
+.login-button {
+  margin-top: 0.5rem;
+  padding: 0.95rem 1rem;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--color-ink);
+  color: var(--color-white);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.02rem;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.login-button:hover {
+  background: var(--color-primary-dark);
+  box-shadow: 0 10px 22px -10px rgba(217, 136, 10, 0.6);
+  transform: translateY(-1px);
+}
+
+.login-button:active {
+  transform: translateY(0);
+}
+
+.login-button:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.login-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.85;
+  transform: none;
+}
+
+/* Spinner shown while the request to the API is in flight */
+.login-button .spinner {
+  display: none;
+  width: 18px;
+  height: 18px;
+  border: 3px solid rgba(255, 255, 255, 0.35);
+  border-top-color: var(--color-white);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+.login-button.is-loading .btn-text {
+  opacity: 0.7;
+}
+
+.login-button.is-loading .spinner {
+  display: inline-block;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+#mensaje {
+  min-height: 1.2em;
+  margin: 0.85rem 0 0;
+  text-align: center;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--color-error);
+}
+
+@media (max-width: 420px) {
+  .login-card > h1 {
+    padding: 1.85rem 1.5rem 1.25rem;
+  }
+  form#login {
+    padding: 1.25rem 1.5rem 1.75rem;
+  }
+  .login-card > p {
+    margin: 1.25rem 1.5rem 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-button {
+    transition: none;
+  }
+  .login-button .spinner {
+    animation-duration: 1.4s;
+  }
+}
+
+
+/* ==========================
+   PANTALLA DE CARGA
+========================== */
+
+#loader {
+    position: fixed;
+    inset: 0;
+
+    background: white;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    z-index: 9999;
+
+    transition: opacity 0.6s ease,
+                visibility 0.6s ease;
+}
+
+.loader-logo {
+    width: 200px;
+
+    animation: logoCarga 1.5s ease-in-out infinite alternate;
+}
+
+#loader.oculto {
+    opacity: 0;
+    visibility: hidden;
+}
+
+@keyframes logoCarga {
+
+    from {
+        transform: scale(0.95);
+        opacity: 0.7;
+    }
+
+    to {
+        transform: scale(1.05);
+        opacity: 1;
+    }
+}

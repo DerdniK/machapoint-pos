@@ -1,0 +1,416 @@
+
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MachaPoint - Procesando...</title>
+</head>
+
+<body>
+
+    <p id="mensaje">Procesando inicio de sesión con Google...</p>
+    
+    <button id="btnVolver" style="display: none; margin-top: 15px; padding: 10px;" onclick="window.location.href='/index.html'">
+        Volver a Index
+    </button>
+
+    <script type="module">
+
+        import { createClient }
+            from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+
+        // ============================================================
+        // CONFIGURACIÓN SUPABASE
+        // ============================================================
+
+        const supabase = createClient(
+            'https://rbhdpforntgwfbuqychm.supabase.co',
+            'sb_publishable_niMghnGw3H6wuJbE9eV_fg_E_RrLFXm'
+        );
+
+
+        // ============================================================
+        // PROCESAR LOGIN
+        // ============================================================
+
+        async function procesarLogin() {
+
+            try {
+
+                document.getElementById("mensaje").textContent =
+                    "Obteniendo sesión...";
+
+
+                // ----------------------------------------------------
+                // 1. Obtener sesión de Supabase
+                // ----------------------------------------------------
+
+                const { data, error } =
+                    await supabase.auth.getSession();
+
+
+                if (error) {
+
+                    console.error(
+                        "Error obteniendo sesión:",
+                        error
+                    );
+
+                    throw error;
+                }
+
+
+                const session = data.session;
+
+
+                // ----------------------------------------------------
+                // 2. Verificar que realmente exista una sesión
+                // ----------------------------------------------------
+
+                if (!session) {
+
+                    console.error(
+                        "No existe una sesión de Supabase"
+                    );
+                    
+                    document.getElementById("mensaje").textContent = "Error: No existe sesión. Revisa la consola.";
+                    
+                    // COMENTADO TEMPORALMENTE PARA DEPURAR
+                    window.location.href = "/index.html?error=google_auth";
+                    // document.getElementById("btnVolver").style.display = "block";
+
+                    return;
+                }
+
+
+                // ----------------------------------------------------
+                // 3. Obtener JWT
+                // ----------------------------------------------------
+
+                const accessToken =
+                    session.access_token;
+
+
+                console.log(
+                    "JWT de Supabase:",
+                    accessToken
+                );
+
+
+                // ----------------------------------------------------
+                // 4. Obtener información del usuario
+                // ----------------------------------------------------
+
+                const { data: userData, error: userError } =
+                    await supabase.auth.getUser();
+
+
+                if (userError) {
+
+                    console.error(
+                        "Error obteniendo usuario:",
+                        userError
+                    );
+
+                    throw userError;
+                }
+
+
+                const user = userData.user;
+
+
+                console.log(
+                    "Usuario de Supabase:",
+                    user
+                );
+
+                console.log(
+                    "ID:",
+                    user.id
+                );
+
+                console.log(
+                    "Email:",
+                    user.email
+                );
+
+                console.log(
+                    "Nombre:",
+                    user.user_metadata?.full_name
+                );
+
+
+                // ----------------------------------------------------
+                // 5. Guardar JWT
+                // ----------------------------------------------------
+
+                localStorage.setItem(
+                    "authToken",
+                    accessToken
+                );
+
+
+                // ----------------------------------------------------
+                // 6. Guardar información básica del usuario
+                // ----------------------------------------------------
+
+                localStorage.setItem(
+                    "user",
+                    JSON.stringify({
+                        id: user.id,
+                        email: user.email,
+                        nombre: user.user_metadata?.full_name
+                    })
+                );
+
+
+                console.log(
+                    "JWT guardado correctamente"
+                );
+
+
+                // ----------------------------------------------------
+                // 7. Redirigir al catálogo
+                // ----------------------------------------------------
+
+                document.getElementById("mensaje").textContent =
+                    "Inicio de sesión exitoso. Revisa la consola y usa el botón para continuar.";
+
+                // COMENTADO TEMPORALMENTE PARA DEPURAR
+                // window.location.href = "/catalogo.html";
+                document.getElementById("btnVolver").style.display = "block";
+
+            }
+
+            catch (error) {
+
+                console.error(
+                    "Error durante autenticación:",
+                    error
+                );
+
+                localStorage.removeItem("authToken");
+                
+                document.getElementById("mensaje").textContent = "Ocurrió un error. Revisa la consola.";
+
+                // COMENTADO TEMPORALMENTE PARA DEPURAR
+                  // window.location.href = "/index.html?error=google_auth";
+                document.getElementById("btnVolver").style.display = "block";
+            }
+        }
+
+
+        // Ejecutar proceso
+        procesarLogin();
+
+    </script>
+
+</body>
+
+</html>
+
+SEGUNDA PRUEBA 
+
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MachaPoint - Procesando...</title>
+</head>
+
+<body>
+
+    <p id="mensaje">Procesando inicio de sesión con Google...</p>
+
+    <script type="module">
+
+        import { createClient }
+            from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+
+        // ============================================================
+        // CONFIGURACIÓN SUPABASE
+        // ============================================================
+
+        const supabase = createClient(
+            'https://rbhdpforntgwfbuqychm.supabase.co',
+            'sb_publishable_niMghnGw3H6wuJbE9eV_fg_E_RrLFXm'
+        );
+
+
+        // ============================================================
+        // PROCESAR LOGIN
+        // ============================================================
+
+        async function procesarLogin() {
+
+            try {
+
+                document.getElementById("mensaje").textContent =
+                    "Obteniendo sesión...";
+
+
+                // ----------------------------------------------------
+                // 1. Obtener sesión de Supabase
+                // ----------------------------------------------------
+
+                const { data, error } =
+                    await supabase.auth.getSession();
+
+
+                if (error) {
+
+                    console.error(
+                        "Error obteniendo sesión:",
+                        error
+                    );
+
+                    throw error;
+                }
+
+
+                const session = data.session;
+
+
+                // ----------------------------------------------------
+                // 2. Verificar que realmente exista una sesión
+                // ----------------------------------------------------
+
+                if (!session) {
+
+                    console.error(
+                        "No existe una sesión de Supabase"
+                    );
+                    
+                    window.location.href = "/index.html?error=google_auth";
+
+                    return;
+                }
+
+
+                // ----------------------------------------------------
+                // 3. Obtener JWT
+                // ----------------------------------------------------
+
+                const accessToken =
+                    session.access_token;
+
+
+                console.log(
+                    "JWT de Supabase:",
+                    accessToken
+                );
+
+
+                // ----------------------------------------------------
+                // 4. Obtener información del usuario
+                // ----------------------------------------------------
+
+                const { data: userData, error: userError } =
+                    await supabase.auth.getUser();
+
+
+                if (userError) {
+
+                    console.error(
+                        "Error obteniendo usuario:",
+                        userError
+                    );
+
+                    throw userError;
+                }
+
+
+                const user = userData.user;
+
+
+                console.log(
+                    "Usuario de Supabase:",
+                    user
+                );
+
+                console.log(
+                    "ID:",
+                    user.id
+                );
+
+                console.log(
+                    "Email:",
+                    user.email
+                );
+
+                console.log(
+                    "Nombre:",
+                    user.user_metadata?.full_name
+                );
+
+
+                // ----------------------------------------------------
+                // 5. Guardar JWT
+                // ----------------------------------------------------
+
+                localStorage.setItem(
+                    "authToken",
+                    accessToken
+                );
+
+
+                // ----------------------------------------------------
+                // 6. Guardar información básica del usuario
+                // ----------------------------------------------------
+
+                localStorage.setItem(
+                    "user",
+                    JSON.stringify({
+                        id: user.id,
+                        email: user.email,
+                        nombre: user.user_metadata?.full_name
+                    })
+                );
+
+
+                console.log(
+                    "JWT guardado correctamente"
+                );
+
+
+                // ----------------------------------------------------
+                // 7. Redirigir al catálogo
+                // ----------------------------------------------------
+
+                document.getElementById("mensaje").textContent =
+                    "Inicio de sesión exitoso. Redirigiendo...";
+
+                window.location.href = "/catalogo.html";
+
+            }
+
+            catch (error) {
+
+                console.error(
+                    "Error durante autenticación:",
+                    error
+                );
+
+                localStorage.removeItem("authToken");
+                
+                window.location.href = "/index.html?error=google_auth";
+            }
+        }
+
+
+        // Ejecutar proceso
+        procesarLogin();
+
+    </script>
+
+</body>
+
+</html>
+
+

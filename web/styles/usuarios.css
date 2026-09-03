@@ -1,0 +1,265 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    min-height: 100vh;
+    background-color: #ffffff;
+}
+
+
+/* =========================
+   BARRA SUPERIOR
+========================= */
+
+.barra-superior {
+
+    height: 115px;
+
+    background-color: #ffbd59;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 0 50px;
+}
+
+.barra-superior h1 {
+    font-size: 32px;
+    font-weight: 500;
+}
+
+.barra-superior a {
+    color: black;
+    text-decoration: none;
+    font-size: 30px;
+}
+
+
+/* =========================
+   CONTENEDOR
+========================= */
+
+.usuarios-container {
+
+    width: 85%;
+    margin: 60px auto;
+}
+
+
+/* =========================
+   HEADER USUARIOS
+========================= */
+
+.usuarios-header {
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    margin-bottom: 30px;
+}
+
+.usuarios-header h2 {
+    font-size: 25px;
+}
+
+.btn-agregar {
+
+    border: none;
+
+    background-color: #ffbd59;
+
+    padding: 20px 25px;
+
+    border-radius: 22px;
+
+    font-size: 20px;
+
+    cursor: pointer;
+
+    transition: 0.2s;
+}
+
+.btn-agregar:hover {
+    transform: scale(1.03);
+    background-color: #ffaa2b;
+}
+
+
+/* =========================
+   TABLA
+========================= */
+
+.tabla-container {
+
+    border: 5px solid black;
+
+    padding: 30px 10px;
+
+    overflow-x: auto;
+}
+
+.tabla-usuarios {
+
+    width: 100%;
+
+    border-collapse: separate;
+    border-spacing: 0 18px;
+}
+
+.tabla-usuarios thead {
+
+    background-color: #d9d9d9;
+}
+
+.tabla-usuarios tbody tr {
+
+    background-color: #d9d9d9;
+}
+
+.tabla-usuarios th,
+.tabla-usuarios td {
+
+    padding: 18px;
+
+    text-align: center;
+
+    font-size: 18px;
+}
+
+
+/* =========================
+   BOTONES ACCIONES
+========================= */
+
+.btn-editar,
+.btn-eliminar {
+
+    border: none;
+
+    padding: 10px 15px;
+
+    margin: 2px;
+
+    border-radius: 8px;
+
+    cursor: pointer;
+}
+
+.btn-editar {
+    background-color: #ffbd59;
+}
+
+.btn-eliminar {
+    background-color: #ff7777;
+}
+
+
+/* =========================
+   MODAL
+========================= */
+
+.modal {
+
+    position: fixed;
+
+    inset: 0;
+
+    background-color: rgba(0, 0, 0, 0.5);
+
+    display: flex;
+
+    justify-content: center;
+    align-items: center;
+
+    z-index: 1000;
+}
+
+.oculto {
+    display: none;
+}
+
+.modal-contenido {
+
+    width: 430px;
+
+    background-color: white;
+
+    padding: 35px;
+
+    border-radius: 15px;
+
+    position: relative;
+}
+
+.modal-contenido h2 {
+
+    margin-bottom: 25px;
+}
+
+
+/* =========================
+   FORMULARIO
+========================= */
+
+#formUsuario {
+
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#formUsuario input,
+#formUsuario select {
+
+    padding: 12px;
+
+    border: 1px solid #aaa;
+
+    border-radius: 7px;
+
+    margin-bottom: 10px;
+}
+
+.btn-guardar {
+
+    margin-top: 15px;
+
+    padding: 15px;
+
+    border: none;
+
+    border-radius: 10px;
+
+    background-color: #ffbd59;
+
+    font-size: 17px;
+
+    cursor: pointer;
+}
+
+
+/* =========================
+   CERRAR MODAL
+========================= */
+
+.cerrar-modal {
+
+    position: absolute;
+
+    right: 20px;
+    top: 15px;
+
+    border: none;
+
+    background: none;
+
+    font-size: 30px;
+
+    cursor: pointer;
+}
