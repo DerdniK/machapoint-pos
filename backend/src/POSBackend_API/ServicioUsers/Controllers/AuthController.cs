@@ -5,6 +5,7 @@ using ServicioUsers.Dtos.Auth.Register;
 using ServicioUsers.Dtos.Auth.Login;
 using ServicioUsers.Services;
 using ServicioUsers.Dtos.Auth.Delete;
+using ServicioUsers.Dtos.Auth.Update;
 
 namespace ServicioUsers.Controllers
 {
@@ -78,6 +79,30 @@ namespace ServicioUsers.Controllers
             try
             {
                 var response = await _authService.DeleteByIdAsync(request);
+
+                if (!response.Success)
+                {
+                    return BadRequest(response);
+                }
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    Error = ex.Message,
+                    InnerError = ex.InnerException?.Message,
+                    Stack = ex.StackTrace
+                });
+            }
+        }
+
+        [HttpPatch("update")] //? Patch actualizacion parcial del recurso
+        public async Task<IActionResult> UpdateUserById(UpdateUserRequestDto request)
+        {
+            try
+            {
+                var response = await _authService.UpdateUserByIdAsync(request);
 
                 if (!response.Success)
                 {
