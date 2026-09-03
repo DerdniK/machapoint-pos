@@ -1,21 +1,22 @@
-using Microsoft.EntityFrameworkCore;
-using Npgsql.EntityFrameworkCore.PostgreSQL;
-using ServicioProducts.Services;
-using ServicioProducts.Data;
-using ServicioProducts.Security;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
 using System.Text;
-using Amazon.Lambda.AspNetCoreServer.Hosting; // <-- 1. IMPORTAR
+using Amazon.Lambda.AspNetCoreServer.Hosting;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using ServicioProducts.Data;
+using ServicioProducts.Services;
 
-DotNetEnv.Env.TraversePath().Load(); // Cargar el .env
+DotNetEnv.Env.TraversePath().Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Configuration.AddEnvironmentVariables();
 
+// Integración con AWS Lambda (HTTP API / Gateway v2)
 builder.Services.AddAWSLambdaHosting(LambdaEventSource.HttpApi);
 
+// CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -26,29 +27,26 @@ builder.Services.AddCors(options =>
     });
 });
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+// Conexión a Base de Datos (Supabase PostgreSQL)
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
 
 builder.Services.AddDbContext<SupaDBContext>(options =>
     options.UseNpgsql(connectionString));
 
-// builder.Services.AddAWSLambdaHosting(LambdaEventSource.HttpApi);
-
-builder.Services.AddScoped<JwtTokenGenerator>();
-// builder.Services.AddScoped<IHealthService, HealthService>();
-// builder.Services.AddScoped<IAuthService, AuthService>();
+// Inyección de dependencias
 builder.Services.AddScoped<IProductService, ProductService>();
 
-var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-var secretKey = jwtSettings["JwtSettings:SecretKey"]
+// Lectura de configuración JWT (Supabase JWT Secret)
+var secretKey = builder.Configuration["JwtSettings:SecretKey"]
     ?? Environment.GetEnvironmentVariable("JwtSettings__SecretKey")
     ?? throw new InvalidOperationException("JwtSettings:SecretKey no está configurada en las variables de entorno.");
 
-var issuer = builder.Configuration["JwtSettings:Issuer"] 
-    ?? Environment.GetEnvironmentVariable("JwtSettings__Issuer");
+var keyBytes = Encoding.UTF8.GetBytes(secretKey);
 
-var audience = builder.Configuration["JwtSettings:Audience"] 
-    ?? Environment.GetEnvironmentVariable("JwtSettings__Audience");
+JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
+// Autenticación JWT y lectura de Roles
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -56,17 +54,24 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
+    options.RequireHttpsMetadata = false;
+    options.SaveToken = true;
     options.TokenValidationParameters = new TokenValidationParameters
     {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidIssuer = issuer,
-        ValidAudience = audience,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
-        ClockSkew = TimeSpan.Zero
+        IssuerSigningKey = new SymmetricSecurityKey(keyBytes),
+        ValidateIssuer = false,
+        ValidateAudience = false,
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero,
+        RoleClaimType = "role" // Permite usar [Authorize(Roles = "Admin")] leyendo el claim "role"
     };
+});
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
+    options.AddPolicy("CajeroOnly", policy => policy.RequireRole("Cajero"));
 });
 
 builder.Services.AddControllers();
@@ -74,9 +79,10 @@ builder.Services.AddControllers();
 var app = builder.Build();
 
 app.UseCors("AllowAll");
-app.UseAuthentication(); // Valida el JWT
-app.UseAuthorization();  // Valida permisos/roles
-app.MapControllers();
 
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapControllers();
 
 app.Run();
