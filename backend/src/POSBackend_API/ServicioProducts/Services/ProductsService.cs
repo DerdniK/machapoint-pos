@@ -3,7 +3,9 @@ using Npgsql;
 using ServicioProducts.Data;
 using ServicioProducts.Dtos;
 using ServicioProducts.Dtos.Create;
+using ServicioProducts.Dtos.Read;
 using ServicioProducts.Models;
+using ServicioProducts.Models.Views;
 
 namespace ServicioProducts.Services
 {
@@ -52,6 +54,24 @@ namespace ServicioProducts.Services
               Success = true,
               Message = "Producto creado con exito!",
               SKU = request.SKU
+            };
+        }
+
+        public async Task<GetProductResponseDto> GetProductsAsync(GetProductRequestDto request)
+        {
+            var sql = "SELECT * FROM public.sp_view_products(@p_productid)";
+
+            var parameter = new NpgsqlParameter("p_productid", request.ProductId);
+
+            var products = await _context.Database
+            .SqlQueryRaw<ViewProductModel>(sql, parameter)
+            .ToListAsync();
+
+            return new GetProductResponseDto
+            {
+                Success = true,
+                Message = products.Any() ? "Productos obtenidos con éxito" : "No se encontraron productos",
+                Product = products
             };
         }
     }

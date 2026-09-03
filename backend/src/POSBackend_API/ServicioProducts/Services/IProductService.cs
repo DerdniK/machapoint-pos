@@ -1,5 +1,6 @@
 using ServicioProducts.Dtos;
 using ServicioProducts.Dtos.Create;
+using ServicioProducts.Dtos.Read;
 
 namespace ServicioProducts.Services
 {
@@ -7,5 +8,7 @@ namespace ServicioProducts.Services
     {
         Task<IEnumerable<GetAllProductsResponseDto>> GetAllProductsAsync();
         Task<CreateProductResponseDto> CreateProductAsync(CreateProductRequestDto request);
+        Task<GetProductResponseDto> GetProductsAsync(GetProductRequestDto request);
+
     }
 }
