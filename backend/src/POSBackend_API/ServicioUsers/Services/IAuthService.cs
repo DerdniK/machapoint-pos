@@ -1,9 +1,7 @@
-using ServicioUsers.Dtos;
-using ServicioUsers.Dtos.Auth;
 using ServicioUsers.Dtos.Auth.Delete;
 using ServicioUsers.Dtos.Auth.Login;
 using ServicioUsers.Dtos.Auth.Register;
-using ServicioUsers.Dtos.Health;
+using ServicioUsers.Dtos.Auth.Update;
 
 namespace ServicioUsers.Services;
 
@@ -13,4 +11,5 @@ public interface IAuthService
     Task<LoginResponseDto> LoginAsync(LoginRequestDto credentials);
     Task<RegisterResponseDto> RegisterAsync(RegisterRequestDto request);
     Task<DeleteUserResponseDto> DeleteByIdAsync(DeleteUserRequestDto request);
+    Task<UpdateUserResponseDto> UpdateUserByIdAsync(UpdateUserRequestDto request);
 }

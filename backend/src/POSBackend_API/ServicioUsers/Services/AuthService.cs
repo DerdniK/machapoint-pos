@@ -7,19 +7,17 @@ using ServicioUsers.Dtos.Auth;
 using ServicioUsers.Dtos.Auth.Delete;
 using ServicioUsers.Dtos.Auth.Login;
 using ServicioUsers.Dtos.Auth.Register;
-using ServicioUsers.Security;
+using ServicioUsers.Dtos.Auth.Update;
 
 namespace ServicioUsers.Services
 {
     public class AuthService : IAuthService
     {
         private readonly SupaDBContext _context;
-        private readonly JwtTokenGenerator _jwtTokenGenerator;
 
-        public AuthService(SupaDBContext context, JwtTokenGenerator jwtTokenGenerator) //? Inyeccion de dependencias, dynamo y jwt
+        public AuthService(SupaDBContext context) //? Inyeccion de dependencias, dynamo y jwt
         {
             _context = context;
-            _jwtTokenGenerator = jwtTokenGenerator;
         }
 
 
@@ -53,16 +51,11 @@ namespace ServicioUsers.Services
             }
 
 
-            string token = _jwtTokenGenerator.GenerateToken(user);
 
             return new LoginResponseDto
             {
                 Success = true,
-                Message = "Login succesfull!",
-                AuthData = new AuthResponseDto
-                {
-                    Token = token
-                }
+                Message = "Login succesfull!"
             };
         }
 
@@ -106,6 +99,37 @@ namespace ServicioUsers.Services
                 Success = true,
                 Message = "Usuario eliminado!",
                 Deletedid = deletedId
+            };
+        }
+
+        public async Task<UpdateUserResponseDto> UpdateUserByIdAsync(UpdateUserRequestDto request)
+        {
+            string? passwordHash = null;
+
+            if (!string.IsNullOrWhiteSpace(request.Password))
+            {
+                passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
+            }
+
+            var sql = "SELECT sp_c_update_user(@p_userid, @p_username, @p_password, @p_firstname, @p_lastname, @p_roleid)";
+
+            await _context.Database.ExecuteSqlRawAsync(sql,
+            new NpgsqlParameter("p_userid", request.Userid),
+            new NpgsqlParameter("p_username", (object?)request.Username ?? DBNull.Value),
+            new NpgsqlParameter("p_password", (object?)passwordHash ?? DBNull.Value),
+            new NpgsqlParameter("p_firstname", (object?)request.Firstname ?? DBNull.Value),
+            new NpgsqlParameter("p_lastname", (object?)request.Lastname ?? DBNull.Value),
+            new NpgsqlParameter("p_roleid", (object?)request.Roleid ?? DBNull.Value)
+            );
+
+            return new UpdateUserResponseDto
+            {
+                Success = true,
+                Message = "Usuario actualizado!",
+                Username = request.Username,
+                Firstname = request.Firstname,
+                Lastname = request.Lastname,
+                Roleid = request.Roleid
             };
         }
     }

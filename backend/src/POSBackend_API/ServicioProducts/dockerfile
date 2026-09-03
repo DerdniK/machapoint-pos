@@ -3,7 +3,7 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /app
 
 # se copia el archivo ServicioProductos.csproj de la carpeta en donde esta el dockerfile (./)
-COPY ServicioProductos.csproj ./
+COPY ServicioProducts.csproj ./
 # restauramos las dependencias
 RUN dotnet restore
 
@@ -26,4 +26,4 @@ EXPOSE 8081
 ENV ASPNETCORE_HTTP_PORTS=8081
 
 # comando de inicio 
-ENTRYPOINT ["dotnet", "ServicioProductos.dll"]
+ENTRYPOINT ["dotnet", "ServicioProducts.dll"]
