@@ -4,6 +4,6 @@ namespace ServicioProducts.Dtos.Create
     {
         public bool Success {get; set;}
         public string Message {get; set;}
-        public int Productid {get; set;}
+        public string SKU {get; set;}
     }
 }
