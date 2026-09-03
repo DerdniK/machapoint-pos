@@ -18,7 +18,7 @@ namespace ServicioProducts.Controllers
         }
 
 
-        [Authorize]
+        [Authorize(Roles = "Admin,Cajero")]
         [HttpGet]
         public async Task<IActionResult> GetAllProducts()
         {
@@ -34,6 +34,7 @@ namespace ServicioProducts.Controllers
             }
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPost("create")]
         public async Task<IActionResult> CreateProduct(CreateProductRequestDto request)
         {
@@ -59,6 +60,7 @@ namespace ServicioProducts.Controllers
             }
         }
 
+        [Authorize(Roles = "Admin,Cajero")]
         [HttpGet("get")]
         public async Task<IActionResult> GetProducts([FromQuery] GetProductRequestDto request)
         {
