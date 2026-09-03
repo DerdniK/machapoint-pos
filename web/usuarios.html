@@ -1,311 +1,55 @@
 <!DOCTYPE html>
-
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+    <title>MachaPoint - Gestión de Usuarios</title>
     <link rel="stylesheet" href="styles/usuarios.css">
-
-    <title>MachaPoint - Usuarios</title>
 </head>
-
 <body>
-
-    <main class="barra-superior-container">
-
-        <!-- ============================= -->
-        <!-- BARRA SUPERIOR -->
-        <!-- ============================= -->
-
-        <div id="barra-superior">
-
-            <h1>MachaPoint</h1>
-
-            <!-- Botón hamburguesa -->
-            <div class="hamburger" id="hamburger">
-
-                <span class="bar"></span>
-                <span class="bar"></span>
-                <span class="bar"></span>
-
-            </div>
-
-
-            <!-- Menú -->
-            <nav class="nav-menu" id="nav-menu">
-
-                <ul>
-
-                    <li>
-                        <a href="catalogo.html">
-                            Catálogo
-                        </a>
-                    </li>
-
-                </ul>
-
-            </nav>
-
+    <header class="navbar">
+        <h1>MachaPoint - Administración</h1>
+        <div>
+            <span id="health-status">Estado del servicio: Consultando...</span>
+            <a href="catalogo.html">Ir a Catálogo</a>
         </div>
+    </header>
 
+    <main class="container">
+        <!-- Registrar Usuario -->
+        <section class="card">
+            <h3>Registrar Nuevo Usuario</h3>
+            <form id="form-register">
+                <input type="text" id="reg-username" placeholder="Username" required>
+                <input type="password" id="reg-password" placeholder="Password" required>
+                <input type="text" id="reg-firstname" placeholder="Nombre" required>
+                <input type="text" id="reg-lastname" placeholder="Apellido" required>
+                <input type="number" id="reg-roleid" placeholder="RoleId (ej: 1)" value="1" required>
+                <button type="submit">Registrar</button>
+            </form>
+        </section>
 
-        <!-- ============================= -->
-        <!-- CONTENIDO -->
-        <!-- ============================= -->
+        <!-- Modificar Usuario -->
+        <section class="card">
+            <h3>Modificar Username</h3>
+            <form id="form-update">
+                <input type="text" id="upd-userid" placeholder="Userid (UUID)" required>
+                <input type="text" id="upd-username" placeholder="Nuevo Username" required>
+                <button type="submit">Actualizar</button>
+            </form>
+        </section>
 
-        <div class="contenido">
+        <!-- Eliminar Usuario -->
+        <section class="card">
+            <h3>Eliminar Usuario</h3>
+            <form id="form-delete">
+                <input type="text" id="del-userid" placeholder="Userid (UUID)" required>
+                <button type="submit" class="btn-danger">Eliminar</button>
+            </form>
+        </section>
 
-            <div class="usuarios-header">
-
-                <h2>
-                    Usuarios activos
-                </h2>
-
-
-                <button
-                    type="button"
-                    id="btnAgregarUsuario"
-                    class="btn-agregar"
-                >
-                    Agregar usuario +
-                </button>
-
-            </div>
-
-
-            <!-- Mensajes del sistema -->
-            <div
-                id="mensaje"
-                class="mensaje"
-            ></div>
-
-
-            <!-- ============================= -->
-            <!-- TABLA DE USUARIOS -->
-            <!-- ============================= -->
-
-            <section id="usuarios">
-
-                <div class="tabla-container">
-
-                    <table class="tabla-usuarios">
-
-                        <thead>
-
-                            <tr>
-
-                                <th>
-                                    Usuario
-                                </th>
-
-                                <th>
-                                    Nombre
-                                </th>
-
-                                <th>
-                                    Rol de usuario
-                                </th>
-
-                                <th>
-                                    Editar
-                                </th>
-
-                                <th>
-                                    Eliminar
-                                </th>
-
-                            </tr>
-
-                        </thead>
-
-
-                        <tbody id="listaUsuarios">
-
-                            <!--
-                                Los usuarios serán
-                                generados mediante JavaScript.
-                            -->
-
-                            <tr>
-
-                                <td colspan="5">
-                                    Cargando usuarios...
-                                </td>
-
-                            </tr>
-
-                        </tbody>
-
-                    </table>
-
-                </div>
-
-            </section>
-
-        </div>
-
+        <p id="user-status-msg"></p>
     </main>
 
-
-    <!-- ======================================= -->
-    <!-- MODAL AGREGAR / EDITAR USUARIO -->
-    <!-- ======================================= -->
-
-    <div
-        id="modalUsuario"
-        class="modal oculto"
-    >
-
-        <div class="modal-contenido">
-
-
-            <!-- Botón cerrar -->
-
-            <button
-                type="button"
-                id="cerrarModal"
-                class="cerrar-modal"
-            >
-                ×
-            </button>
-
-
-            <h2 id="tituloModal">
-                Agregar usuario
-            </h2>
-
-
-            <!-- ================================= -->
-            <!-- FORMULARIO -->
-            <!-- ================================= -->
-
-            <form id="formUsuario">
-
-
-                <!--
-                    ID oculto.
-
-                    Vacío = crear usuario
-                    Con ID = editar usuario
-                -->
-
-                <input
-                    type="hidden"
-                    id="userId"
-                >
-
-
-                <!-- Usuario -->
-
-                <label for="username">
-                    Usuario
-                </label>
-
-                <input
-                    type="text"
-                    id="username"
-                    name="username"
-                    placeholder="Nombre de usuario"
-                    required
-                >
-
-
-                <!-- Contraseña -->
-
-                <label for="password">
-                    Contraseña
-                </label>
-
-                <input
-                    type="password"
-                    id="password"
-                    name="password"
-                    placeholder="Contraseña"
-                >
-
-
-                <!-- Nombre -->
-
-                <label for="firstname">
-                    Nombre
-                </label>
-
-                <input
-                    type="text"
-                    id="firstname"
-                    name="firstname"
-                    placeholder="Nombre"
-                    required
-                >
-
-
-                <!-- Apellidos -->
-
-                <label for="lastname">
-                    Apellidos
-                </label>
-
-                <input
-                    type="text"
-                    id="lastname"
-                    name="lastname"
-                    placeholder="Apellidos"
-                    required
-                >
-
-
-                <!-- Rol -->
-
-                <label for="roleid">
-                    Rol de usuario
-                </label>
-
-                <select
-                    id="roleid"
-                    name="roleid"
-                    required
-                >
-
-                    <option value="">
-                        Selecciona un rol
-                    </option>
-
-                    <option value="1">
-                        Administrador
-                    </option>
-
-                    <option value="2">
-                        Empleado
-                    </option>
-
-                </select>
-
-
-                <!-- Botón guardar -->
-
-                <button
-                    type="submit"
-                    id="btnGuardarUsuario"
-                    class="btn-guardar"
-                >
-                    Guardar usuario
-                </button>
-
-            </form>
-
-        </div>
-
-    </div>
-
-
-    <!-- ======================================= -->
-    <!-- JAVASCRIPT -->
-    <!-- ======================================= -->
-
     <script src="js/usuarios.js"></script>
-
 </body>
-
 </html>

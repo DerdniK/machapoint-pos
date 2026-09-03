@@ -1,455 +1,73 @@
-const API_URL =
-    "https://tmvksz56enigo6ojk25lfvg6x40vigzo.lambda-url.us-east-1.on.aws";
+const API_USERS_URL = "https://tmvksz56enigo6ojk25lfvg6x40vigzo.lambda-url.us-east-1.on.aws/api/users";
+// const API_USERS_URL = "http://localhost:8080/api/users";
 
+const token = localStorage.getItem('authToken');
+const statusMsg = document.getElementById('user-status-msg');
 
-const listaUsuarios =
-    document.getElementById("listaUsuarios");
-
-const modal =
-    document.getElementById("modalUsuario");
-
-const formUsuario =
-    document.getElementById("formUsuario");
-
-const btnAgregarUsuario =
-    document.getElementById("btnAgregarUsuario");
-
-const cerrarModal =
-    document.getElementById("cerrarModal");
-
-const tituloModal =
-    document.getElementById("tituloModal");
-
-
-function obtenerToken() {
-
-    return localStorage.getItem("authToken");
-
+// 1. Health check
+async function checkHealth() {
+    const healthEl = document.getElementById('health-status');
+    try {
+        const res = await fetch(`${API_USERS_URL}/health`);
+        healthEl.textContent = res.ok ? "Servicio Users: Operativo" : "Servicio Users: Con fallas";
+    } catch {
+        healthEl.textContent = "Servicio Users: Offline";
+    }
 }
+checkHealth();
 
-// Función para realizar peticiones a la API con el token de autenticación
-
-async function apiFetch(endpoint, options = {}) {
-
-    const token = obtenerToken();
-
-    const headers = {
-        "Content-Type": "application/json",
-        ...options.headers
+// 2. Registro (POST /api/users/auth/register)
+document.getElementById('form-register').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const payload = {
+        username: document.getElementById('reg-username').value,
+        password: document.getElementById('reg-password').value,
+        firstname: document.getElementById('reg-firstname').value,
+        lastname: document.getElementById('reg-lastname').value,
+        roleid: parseInt(document.getElementById('reg-roleid').value, 10)
     };
 
-    if (token) {
-        headers["Authorization"] =
-            `Bearer ${token}`;
-    }
+    ejecutarPeticion(`${API_USERS_URL}/auth/register`, 'POST', payload);
+});
 
-    const response = await fetch(
-        `${API_URL}${endpoint}`,
-        {
-            ...options,
-            headers
-        }
-    );
+// 3. Modificación (PATCH /api/users/auth/update)
+document.getElementById('form-update').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const payload = {
+        Userid: document.getElementById('upd-userid').value,
+        Username: document.getElementById('upd-username').value
+    };
 
-    const data = await response.json();
+    ejecutarPeticion(`${API_USERS_URL}/auth/update`, 'PATCH', payload);
+});
 
-    if (!response.ok) {
+// 4. Eliminación (DELETE /api/users/auth/delete)
+document.getElementById('form-delete').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const payload = {
+        Userid: document.getElementById('del-userid').value
+    };
 
-        throw new Error(
-            data.message ||
-            "Error al comunicarse con el servidor"
-        );
+    ejecutarPeticion(`${API_USERS_URL}/auth/delete`, 'DELETE', payload);
+});
 
-    }
-
-    return data;
-}
-
-// Registrar usuario - CREATE
-
-async function registrarUsuario(usuario) {
-
+async function ejecutarPeticion(url, method, body) {
+    statusMsg.textContent = "Procesando...";
     try {
+        const res = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(body)
+        });
 
-        const data = await apiFetch(
-            "https://tmvksz56enigo6ojk25lfvg6x40vigzo.lambda-url.us-east-1.on.aws/api/users/auth/register",
-            {
-                method: "POST",
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
 
-                body: JSON.stringify(usuario)
-            }
-        );
-
-        alert(
-            data.message ||
-            "Usuario registrado correctamente"
-        );
-
-        return true;
-
-    } catch (error) {
-
-        console.error(error);
-
-        alert(
-            "No se pudo registrar el usuario: " +
-            error.message
-        );
-
-        return false;
+        statusMsg.textContent = `Operación ${method} realizada con éxito.`;
+    } catch (err) {
+        statusMsg.textContent = "Error: " + err.message;
     }
 }
-
-// actualizar usuario - UPDATE
-
-async function actualizarUsuario(usuario) {
-
-    try {
-
-        const data = await apiFetch(
-            "https://tmvksz56enigo6ojk25lfvg6x40vigzo.lambda-url.us-east-1.on.aws/api/users/update",
-            {
-                method: "PUT",
-
-                body: JSON.stringify(usuario)
-            }
-        );
-
-        alert(
-            data.message ||
-            "Usuario actualizado"
-        );
-
-        return true;
-
-    } catch (error) {
-
-        console.error(error);
-
-        alert(
-            "No se pudo actualizar: " +
-            error.message
-        );
-
-        return false;
-    }
-}
-
-// eliminar usuario - DELETE
-
-async function eliminarUsuario(userId) {
-
-    const confirmar = confirm(
-        "¿Seguro que quieres eliminar este usuario?"
-    );
-
-    if (!confirmar) {
-        return;
-    }
-
-    try {
-
-        const data = await apiFetch(
-            "https://tmvksz56enigo6ojk25lfvg6x40vigzo.lambda-url.us-east-1.on.aws/api/users/delete",
-            {
-                method: "DELETE",
-
-                body: JSON.stringify({
-                    UserID: userId
-                })
-            }
-        );
-
-        alert(
-            data.message ||
-            "Usuario eliminado"
-        );
-
-        cargarUsuarios();
-
-    } catch (error) {
-
-        console.error(error);
-
-        alert(
-            "No se pudo eliminar el usuario: " +
-            error.message
-        );
-    }
-}
-
-// Abir modal para agregar usuario
-
-btnAgregarUsuario.addEventListener(
-    "click",
-    () => {
-
-        formUsuario.reset();
-
-        document.getElementById("userId").value = "";
-
-        document.getElementById("password").required = true;
-
-        tituloModal.textContent =
-            "Agregar usuario";
-
-        modal.classList.remove("oculto");
-
-    }
-);
-   // cerrar modal al dar click en la X
-cerrarModal.addEventListener(
-    "click",
-    () => {
-
-        modal.classList.add("oculto");
-
-    }
-);
-
-
-// se utiliza el mismo formulario para agregar y actualizar usuarios
-
-formUsuario.addEventListener(
-    "submit",
-    async (event) => {
-
-        event.preventDefault();
-
-
-        const userId =
-            document.getElementById("userId").value;
-
-        const username =
-            document.getElementById("username").value;
-
-        const password =
-            document.getElementById("password").value;
-
-        const firstname =
-            document.getElementById("firstname").value;
-
-        const lastname =
-            document.getElementById("lastname").value;
-
-        const roleid =
-            Number(
-                document.getElementById("roleid").value
-            );
-
-
-        let resultado;
-
-
-        // =========================
-        // CREAR
-        // =========================
-
-        if (!userId) {
-
-            const usuario = {
-
-                username,
-                password,
-                firstname,
-                lastname,
-                roleid
-            };
-
-            resultado =
-                await registrarUsuario(usuario);
-
-        }
-
-
-        // =========================
-        // EDITAR
-        // =========================
-
-        else {
-
-            const usuario = {
-
-                Userid: userId,
-                Username: username,
-                firstname,
-                lastname,
-                roleid
-            };
-
-            resultado =
-                await actualizarUsuario(usuario);
-
-        }
-
-
-        if (resultado) {
-
-            modal.classList.add("oculto");
-
-            cargarUsuarios();
-
-        }
-
-    }
-);
-
-// editar usuario - abrir modal con datos del usuario
-
-function abrirEditarUsuario(usuario) {
-
-    document.getElementById("userId").value =
-        usuario.userid;
-
-    document.getElementById("username").value =
-        usuario.username;
-
-    document.getElementById("firstname").value =
-        usuario.firstname ?? "";
-
-    document.getElementById("lastname").value =
-        usuario.lastname ?? "";
-
-    document.getElementById("roleid").value =
-        usuario.roleid;
-
-
-    // Normalmente NO debes recuperar
-    // ni mostrar una contraseña existente.
-
-    document.getElementById("password").value = "";
-    document.getElementById("password").required = false;
-
-
-    tituloModal.textContent =
-        "Editar usuario";
-
-
-    modal.classList.remove("oculto");
-
-}
-
-
-// Recuperar usuarios - READ
-
-async function cargarUsuarios() {
-
-    try {
-
-        const data = await apiFetch(
-            "https://tmvksz56enigo6ojk25lfvg6x40vigzo.lambda-url.us-east-1.on.aws/api/users",
-            {
-                method: "GET"
-            }
-        );
-
-        mostrarUsuarios(data.users);
-
-    } catch (error) {
-
-        console.error(
-            "Error cargando usuarios:",
-            error
-        );
-
-        listaUsuarios.innerHTML = `
-            <tr>
-                <td colspan="4">
-                    No se pudieron cargar los usuarios
-                </td>
-            </tr>
-        `;
-    }
-}
-
-// json en filas 
-
-function mostrarUsuarios(usuarios) {
-
-    listaUsuarios.innerHTML = "";
-
-
-    usuarios.forEach(usuario => {
-
-        const fila =
-            document.createElement("tr");
-
-
-        const rol =
-            usuario.roleid === 1
-                ? "Administrador"
-                : "Empleado";
-
-
-        fila.innerHTML = `
-
-            <td>
-                ${usuario.username}
-            </td>
-
-            <td>
-                ${usuario.firstname ?? ""}
-                ${usuario.lastname ?? ""}
-            </td>
-
-            <td>
-                ${rol}
-            </td>
-
-            <td>
-
-                <button
-                    class="btn-editar"
-                >
-                    Editar
-                </button>
-
-                <button
-                    class="btn-eliminar"
-                >
-                    Eliminar
-                </button>
-
-            </td>
-
-        `;
-
-
-        fila
-            .querySelector(".btn-editar")
-            .addEventListener(
-                "click",
-                () => {
-
-                    abrirEditarUsuario(usuario);
-
-                }
-            );
-
-
-        fila
-            .querySelector(".btn-eliminar")
-            .addEventListener(
-                "click",
-                () => {
-
-                    eliminarUsuario(
-                        usuario.userid
-                    );
-
-                }
-            );
-
-
-        listaUsuarios.appendChild(fila);
-
-    });
-
-}
-
-// Cargar usuarios al cargar la página (hay que rezar)
-
-document.addEventListener(
-    "DOMContentLoaded",
-    cargarUsuarios
-);
