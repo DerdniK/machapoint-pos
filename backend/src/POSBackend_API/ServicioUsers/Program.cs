@@ -1,5 +1,3 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Text;
 using Amazon.Lambda.AspNetCoreServer.Hosting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -16,7 +14,7 @@ builder.Configuration.AddEnvironmentVariables();
 // Integración con AWS Lambda (HTTP API)
 builder.Services.AddAWSLambdaHosting(LambdaEventSource.HttpApi);
 
-// CORS
+// CORS para entorno local
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -38,16 +36,10 @@ builder.Services.AddDbContext<SupaDBContext>(options =>
 builder.Services.AddScoped<IHealthService, HealthService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
-// Lectura del JWT Secret de Supabase
-var secretKey = builder.Configuration["JwtSettings:SecretKey"]
-    ?? Environment.GetEnvironmentVariable("JwtSettings__SecretKey")
-    ?? throw new InvalidOperationException("JwtSettings:SecretKey no está configurada en las variables de entorno.");
+// URL base de tu proyecto en Supabase
+var supabaseUrl = "https://rbhdpforntgwfbuqychm.supabase.co";
 
-var keyBytes = Encoding.UTF8.GetBytes(secretKey);
-
-JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
-
-// Configuración de autenticación JWT compatible con Supabase y Roles
+// Configuración JWT validando contra el JWKS oficial de Supabase (compatible con ES256)
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -58,30 +50,36 @@ builder.Services.AddAuthentication(options =>
     options.MapInboundClaims = false;
     options.RequireHttpsMetadata = false;
     options.SaveToken = true;
+
+    // Supabase expone las llaves públicas para verificar firmas ES256
+    options.MetadataAddress = $"{supabaseUrl}/auth/v1/.well-known/openid-configuration";
+
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(keyBytes),
-        ValidateIssuer = false,
-        ValidateAudience = false,
+        ValidateIssuer = true,
+        ValidIssuer = $"{supabaseUrl}/auth/v1",
+        ValidateAudience = true,
+        ValidAudience = "authenticated",
         ValidateLifetime = true,
-        ClockSkew = TimeSpan.Zero,
-        RoleClaimType = "role" // Reconoce el claim de rol para [Authorize(Roles = "...")]
+        ClockSkew = TimeSpan.FromMinutes(5),
+        RoleClaimType = "role"
     };
 });
 
-// Políticas de autorización por rol
+// Políticas de autorización por rol (incluye "authenticated" para usuarios de Google)
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
-    options.AddPolicy("CajeroOnly", policy => policy.RequireRole("Cajero"));
+    options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin", "authenticated"));
+    options.AddPolicy("CajeroOnly", policy => policy.RequireRole("Cajero", "authenticated"));
 });
 
 builder.Services.AddControllers();
 
 var app = builder.Build();
 
-app.UseCors("AllowAll");
+// Si está activo el CORS en AWS Lambda Function URL, deja esta línea comentada
+// app.UseCors("AllowAll");
 
 app.UseAuthentication(); // Valida el JWT
 app.UseAuthorization();  // Valida permisos/roles
