@@ -11,5 +11,5 @@ public interface IAuthService
     Task<LoginResponseDto> LoginAsync(LoginRequestDto credentials);
     Task<RegisterResponseDto> RegisterAsync(RegisterRequestDto request);
     Task<DeleteUserResponseDto> DeleteByIdAsync(DeleteUserRequestDto request);
-    Task<UpdateUserResponseDto> UpdateUserByUsernameAsync(UpdateUserRequestDto request);
+    Task<UpdateUserResponseDto> UpdateUserByIdAsync(UpdateUserRequestDto request);
 }

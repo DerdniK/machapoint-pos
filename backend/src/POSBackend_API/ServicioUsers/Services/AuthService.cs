@@ -110,7 +110,7 @@ namespace ServicioUsers.Services
             };
         }
 
-        public async Task<UpdateUserResponseDto> UpdateUserByUsernameAsync(UpdateUserRequestDto request)
+        public async Task<UpdateUserResponseDto> UpdateUserByIdAsync(UpdateUserRequestDto request)
         {
             string passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
 
