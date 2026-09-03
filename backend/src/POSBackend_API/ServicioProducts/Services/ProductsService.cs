@@ -61,7 +61,10 @@ namespace ServicioProducts.Services
         {
             var sql = "SELECT * FROM public.sp_view_products(@p_productid)";
 
-            var parameter = new NpgsqlParameter("p_productid", request.ProductId);
+            var parameter = new NpgsqlParameter("p_productid", NpgsqlTypes.NpgsqlDbType.Integer)
+            {
+                Value = (object?)request.ProductId ?? DBNull.Value
+            };
 
             var products = await _context.Database
             .SqlQueryRaw<ViewProductModel>(sql, parameter)
