@@ -112,17 +112,22 @@ namespace ServicioUsers.Services
 
         public async Task<UpdateUserResponseDto> UpdateUserByIdAsync(UpdateUserRequestDto request)
         {
-            string passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
+            string? passwordHash = null;
+
+            if (!string.IsNullOrWhiteSpace(request.Password))
+            {
+                passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
+            }
 
             var sql = "SELECT sp_c_update_user(@p_userid, @p_username, @p_password, @p_firstname, @p_lastname, @p_roleid)";
 
             await _context.Database.ExecuteSqlRawAsync(sql,
             new NpgsqlParameter("p_userid", request.Userid),
-            new NpgsqlParameter("p_username", request.Username),
-            new NpgsqlParameter("p_password", passwordHash),
-            new NpgsqlParameter("p_firstname", request.Firstname),
-            new NpgsqlParameter("p_lastname", request.Lastname),
-            new NpgsqlParameter("p_roleid", request.Roleid)
+            new NpgsqlParameter("p_username", (object?)request.Username ?? DBNull.Value),
+            new NpgsqlParameter("p_password", (object?)passwordHash ?? DBNull.Value),
+            new NpgsqlParameter("p_firstname", (object?)request.Firstname ?? DBNull.Value),
+            new NpgsqlParameter("p_lastname", (object?)request.Lastname ?? DBNull.Value),
+            new NpgsqlParameter("p_roleid", (object?)request.Roleid ?? DBNull.Value)
             );
 
             return new UpdateUserResponseDto
