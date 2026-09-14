@@ -7,6 +7,6 @@ namespace ServicioShift.Data
     {
         public SupaDBContext(DbContextOptions<SupaDBContext> options) : base(options) { } 
         //^ "SupaDBContext" el nombre de la clase a la cual heredamos "DbContext"
-        public DbSet<Shift> ProductsTypeTable {get; set;}
+        public DbSet<Shift> ShiftsTable {get; set;}
     }
 }
