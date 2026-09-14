@@ -8,7 +8,6 @@ namespace ServicioSales.Dtos
 {
     public class SaleResponseDto
     {
-        // public int SaleId {get; set;}
         public int ShiftId {get; set;}
         public Guid CashierId {get; set;}
         public List<SaleProductResponseDto> ProductsList {get; set;}
