@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using ServicioSales.Data;
-using ServicioSales.Services;
+using ServicioSales.Service;
 
 DotNetEnv.Env.TraversePath().Load();
 
@@ -32,7 +32,7 @@ builder.Services.AddCors(options =>
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
 
-builder.Services.AddDbContext<SalesDbContext>(options =>
+builder.Services.AddDbContext<SupaDBContext>(options =>
     options.UseNpgsql(connectionString));
 
 // Inyección de dependencias para ventas
