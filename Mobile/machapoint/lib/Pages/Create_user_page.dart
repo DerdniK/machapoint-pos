@@ -10,33 +10,56 @@ class CreateUserPage extends StatefulWidget {
 }
 
 class _CreateUserPageState extends State<CreateUserPage> {
+  final _createFormKey = GlobalKey<FormState>();
+  final _updateFormKey = GlobalKey<FormState>();
   String _selectedAction = 'create'; // 'create', 'update', 'delete'
 
-  // Controladores independientes para CREAR
+  // Controladores para CREAR
   final _usernameCreateController = TextEditingController();
   final _passwordController = TextEditingController();
   final _firstnameController = TextEditingController();
   final _lastnameController = TextEditingController();
   final _roleIdController = TextEditingController(text: '1');
   
-  // Controladores independientes para ACTUALIZAR
+  // Controladores para ACTUALIZAR
   final _userIdUpdateController = TextEditingController();
   final _usernameUpdateController = TextEditingController();
 
-  // Controlador independiente para ELIMINAR
+  // Controlador para ELIMINAR
   final _userIdDeleteController = TextEditingController();
 
   bool _isLoading = false;
 
   Future<void> _submitCreate() async {
+    if (!_createFormKey.currentState!.validate()) {
+      return;
+    }
+
+    final roleId = int.tryParse(_roleIdController.text.trim());
+    final password = _passwordController.text.trim();
+
+    if (roleId == null || roleId < 1 || roleId > 2) {
+      if (mounted) {
+        _showSnackBar('El rol debe ser 1 o 2', Colors.orange);
+      }
+      return;
+    }
+
+    if (password.length < 7) {
+      if (mounted) {
+        _showSnackBar('La contraseña debe tener al menos 7 caracteres', Colors.orange);
+      }
+      return;
+    }
+
     setState(() => _isLoading = true);
     try {
       final user = UserModel(
         username: _usernameCreateController.text.trim(),
-        password: _passwordController.text.trim(),
+        password: password,
         firstname: _firstnameController.text.trim(),
         lastname: _lastnameController.text.trim(),
-        roleid: int.tryParse(_roleIdController.text.trim()) ?? 1,
+        roleid: roleId,
       );
       await UserService.registerUser(user);
       if (mounted) {
@@ -54,34 +77,74 @@ class _CreateUserPageState extends State<CreateUserPage> {
   }
 
   Future<void> _submitUpdate() async {
+    if (!_updateFormKey.currentState!.validate()) {
+      return;
+    }
+
+    final userId = _userIdUpdateController.text.trim();
+    final username = _usernameUpdateController.text.trim();
+
     setState(() => _isLoading = true);
     try {
-      await UserService.updateUser(
-        userId: _userIdUpdateController.text.trim(),
-        username: _usernameUpdateController.text.trim(),
+      final success = await UserService.updateUser(
+        userId: userId,
+        username: username,
       );
+
       if (mounted) {
-        _showSnackBar('¡Usuario actualizado exitosamente!', Colors.green);
+        if (success) {
+          _showSnackBar('¡Usuario actualizado exitosamente!', Colors.green);
+        } else {
+          _showSnackBar('Usuario no encontrado', Colors.orange);
+        }
       }
     } catch (e) {
-      if (mounted) _showSnackBar('Error: $e', Colors.redAccent);
+      final message = e.toString().toLowerCase();
+      if (mounted) {
+        if (message.contains('not found') || message.contains('usuario no encontrado') || message.contains('404')) {
+          _showSnackBar('Usuario no encontrado', Colors.orange);
+        } else {
+          _showSnackBar('Error: $e', Colors.redAccent);
+        }
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
   Future<void> _submitDelete() async {
+    final userId = _userIdDeleteController.text.trim();
+
+    if (userId.isEmpty) {
+      if (mounted) {
+        _showSnackBar('Ingrese el ID del usuario', Colors.orange);
+      }
+      return;
+    }
+
     setState(() => _isLoading = true);
     try {
-      await UserService.deleteUser(
-        userId: _userIdDeleteController.text.trim(),
+      final success = await UserService.deleteUser(
+        userId: userId,
       );
+
       if (mounted) {
-        _showSnackBar('¡Usuario eliminado exitosamente!', Colors.redAccent);
-        _userIdDeleteController.clear();
+        if (success) {
+          _showSnackBar('¡Usuario eliminado exitosamente!', Colors.redAccent);
+          _userIdDeleteController.clear();
+        } else {
+          _showSnackBar('Usuario no encontrado', Colors.orange);
+        }
       }
     } catch (e) {
-      if (mounted) _showSnackBar('Error: $e', Colors.redAccent);
+      final message = e.toString().toLowerCase();
+      if (mounted) {
+        if (message.contains('not found') || message.contains('usuario no encontrado') || message.contains('404')) {
+          _showSnackBar('Usuario no encontrado', Colors.orange);
+        } else {
+          _showSnackBar('Error: $e', Colors.redAccent);
+        }
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -142,21 +205,74 @@ class _CreateUserPageState extends State<CreateUserPage> {
               ),
             ),
             const SizedBox(height: 24),
-
-            // Formulario condicional según la opción seleccionada
             if (_selectedAction == 'create') ...[
-              TextField(
-                controller: _usernameCreateController,
-                decoration: _inputDec('Nombre de usuario'),
+              Form(
+                key: _createFormKey,
+                child: Column(
+                  children: [
+                    TextFormField(
+                      controller: _usernameCreateController,
+                      decoration: _inputDec('Nombre de usuario'),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Ingrese el nombre de usuario';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _passwordController,
+                      decoration: _inputDec('Contraseña'),
+                      obscureText: true,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Ingrese la contraseña';
+                        }
+                        if (value.trim().length < 7) {
+                          return 'La contraseña debe tener al menos 7 caracteres';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _firstnameController,
+                      decoration: _inputDec('Nombre(s)'),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Ingrese el nombre';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _lastnameController,
+                      decoration: _inputDec('Apellido(s)'),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Ingrese el apellido';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _roleIdController,
+                      decoration: _inputDec('Rol ID'),
+                      keyboardType: TextInputType.number,
+                      validator: (value) {
+                        final roleId = int.tryParse(value ?? '');
+                        if (roleId == null || roleId < 1 || roleId > 2) {
+                          return 'El rol debe ser 1 o 2';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 16),
-              TextField(controller: _passwordController, decoration: _inputDec('Contraseña'), obscureText: true),
-              const SizedBox(height: 16),
-              TextField(controller: _firstnameController, decoration: _inputDec('Nombre(s)')),
-              const SizedBox(height: 16),
-              TextField(controller: _lastnameController, decoration: _inputDec('Apellido(s)')),
-              const SizedBox(height: 16),
-              TextField(controller: _roleIdController, decoration: _inputDec('Rol ID'), keyboardType: TextInputType.number),
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
@@ -168,9 +284,34 @@ class _CreateUserPageState extends State<CreateUserPage> {
                 ),
               ),
             ] else if (_selectedAction == 'update') ...[
-              TextField(controller: _userIdUpdateController, decoration: _inputDec('User ID (UUID)')),
-              const SizedBox(height: 16),
-              TextField(controller: _usernameUpdateController, decoration: _inputDec('Nuevo Nombre de usuario')),
+              Form(
+                key: _updateFormKey,
+                child: Column(
+                  children: [
+                    TextFormField(
+                      controller: _userIdUpdateController,
+                      decoration: _inputDec('User ID (UUID)'),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Ingrese el ID del usuario';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _usernameUpdateController,
+                      decoration: _inputDec('Nuevo Nombre de usuario'),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Ingrese el nuevo nombre de usuario';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
+                ),
+              ),
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
@@ -182,7 +323,18 @@ class _CreateUserPageState extends State<CreateUserPage> {
                 ),
               ),
             ] else if (_selectedAction == 'delete') ...[
-              TextField(controller: _userIdDeleteController, decoration: _inputDec('User ID (UUID)')),
+              Form(
+                child: TextFormField(
+                  controller: _userIdDeleteController,
+                  decoration: _inputDec('User ID (UUID)'),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Ingrese el ID del usuario';
+                    }
+                    return null;
+                  },
+                ),
+              ),
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,

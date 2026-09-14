@@ -4,7 +4,7 @@ import '../models/produtos.dart';
 import '../services/auth.dart';
 import '../services/product.dart';
 import 'Login_Page.dart';
-import 'create_user_page.dart'; // <-- 1. Importas la nueva página aquí
+import 'create_user_page.dart'; 
 
 class ProductPage extends StatefulWidget {
   const ProductPage({super.key});
@@ -46,7 +46,6 @@ class _ProductPageState extends State<ProductPage> {
   Widget build(BuildContext context) {
     const orangeColor = Color(0xFFF2B04E);
 
-    // El módulo central de usuarios queda oculto temporalmente.
     final List<Widget> pages = [
       _buildProductGrid(),
       const CreateUserPage(),

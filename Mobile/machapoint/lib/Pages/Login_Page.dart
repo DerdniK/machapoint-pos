@@ -68,7 +68,7 @@ class _LoginPageState extends State<LoginPage> {
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error al iniciar sesión con Google')),
+          const SnackBar(content: Text('Error al iniciar sesion con Google')),
         );
       }
     } catch (e) {
