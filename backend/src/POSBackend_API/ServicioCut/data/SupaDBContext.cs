@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using ServicioCut.Models;
+using ServicioCut.Models.Views;
 
 namespace ServicioCut.Data
 {
