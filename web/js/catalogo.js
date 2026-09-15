@@ -1,7 +1,5 @@
 // NOTAS DE PUSH: 
-// SE AGREGO LA FUNCIONALIDAD SELECCIONAR PRODUCTOS
-// SE AGREGO SELECCIONAR PRODUCTOS Y AGREGARLOS AL CARRITO
-// SE AGREGO UN BOTON QUE LLEVA A CARRITO.HTML
+// añadí botones y logica para poder agregar productos al carrito, pero de momento el carrito se guarda en localStorage, se recomienda cambiarlo a backend para persistencia y seguridad
 
 
 const API_URL ='https://4upkj2tafvod2ubwcsbnagviyu0feljy.lambda-url.us-east-1.on.aws';
@@ -85,6 +83,7 @@ function mostrarProductos(productos) {
     }
 
     productos.forEach(producto => {
+        console.log('producto individual:', producto);
 
         const article = document.createElement('article');
 
@@ -113,7 +112,7 @@ function mostrarProductos(productos) {
                     Tipo: ${producto.typeid}
                 </p>
 
-                <button class="boton-agregar" data-id="${producto.id}" > 
+                <button class="boton-agregar" data-id="${producto.productId}" > 
                     Agregar al carrito 
                 </button>
 
@@ -142,7 +141,8 @@ function agregarEventosBotones() {
             // Posteriormente aquí conectaremos el carrito
             // Buscar el producto completo en la lista 
             const producto = productosActuales.find( 
-                p => String(p.id) === String(productId) ); 
+                p => String(p.productId) === String(productId)
+            );
             
             if (!producto) { 
                 console.error("No se encontró el producto:", productId); return; 
@@ -164,7 +164,7 @@ function agregarAlCarrito(producto) {
 
     // agregar unicamente la infomación necesaria del producto al carrito
     const productoCarrito = {
-        id: producto.id,
+        id: producto.productId,
         name: producto.name,
         sku: producto.sku,
         price: producto.price,
@@ -228,6 +228,7 @@ if (formCrear) {
         //
 
         try {
+            msgCreacion.textContent = "Creando producto...";
             if (msgCreacion) msgCreacion.textContent = "Creando producto...";
 
             const res = await fetch(`${API_URL}/api/products/product/create`, {
@@ -239,6 +240,7 @@ if (formCrear) {
                 body: JSON.stringify(payload)
             });
 
+            msgCreacion.textContent = "¡Producto creado con éxito!";
             // Extraer respuesta del backend antes de validar el status
             const data = await res.json().catch(() => null);
 
@@ -251,13 +253,44 @@ if (formCrear) {
             console.log("Respuesta creación exitosa:", data);
             if (msgCreacion) msgCreacion.textContent = "¡Producto creado con éxito!";
             formCrear.reset();
+            cargarProductos(); // recargar productos para reflejar el nuevo producto
             
             if (typeof cargarProductos === 'function') {
                 cargarProductos();
             }
         } catch (err) {
+            msgCreacion.textContent = "Error al crear producto: " + err.message;
             console.error("Error al registrar producto:", err);
             if (msgCreacion) msgCreacion.textContent = "Error al crear: " + err.message;
         }
     });
+}
+
+
+function agregarAlCarrito(producto) {
+    // Obtener el carrito actual desde localStorage
+    let carrito = JSON.parse(localStorage.getItem(CARRITO_KEY)) || [];
+
+    // agregar unicamente la infomación necesaria del producto al carrito
+    const productoCarrito = {
+        id: producto.productId, // asi esta el nombre dentro de la api, estoy probando si es el error de que solo se guarde el primer producto de la lista 
+        name: producto.name,
+        sku: producto.sku,
+        price: producto.price,
+        typeid: producto.typeid,
+        quantity: 1 // cantidad inicial
+        // para quantity se puede implementar un input en el modal de carrito.html para que el usuario pueda modificar la cantidad de cada producto
+    };
+    
+
+    carrito.push(productoCarrito);
+
+
+    // guardar de nuevo en localStorage
+    localStorage.setItem(CARRITO_KEY, JSON.stringify(carrito));
+
+    console.log("Producto agregado al carrito:", productoCarrito);
+    console.log("Carrito actual:", carrito);
+
+    mensaje.textContent = `Producto "${producto.name}" agregado al carrito.`;
 }
