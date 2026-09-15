@@ -10,7 +10,7 @@ namespace ServicioShift.Services
 {
     public interface IShiftService
     {
-        Task<ResponseShiftDto> OpenShiftAsync(OpenShiftDto request);
-        Task<ResponseShiftDto> CloseShiftAsync(CloseShiftDto request);
+        Task<OpenResponseShiftDto> OpenShiftAsync(OpenShiftDto request);
+        Task<CloseResponseShiftDto> CloseShiftAsync(CloseShiftDto request);
     }
 }

@@ -19,16 +19,16 @@ namespace ServicioShift.Services
             _context = context;
         }
 
-        public async Task<ResponseShiftDto> OpenShiftAsync(OpenShiftDto request)
+        public async Task<OpenResponseShiftDto> OpenShiftAsync(OpenShiftDto request)
         {
-            var sql = "SELECT sp_open_shift(@p_cashierid, @p_opening_amount)";
+            var sql = "SELECT sp_open_shift(@p_cashierid::uuid, @p_opening_amount::numeric)";
 
             await _context.Database.ExecuteSqlRawAsync(sql,
             new NpgsqlParameter("p_cashierid", request.CashierId),
             new NpgsqlParameter("p_opening_amount", request.OpeningAmount)
             );
 
-            return new ResponseShiftDto
+            return new OpenResponseShiftDto
             {
                 Message = "Turno iniciado correctamente!",
                 Status = true,
@@ -36,9 +36,9 @@ namespace ServicioShift.Services
             };
         }
 
-        public async Task<ResponseShiftDto> CloseShiftAsync(CloseShiftDto request)
+        public async Task<CloseResponseShiftDto> CloseShiftAsync(CloseShiftDto request)
         {
-            var sql = "SELECT sp_close_shift_z_cut(@p_shiftid, @p_cashierid, @p_actual_cash, @p_notes)";
+            var sql = "SELECT sp_close_shift_z_cut(@p_shiftid, @p_cashierid::uuid, @p_actual_cash::numeric, @p_notes::text)";
 
             await _context.Database.ExecuteSqlRawAsync(sql,
             new NpgsqlParameter("p_shiftid", request.ShiftId),
@@ -47,7 +47,7 @@ namespace ServicioShift.Services
             new NpgsqlParameter("p_notes", request.Notes)
             );
 
-            return new ResponseShiftDto
+            return new CloseResponseShiftDto
             {
                 Message = "Turno Cerrado correctamente!",
                 Status = true,
