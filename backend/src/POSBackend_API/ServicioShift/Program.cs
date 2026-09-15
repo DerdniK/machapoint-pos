@@ -32,7 +32,7 @@ builder.Services.AddCors(options =>
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
 
-builder.Services.AddDbContext<SupaDbContext>(options =>
+builder.Services.AddDbContext<SupaDBContext>(options =>
     options.UseNpgsql(connectionString));
 
 // Inyección de dependencias para el servicio de turnos
