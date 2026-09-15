@@ -20,8 +20,7 @@ async function checkHealth() {
     } catch {
         healthEl.textContent = "Servicio Users: Offline";
     }
-}
-checkHealth();
+    checkHealth();
 
 // 2. Registro (POST /api/users/auth/register)
 const formRegister = document.getElementById('form-register');

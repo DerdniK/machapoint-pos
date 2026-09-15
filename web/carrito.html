@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta 
+        name="viewport" 
+        content="width=device-width, initial-scale=1.0"
+    >
+    <link 
+        rel="stylesheet" 
+        href="styles/carrito.css"
+    >
+    <title>MachaPoint - Carrito</title>
+</head>
+
+<body>
+
+    <main class="carrito-container">
+        <header class="barra-superior">
+
+            <h1>MachaPoint</h1>
+            <a href="catalogo.html">
+                Volver al catálogo
+            </a>
+
+        </header>
+
+
+        <section class="carrito">
+
+            <h2>Carrito</h2>
+
+            <p id="mensaje-carrito">El carrito esta vacio</p>
+
+            <div id="lista-carrito">
+
+                <!--
+                    Los productos se generan
+                    mediante JavaScript
+                -->
+
+            </div>
+        </section>
+
+            <aside class="resumen-carrito">
+
+                <h3>Resumen del carrito</h3>
+                <div class="total-container"> 
+                    <span> Total: </span> 
+                    <strong id="total-carrito"> $0.00 </strong> 
+                </div> 
+                
+<!-- ================================= --> <!-- MÉTODO DE PAGO --> <!-- ================================= --> 
+                <div class="pago-section"> 
+                    <h3> Método de pago </h3> 
+                    <select id="metodo-pago"> 
+                        <option value=""> Seleccionar método </option> 
+                        <option value="efectivo"> Efectivo </option> 
+                        <option value="tarjeta"> Tarjeta </option> 
+                    </select> 
+                </div> 
+                
+<!-- ================================= --> <!-- EFECTIVO --> <!-- ================================= --> 
+                <div id="seccion-efectivo" class="pago-detalle" style="display: none;" > 
+                    <h3> Pago en efectivo </h3> 
+                    <label for="dinero-recibido"> Dinero recibido: </label> 
+                    <input type="number" id="dinero-recibido" min="0" step="0.01" placeholder="0.00" > 
+                    <div class="cambio-container"> <span> Cambio: </span> 
+                        <strong id="cambio"> $0.00 </strong> 
+                    </div> 
+                </div> 
+                <!-- ================================= --> <!-- TARJETA --> <!-- ================================= --> 
+                 <div id="seccion-tarjeta" class="pago-detalle" style="display: none;" > 
+                    <h3> Pago con tarjeta </h3> 
+                    <label for="tipo-tarjeta"> Tipo de tarjeta: </label> 
+                    <select id="tipo-tarjeta"> 
+                        <option value=""> Seleccionar </option> 
+                        <option value="credito"> Crédito </option> 
+                        <option value="debito"> Débito </option> 
+                    </select> 
+                </div> 
+                <!-- ================================= --> <!-- FINALIZAR --> <!-- ================================= --> 
+                 <button id="btn-finalizar" class="btn-finalizar" > Finalizar cuenta </button> 
+                </aside> 
+            </main> 
+   <script src="js/carrito.js"></script> 
+</body> 
+</html>

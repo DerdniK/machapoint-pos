@@ -1,8 +1,18 @@
+// NOTAS DE PUSH: 
+// añadí botones y logica para poder agregar productos al carrito, pero de momento el carrito se guarda en localStorage, se recomienda cambiarlo a backend para persistencia y seguridad
+
+
 const API_URL ='https://4upkj2tafvod2ubwcsbnagviyu0feljy.lambda-url.us-east-1.on.aws';
 // const API_URL ='http://localhost:8081';
 
 const productosContainer = document.getElementById('productos');
 const mensaje = document.getElementById('mensaje');
+
+// Nota: Actualmente se guarda el carrito en localStorage, pero se recomienda cambiarlo a backend para persistencia y seguridad
+// Guardamos temporalmente los productos recibidos de la API 
+let productosActuales = []; 
+// Nombre que utilizaremos en localStorage 
+const CARRITO_KEY = 'carrito';
 
 async function cargarProductos() {
     const token = localStorage.getItem('authToken');
@@ -48,6 +58,10 @@ async function cargarProductos() {
 
         // El backend devuelve la lista dentro de data.product
         const lista = data.product || data.products || (Array.isArray(data) ? data : []);
+        
+        productosActuales = lista; // Guardar los productos cargados
+        console.log("Se guardo con exito la siguiente lista:", productosActuales);
+
         mostrarProductos(lista);
 
     } catch (err) {
@@ -69,6 +83,7 @@ function mostrarProductos(productos) {
     }
 
     productos.forEach(producto => {
+        console.log('producto individual:', producto);
 
         const article = document.createElement('article');
 
@@ -76,7 +91,7 @@ function mostrarProductos(productos) {
 
         article.innerHTML = `
             <img 
-                src="${producto.imageURL}" 
+                src="/img/product.jpg" 
                 alt="${producto.name}"
                 class="producto-imagen"
             >
@@ -97,6 +112,9 @@ function mostrarProductos(productos) {
                     Tipo: ${producto.typeid}
                 </p>
 
+                <button class="boton-agregar" data-id="${producto.productId}" > 
+                    Agregar al carrito 
+                </button>
 
             </div>
         `;
@@ -110,7 +128,7 @@ function mostrarProductos(productos) {
 
 function agregarEventosBotones() {
 
-    const botones = document.querySelectorAll('.btn-agregar');
+    const botones = document.querySelectorAll('.boton-agregar');
 
     botones.forEach(boton => {
 
@@ -121,10 +139,56 @@ function agregarEventosBotones() {
             console.log('Producto agregado:', productId);
 
             // Posteriormente aquí conectaremos el carrito
+            // Buscar el producto completo en la lista 
+            const producto = productosActuales.find( 
+                p => String(p.productId) === String(productId)
+            );
+            
+            if (!producto) { 
+                console.error("No se encontró el producto:", productId); return; 
+                } 
+            agregarAlCarrito(producto);
+
+            // productosActuales es un arreglo que contiene todos los productos cargados actualmente, se debe definir en el ámbito global para que esté disponible aquí.
+            // se necesita modificar la API para que conserve el estado del carrito en el backend y no en localStorage
+
+
         });
 
     });
 }
+
+function agregarAlCarrito(producto) {
+    // Obtener el carrito actual desde localStorage
+    let carrito = JSON.parse(localStorage.getItem(CARRITO_KEY)) || [];
+
+    // agregar unicamente la infomación necesaria del producto al carrito
+    const productoCarrito = {
+        id: producto.productId,
+        name: producto.name,
+        sku: producto.sku,
+        price: producto.price,
+        typeid: producto.typeid,
+        quantity: 1 // cantidad inicial
+        // para quantity se puede implementar un input en el modal de carrito.html para que el usuario pueda modificar la cantidad de cada producto
+    };
+
+    carrito.push(productoCarrito);
+
+
+    // guardar de nuevo en localStorage
+    localStorage.setItem(CARRITO_KEY, JSON.stringify(carrito));
+
+    console.log("Producto agregado al carrito:", productoCarrito);
+    console.log("Carrito actual:", carrito);
+
+    mensaje.textContent = `Producto "${producto.name}" agregado al carrito.`;
+}
+
+
+
+
+
 
 
 // Ejecutar cuando cargue la página
@@ -160,7 +224,11 @@ if (formCrear) {
             imageUrl: imgVal
         };
 
+
+        //
+
         try {
+            msgCreacion.textContent = "Creando producto...";
             if (msgCreacion) msgCreacion.textContent = "Creando producto...";
 
             const res = await fetch(`${API_URL}/api/products/product/create`, {
@@ -172,6 +240,7 @@ if (formCrear) {
                 body: JSON.stringify(payload)
             });
 
+            msgCreacion.textContent = "¡Producto creado con éxito!";
             // Extraer respuesta del backend antes de validar el status
             const data = await res.json().catch(() => null);
 
@@ -184,13 +253,44 @@ if (formCrear) {
             console.log("Respuesta creación exitosa:", data);
             if (msgCreacion) msgCreacion.textContent = "¡Producto creado con éxito!";
             formCrear.reset();
+            cargarProductos(); // recargar productos para reflejar el nuevo producto
             
             if (typeof cargarProductos === 'function') {
                 cargarProductos();
             }
         } catch (err) {
+            msgCreacion.textContent = "Error al crear producto: " + err.message;
             console.error("Error al registrar producto:", err);
             if (msgCreacion) msgCreacion.textContent = "Error al crear: " + err.message;
         }
     });
+}
+
+
+function agregarAlCarrito(producto) {
+    // Obtener el carrito actual desde localStorage
+    let carrito = JSON.parse(localStorage.getItem(CARRITO_KEY)) || [];
+
+    // agregar unicamente la infomación necesaria del producto al carrito
+    const productoCarrito = {
+        id: producto.productId, // asi esta el nombre dentro de la api, estoy probando si es el error de que solo se guarde el primer producto de la lista 
+        name: producto.name,
+        sku: producto.sku,
+        price: producto.price,
+        typeid: producto.typeid,
+        quantity: 1 // cantidad inicial
+        // para quantity se puede implementar un input en el modal de carrito.html para que el usuario pueda modificar la cantidad de cada producto
+    };
+    
+
+    carrito.push(productoCarrito);
+
+
+    // guardar de nuevo en localStorage
+    localStorage.setItem(CARRITO_KEY, JSON.stringify(carrito));
+
+    console.log("Producto agregado al carrito:", productoCarrito);
+    console.log("Carrito actual:", carrito);
+
+    mensaje.textContent = `Producto "${producto.name}" agregado al carrito.`;
 }
