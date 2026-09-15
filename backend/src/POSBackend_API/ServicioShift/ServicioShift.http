@@ -1,0 +1,6 @@
+@ServicioShift_HostAddress = http://localhost:5227
+
+GET {{ServicioShift_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
