@@ -13,6 +13,13 @@ class ProductType {
       typeName: json['typeName']?.toString() ?? '',
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'typeId': typeId,
+      'typeName': typeName,
+    };
+  }
 }
 
 class Product {
@@ -41,5 +48,16 @@ class Product {
       price: (json['price'] as num?)?.toDouble() ?? 0.0,
       imageUrl: json['imageURL']?.toString() ?? json['imageUrl']?.toString() ?? '',
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'productId': productId,
+      'name': name,
+      'sku': sku,
+      'type': type?.toJson(),
+      'price': price,
+      'imageUrl': imageUrl,
+    };
   }
 }
