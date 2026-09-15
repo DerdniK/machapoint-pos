@@ -5,6 +5,7 @@ import '../services/auth.dart';
 import '../services/product.dart';
 import 'Login_Page.dart';
 import 'create_user_page.dart'; 
+import 'Create_product.dart';
 
 class ProductPage extends StatefulWidget {
   const ProductPage({super.key});
@@ -42,12 +43,32 @@ class _ProductPageState extends State<ProductPage> {
     });
   }
 
+  String _getAppBarTitle() {
+    switch (_currentIndex) {
+      case 0:
+        return 'MachaPoint POS';
+      case 1:
+        return 'Crear Producto';
+      case 2:
+        return 'Usuarios';
+      default:
+        return 'MachaPoint POS';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     const orangeColor = Color(0xFFF2B04E);
-
     final List<Widget> pages = [
       _buildProductGrid(),
+      CreateProductPage(
+        onProductCreated: () {
+          _refreshProducts();
+          setState(() {
+            _currentIndex = 0;
+          });
+        },
+      ),
       const CreateUserPage(),
     ];
 
@@ -57,9 +78,7 @@ class _ProductPageState extends State<ProductPage> {
         backgroundColor: orangeColor,
         elevation: 0,
         title: Text(
-          _currentIndex == 0
-              ? 'MachaPoint POS'
-              : 'Usuarios',
+          _getAppBarTitle(),
           style: const TextStyle(
             color: Colors.black,
             fontSize: 22,
@@ -84,7 +103,10 @@ class _ProductPageState extends State<ProductPage> {
           ),
         ],
       ),
-      body: pages[_currentIndex],
+      body: IndexedStack(
+        index: _currentIndex,
+        children: pages,
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) {
@@ -102,6 +124,11 @@ class _ProductPageState extends State<ProductPage> {
             label: 'Productos',
           ),
           BottomNavigationBarItem(
+            icon: Icon(Icons.add_box_outlined),
+            activeIcon: Icon(Icons.add_box),
+            label: 'Crear Producto',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.person_add),
             label: 'Usuarios',
           ),
@@ -109,7 +136,6 @@ class _ProductPageState extends State<ProductPage> {
       ),
     );
   }
-  
 
   Widget _buildProductGrid() {
     return FutureBuilder<List<Product>>(
@@ -197,7 +223,6 @@ class _ProductPageState extends State<ProductPage> {
       },
     );
   }
-
 }
 
 class ProductCard extends StatelessWidget {
