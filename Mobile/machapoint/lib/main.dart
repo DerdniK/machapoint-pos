@@ -54,7 +54,6 @@ class _AuthCheckScreenState extends State<AuthCheckScreen> {
   }
 
   Future<void> _checkInitialSession() async {
-    // Verificar si ya existe una sesión activa persistida en Supabase
     final session = Supabase.instance.client.auth.currentSession;
     final apiToken = await AuthService.getToken();
     setState(() {
@@ -64,7 +63,7 @@ class _AuthCheckScreenState extends State<AuthCheckScreen> {
     
     FlutterNativeSplash.remove();
 
-    // Escuchar activamente logins/logouts
+
     _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
       final session = data.session;
       if (mounted) {
