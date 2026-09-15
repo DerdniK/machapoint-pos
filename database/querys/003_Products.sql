@@ -24,3 +24,6 @@ values
 ('Sticker Pack', 'STK-PCK-003', 3, 100.00),
 ('Holiday Postal Card', 'PC-HLD-004', 4, 30.00),
 ('Art Poster', 'PST-ART-005', 1, 60.00);
+
+alter table products alter column name type varchar;
+alter table products alter column sku type varchar;
