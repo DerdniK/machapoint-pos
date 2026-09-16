@@ -7,20 +7,15 @@ import 'auth.dart';
 class ProductService {
   static const String _baseUrl = 'https://4upkj2tafvod2ubwcsbnagviyu0feljy.lambda-url.us-east-1.on.aws';
 
-  /// Obtiene la lista completa de productos
   static Future<List<Product>> getProducts() async {
     try {
       final supabase = Supabase.instance.client;
       
       String? token = supabase.auth.currentSession?.accessToken;
       token ??= await AuthService.getToken();
-
-      print('--> ProductService: Token = ${token != null ? "ENCONTRADO" : "NULO"}');
-
       if (token == null || token.isEmpty) {
         throw Exception('No se encontró token de sesión.');
       }
-
       final url = Uri.parse('$_baseUrl/api/products/product/get');
       final response = await http.get(
         url,
@@ -29,10 +24,6 @@ class ProductService {
           'Authorization': 'Bearer $token',
         },
       );
-
-      print('--> API Status Code (Get): ${response.statusCode}');
-      print('--> Response Body (Get): ${response.body}');
-
       if (response.statusCode == 200) {
         final dynamic decoded = jsonDecode(response.body);
 
@@ -50,14 +41,10 @@ class ProductService {
       } else {
         throw Exception('Error del servidor (${response.statusCode}): ${response.body}');
       }
-    } catch (e, stack) {
-      print('--> Error en ProductService.getProducts: $e');
-      print('--> Stacktrace: $stack');
+    } catch (e, stack) {      
       rethrow;
     }
   }
-
-  /// Crea un nuevo producto enviando la estructura en PascalCase para la Lambda de AWS
   static Future<bool> createProduct({
     required String name,
     required String sku,
@@ -76,8 +63,6 @@ class ProductService {
       }
 
       final url = Uri.parse('$_baseUrl/api/products/product/create');
-
-      // Body con llaves en PascalCase como requiere tu API
       final body = jsonEncode({
         "Name": name,
         "SKU": sku,
@@ -93,10 +78,7 @@ class ProductService {
           'Authorization': 'Bearer $token',
         },
         body: body,
-      );
-
-      print('--> API Status Code (Create): ${response.statusCode}');
-      print('--> Response Body (Create): ${response.body}');
+      );  
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final Map<String, dynamic> decoded = jsonDecode(response.body);
