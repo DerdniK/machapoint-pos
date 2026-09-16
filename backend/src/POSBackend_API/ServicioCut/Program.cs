@@ -208,7 +208,7 @@ builder.Services.AddControllers();
 
 var app = builder.Build();
 
-app.UseCors("AllowAll");
+// app.UseCors("AllowAll");
 
 // Log de diagnóstico para CloudWatch
 app.Use(async (context, next) =>
