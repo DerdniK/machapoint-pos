@@ -104,3 +104,4 @@ async function ejecutarPeticion(url, method, body) {
         }
     }
 }
+}

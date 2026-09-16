@@ -479,7 +479,7 @@ async function procesarVentaBackend() {
 
     const payload = {
         // shiftId: shiftId, --------------------------------------------------------------------------------------------------------------
-        // cashierId: usuario.id,
+        cashierId: "1672c576-1e90-43f5-84d8-8cf6486275c0"   ,
         total: Number(total.toFixed(2)),
         payment_method: payment_method,
         amount_given: Number(amount_given.toFixed(2)),

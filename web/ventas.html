@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="styles/ventas.css">
+
+    <title>MachaPoint - Ventas</title>
+</head>
+
+<body>
+
+    <header class="navbar">
+
+        <div class="navbar-logo">
+            <img src="imagenes/logo.png" alt="MachaPoint">
+            <span>MachaPoint</span>
+        </div>
+
+        <nav>
+            <a href="catalogo.html">Catálogo</a>
+            <a href="ventas.html" class="activo">Ventas</a>
+            <a href="usuarios.html">Usuarios</a>
+        </nav>
+
+    </header>
+
+
+    <main class="contenedor">
+
+        <!-- ENCABEZADO -->
+        <section class="encabezado">
+
+            <div>
+                <h1>Turno de ventas</h1>
+                <p>Administración de caja y cierre de turno</p>
+            </div>
+
+            <div id="estado-turno" class="estado cerrado">
+                ● Turno cerrado
+            </div>
+
+        </section>
+
+
+        <!-- MENSAJE GENERAL -->
+        <div id="mensaje" class="mensaje oculto"></div>
+
+
+        <!-- ========================= -->
+        <!-- SIN TURNO -->
+        <!-- ========================= -->
+
+        <section id="seccion-apertura" class="tarjeta">
+
+            <div class="tarjeta-header">
+                <h2>Abrir día de venta</h2>
+                <span>Inicio de turno</span>
+            </div>
+
+            <div class="formulario">
+
+                <div class="campo">
+                    <label for="cashier-select">
+                        Cajero
+                    </label>
+
+                    <select id="cashier-select">
+                        <option value="">Seleccionar cajero</option>
+
+                        <!--
+                            Temporalmente los cajeros están definidos
+                            en ventas.js.
+                            
+                            Posteriormente se pueden obtener desde
+                            el endpoint de usuarios.
+                        -->
+                    </select>
+                </div>
+
+
+                <div class="campo">
+                    <label for="opening-amount">
+                        Fondo inicial
+                    </label>
+
+                    <div class="input-moneda">
+                        <span>$</span>
+
+                        <input
+                            type="number"
+                            id="opening-amount"
+                            min="0"
+                            step="0.01"
+                            placeholder="0.00"
+                        >
+                    </div>
+                </div>
+
+            </div>
+
+
+            <div class="acciones">
+                <button
+                    id="btn-abrir-turno"
+                    class="btn btn-principal"
+                >
+                    Abrir día de venta
+                </button>
+            </div>
+
+        </section>
+
+
+
+        <!-- ========================= -->
+        <!-- TURNO ABIERTO -->
+        <!-- ========================= -->
+
+        <section
+            id="seccion-turno"
+            class="tarjeta oculto"
+        >
+
+            <div class="tarjeta-header">
+
+                <div>
+                    <h2>Turno actual</h2>
+
+                    <p id="turno-info">
+                        Turno activo
+                    </p>
+                </div>
+
+                <div class="estado abierto">
+                    ● Turno abierto
+                </div>
+
+            </div>
+
+
+            <!-- INFORMACIÓN DEL TURNO -->
+
+            <div class="resumen-grid">
+
+                <div class="resumen-item">
+                    <span>Cajero</span>
+                    <strong id="resumen-cajero">
+                        -
+                    </strong>
+                </div>
+
+                <div class="resumen-item">
+                    <span>Turno</span>
+                    <strong id="resumen-shift">
+                        -
+                    </strong>
+                </div>
+
+                <div class="resumen-item">
+                    <span>Fondo inicial</span>
+                    <strong id="resumen-apertura">
+                        $0.00
+                    </strong>
+                </div>
+
+                <div class="resumen-item">
+                    <span>Estado</span>
+                    <strong class="texto-verde">
+                        Activo
+                    </strong>
+                </div>
+
+            </div>
+
+
+            <!-- AVISO -->
+
+            <div class="aviso">
+
+                <strong>Turno abierto</strong>
+
+                <p>
+                    Las ventas realizadas desde el sistema
+                    deberán asociarse a este turno.
+                </p>
+
+            </div>
+
+
+            <!-- ========================= -->
+            <!-- CIERRE -->
+            <!-- ========================= -->
+
+            <div class="separador"></div>
+
+            <div class="tarjeta-header">
+                <div>
+                    <h2>Cerrar turno</h2>
+                    <span>Arqueo de caja</span>
+                </div>
+            </div>
+
+
+            <div class="formulario">
+
+                <div class="campo">
+
+                    <label for="actual-cash">
+                        Dinero contado en caja
+                    </label>
+
+                    <div class="input-moneda">
+                        <span>$</span>
+
+                        <input
+                            type="number"
+                            id="actual-cash"
+                            min="0"
+                            step="0.01"
+                            placeholder="0.00"
+                        >
+                    </div>
+
+                    <small>
+                        Ingresa el efectivo físico contado
+                        al finalizar el turno.
+                    </small>
+
+                </div>
+
+
+                <div class="campo campo-completo">
+
+                    <label for="close-notes">
+                        Observaciones
+                    </label>
+
+                    <textarea
+                        id="close-notes"
+                        rows="4"
+                        placeholder="Escribe alguna observación del cierre..."
+                    ></textarea>
+
+                </div>
+
+            </div>
+
+
+            <div class="acciones">
+
+                <button
+                    id="btn-cerrar-turno"
+                    class="btn btn-danger"
+                >
+                    Cerrar turno
+                </button>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- ========================= -->
+        <!-- CORTE Z -->
+        <!-- ========================= -->
+
+        <section
+            id="seccion-corte"
+            class="tarjeta oculto"
+        >
+
+            <div class="tarjeta-header">
+
+                <div>
+                    <h2>Corte de caja</h2>
+                    <span>Resultado del turno</span>
+                </div>
+
+                <div class="estado cerrado">
+                    ● Turno cerrado
+                </div>
+
+            </div>
+
+
+            <div class="corte-grid">
+
+                <div class="corte-item">
+                    <span>Cajero</span>
+                    <strong id="corte-cajero">-</strong>
+                </div>
+
+                <div class="corte-item">
+                    <span>Turno</span>
+                    <strong id="corte-shift">-</strong>
+                </div>
+
+                <div class="corte-item">
+                    <span>Fecha de apertura</span>
+                    <strong id="corte-apertura">-</strong>
+                </div>
+
+                <div class="corte-item">
+                    <span>Fecha de cierre</span>
+                    <strong id="corte-cierre">-</strong>
+                </div>
+
+                <div class="corte-item">
+                    <span>Fondo inicial</span>
+                    <strong id="corte-opening">$0.00</strong>
+                </div>
+
+                <div class="corte-item">
+                    <span>Total de ventas</span>
+                    <strong id="corte-sales">$0.00</strong>
+                </div>
+
+                <div class="corte-item">
+                    <span>Número de ventas</span>
+                    <strong id="corte-count">0</strong>
+                </div>
+
+                <div class="corte-item">
+                    <span>Efectivo esperado</span>
+                    <strong id="corte-expected">$0.00</strong>
+                </div>
+
+                <div class="corte-item">
+                    <span>Efectivo contado</span>
+                    <strong id="corte-actual">$0.00</strong>
+                </div>
+
+                <div class="corte-item diferencia">
+                    <span>Diferencia</span>
+                    <strong id="corte-difference">$0.00</strong>
+                </div>
+
+            </div>
+
+
+            <div id="corte-status" class="resultado-corte">
+                -
+            </div>
+
+
+            <div class="observaciones-corte">
+
+                <span>Observaciones</span>
+
+                <p id="corte-notes">
+                    Sin observaciones
+                </p>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <script src="js/ventas.js"></script>
+
+</body>
+
+</html>

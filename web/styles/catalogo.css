@@ -1,4 +1,8 @@
 /* =========================================================
+   MachaPoint POS — Catálogo
+   ========================================================= */
+
+/* =========================================================
    VARIABLES
    ========================================================= */
 
@@ -111,13 +115,13 @@ body {
 
 
 /* =========================================================
-   NUEVA SECCIÓN: FORMULARIO AGREGAR PRODUCTO
+   FORMULARIO AGREGAR PRODUCTO
    ========================================================= */
 
 .form-section {
     width: 90%;
     max-width: 1200px;
-    margin: 90px auto 30px; /* 90px para compensar la barra navbar fija */
+    margin: 90px auto 30px;
     padding: 25px 30px;
     background: var(--color-white);
     border: 2px solid var(--color-line);
@@ -212,7 +216,8 @@ body {
     margin-bottom: 15px;
     text-align: center;
     color: var(--color-ink-soft);
-    font-size: 0.9rem;
+    font-size: 0.95rem;
+    font-weight: 600;
 }
 
 
@@ -243,16 +248,14 @@ body {
     padding: 15px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
     box-shadow: 0 5px 15px rgba(43, 33, 24, 0.05);
-    /* transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; */
     transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .producto:hover {
-    /* transform: translateY(-5px);
     border-color: var(--color-primary);
-    box-shadow: 0 15px 30px rgba(43, 33, 24, 0.12); */
+    box-shadow: 0 8px 20px rgba(43, 33, 24, 0.1);
 }
 
 .producto-imagen {
@@ -268,7 +271,8 @@ body {
 .producto-info {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    flex-grow: 1;
+    gap: 6px;
 }
 
 .producto-info h3 {
@@ -288,7 +292,7 @@ body {
 }
 
 .producto-precio {
-    margin-top: 5px !important;
+    margin-top: 4px !important;
     font-family: var(--font-display);
     font-size: 1.3rem;
     font-weight: 800;
@@ -297,10 +301,11 @@ body {
 
 
 /* =========================================================
-   BOTÓN AGREGAR
+   BOTÓN AGREGAR (COMPATIBILIDAD CON .boton-agregar Y .btn-agregar)
    ========================================================= */
 
-.btn-agregar {
+.btn-agregar,
+.boton-agregar {
     width: 100%;
     margin-top: auto;
     padding: 11px 15px;
@@ -312,21 +317,25 @@ body {
     font-size: 0.9rem;
     font-weight: 700;
     cursor: pointer;
-    transition: background 0.2s ease, transform 0.2s ease;
+    transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.btn-agregar:hover {
+.btn-agregar:hover,
+.boton-agregar:hover {
     background: var(--color-primary-dark);
     transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(217, 136, 10, 0.25);
 }
 
-.btn-agregar:active {
+.btn-agregar:active,
+.boton-agregar:active {
     transform: translateY(0);
 }
 
-.btn-agregar:focus-visible {
+.btn-agregar:focus-visible,
+.boton-agregar:focus-visible {
     outline: 3px solid var(--color-primary);
-    outline-offset: 3px;
+    outline-offset: 2px;
 }
 
 
