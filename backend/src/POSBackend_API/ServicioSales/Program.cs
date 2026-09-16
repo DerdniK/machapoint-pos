@@ -202,7 +202,7 @@ builder.Services.AddControllers();
 
 var app = builder.Build();
 
-app.UseCors("AllowAll");
+// app.UseCors("AllowAll");
 
 app.UseAuthentication();
 app.UseAuthorization();

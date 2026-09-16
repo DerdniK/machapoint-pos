@@ -21,18 +21,22 @@ namespace ServicioShift.Services
 
         public async Task<OpenResponseShiftDto> OpenShiftAsync(OpenShiftDto request)
         {
-            var sql = "SELECT sp_open_shift(@p_cashierid::uuid, @p_opening_amount::numeric)";
+            var sql = "SELECT sp_open_shift(@p_cashierid::uuid, @p_opening_amount::numeric) AS \"Value\"";
 
-            await _context.Database.ExecuteSqlRawAsync(sql,
-            new NpgsqlParameter("p_cashierid", request.CashierId),
-            new NpgsqlParameter("p_opening_amount", request.OpeningAmount)
-            );
+            var shiftId = await _context.Database
+                .SqlQueryRaw<int>(
+                    sql,
+                    new NpgsqlParameter("p_cashierid", request.CashierId),
+                    new NpgsqlParameter("p_opening_amount", request.OpeningAmount)
+                )
+                .FirstOrDefaultAsync();
 
             return new OpenResponseShiftDto
             {
                 Message = "Turno iniciado correctamente!",
                 Status = true,
-                ActualCash = request.OpeningAmount
+                ActualCash = request.OpeningAmount,
+                ShiftId = shiftId
             };
         }
 

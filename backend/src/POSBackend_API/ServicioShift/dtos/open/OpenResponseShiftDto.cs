@@ -10,5 +10,6 @@ namespace ServicioShift.Dtos.Open
         public string Message {get; set;}
         public bool Status {get; set;}
         public double ActualCash {get; set;}
+        public int ShiftId {get; set;}
     }
 }

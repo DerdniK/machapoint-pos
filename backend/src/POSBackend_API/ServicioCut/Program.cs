@@ -208,10 +208,21 @@ builder.Services.AddControllers();
 
 var app = builder.Build();
 
-app.UseCors("AllowAll");
+// app.UseCors("AllowAll");
+
+// Log de diagnóstico para CloudWatch
+app.Use(async (context, next) =>
+{
+    Console.WriteLine($"[LAMBDA INCOMING] Method: {context.Request.Method} | Path: {context.Request.Path} | Query: {context.Request.QueryString}");
+    await next();
+});
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Endpoint directo en la raíz para validar conectividad sin pasar por controllers
+app.MapGet("/", () => Results.Ok("ServicioCut OK"));
+app.MapGet("/ping", () => Results.Ok("pong"));
 
 app.MapControllers();
 
