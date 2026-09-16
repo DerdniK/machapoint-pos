@@ -18,7 +18,7 @@ public class CutController : ControllerBase
 
     [HttpGet("zcuts")]
     [Authorize]
-    public async Task<IActionResult> GetZCuts(GetZCutRequestDto request)
+    public async Task<IActionResult> GetZCuts([FromQuery] GetZCutRequestDto request)
     {
         var response = await _cutService.GetZCutsAsync(request);
         return Ok(response);
