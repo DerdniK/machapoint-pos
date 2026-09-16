@@ -1,8 +1,14 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
 import '../services/product.dart';
 
 class CreateProductPage extends StatefulWidget {
-  const CreateProductPage({super.key});
+  final VoidCallback? onProductCreated;
+
+  const CreateProductPage({super.key, this.onProductCreated});
 
   @override
   State<CreateProductPage> createState() => _CreateProductPageState();
@@ -10,7 +16,6 @@ class CreateProductPage extends StatefulWidget {
 
 class _CreateProductPageState extends State<CreateProductPage> {
   final _formKey = GlobalKey<FormState>();
-
   final _nameController = TextEditingController();
   final _skuController = TextEditingController();
   final _priceController = TextEditingController();
@@ -19,18 +24,85 @@ class _CreateProductPageState extends State<CreateProductPage> {
 
   bool _isLoading = false;
 
+  Future<String> _resolvePinterestUrl(String url) async {
+    final trimmedUrl = url.trim();
+    final lowerUrl = trimmedUrl.toLowerCase();
+
+    if (lowerUrl.contains('i.pinimg.com') ||
+        RegExp(r'\.(jpg|jpeg|png|webp)(\?.*)?$', caseSensitive: false)
+            .hasMatch(lowerUrl)) {
+      return trimmedUrl;
+    }
+
+    if (lowerUrl.contains('pin.it') || lowerUrl.contains('pinterest.com')) {
+      try {
+        var pinterestUrl = trimmedUrl;
+        if (lowerUrl.contains('pin.it')) {
+          final redirectResponse = await http.get(Uri.parse(trimmedUrl));
+          pinterestUrl = redirectResponse.request?.url.toString() ?? trimmedUrl;
+        }
+
+        final oembedResponse = await http.get(
+          Uri.parse(
+            'https://www.pinterest.com/oembed.json?url=${Uri.encodeComponent(pinterestUrl)}',
+          ),
+        );
+        if (oembedResponse.statusCode == 200) {
+          final data = jsonDecode(oembedResponse.body) as Map<String, dynamic>;
+          final thumbnailUrl = data['thumbnail_url']?.toString();
+          if (thumbnailUrl != null && thumbnailUrl.isNotEmpty) {
+            return thumbnailUrl;
+          }
+        }
+
+        final response = await http.get(
+          Uri.parse(pinterestUrl),
+          headers: {
+            'User-Agent':
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          },
+        );
+
+        if (response.statusCode == 200) {
+          final html = response.body;
+
+          final regExp = RegExp(
+            r'''<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']''',
+            caseSensitive: false,
+          );
+          final regExpAlt = RegExp(
+            r'''<meta\s+content=["']([^"']+)["']\s+property=["']og:image["']''',
+            caseSensitive: false,
+          );
+
+          final match = regExp.firstMatch(html) ?? regExpAlt.firstMatch(html);
+
+          if (match != null && match.groupCount >= 1) {
+            String imageUrl = match.group(1)!;
+            return imageUrl.replaceAll(RegExp(r'/\d+x/'), '/1200x/');
+          }
+        }
+      } catch (_) {}
+
+      return trimmedUrl;
+    }
+
+    return trimmedUrl;
+  }
+
   void _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
     try {
+      final imageUrl = await _resolvePinterestUrl(_imageUrlController.text);
       final success = await ProductService.createProduct(
         name: _nameController.text.trim(),
         sku: _skuController.text.trim(),
         price: double.parse(_priceController.text.trim()),
         typeId: _selectedTypeId,
-        imageUrl: _imageUrlController.text.trim(),
+        imageUrl: imageUrl,
       );
 
       if (!mounted) return;
@@ -38,11 +110,18 @@ class _CreateProductPageState extends State<CreateProductPage> {
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Producto creado con exito'),
+            content: Text('Producto creado con éxito'),
             backgroundColor: Colors.green,
           ),
         );
-        Navigator.pop(context, true);
+
+        _clearForm();
+        _formKey.currentState?.reset();
+        if (widget.onProductCreated != null) {
+          widget.onProductCreated!();
+        } else if (Navigator.canPop(context)) {
+          Navigator.pop(context, true);
+        }
       }
     } catch (e) {
       if (!mounted) return;
@@ -55,6 +134,14 @@ class _CreateProductPageState extends State<CreateProductPage> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  void _clearForm() {
+    _nameController.clear();
+    _skuController.clear();
+    _priceController.clear();
+    _imageUrlController.clear();
+    setState(() => _selectedTypeId = 1);
   }
 
   @override
@@ -96,7 +183,7 @@ class _CreateProductPageState extends State<CreateProductPage> {
               const SizedBox(height: 16),
               _buildTextField(
                 controller: _skuController,
-                label: 'SKU (Maximo 20 caracteres)',
+                label: 'SKU (Máximo 20 caracteres)',
                 maxLength: 20, 
                 validator: (val) {
                   if (val == null || val.isEmpty) return 'Campo requerido';
@@ -109,11 +196,21 @@ class _CreateProductPageState extends State<CreateProductPage> {
                 controller: _priceController,
                 label: 'Precio',
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [
+                  TextInputFormatter.withFunction((oldValue, newValue) {
+                    final validFormat = RegExp(r'^\d*(\.\d{0,2})?$');
+                    return validFormat.hasMatch(newValue.text) ? newValue : oldValue;
+                  }),
+                ],
                 validator: (val) {
                   if (val == null || val.isEmpty) return 'Campo requerido';
+                  if (!RegExp(r'^\d+(\.\d{1,2})?$').hasMatch(val.trim())) {
+                    return 'Usa máximo 2 decimales';
+                  }
                   final precioNum = double.tryParse(val.trim());
-                  if (precioNum == null) return 'Ingresa un numero valido';
+                  if (precioNum == null) return 'Ingresa un número válido';
                   if (precioNum <= 0) return 'El precio debe ser mayor a 0';
+                  if (precioNum >= 500) return 'Nadie comprara algo tan caro';
                   return null;
                 },
               ),
@@ -127,8 +224,10 @@ class _CreateProductPageState extends State<CreateProductPage> {
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                 ),
                 items: const [
-                  DropdownMenuItem(value: 1, child: Text('Tipo 1')),
-                  DropdownMenuItem(value: 2, child: Text('Tipo 2')),
+                  DropdownMenuItem(value: 1, child: Text('Tipo 1 (Poster)')),
+                  DropdownMenuItem(value: 2, child: Text('Tipo 2 (Pines)')),
+                  DropdownMenuItem(value: 3, child: Text('Tipo 3 (Stickers)')),
+                  DropdownMenuItem(value: 4, child: Text('Tipo 4 (Postales)')),
                 ],
                 onChanged: (val) {
                   if (val != null) setState(() => _selectedTypeId = val);
@@ -167,12 +266,14 @@ class _CreateProductPageState extends State<CreateProductPage> {
     required String label,
     int? maxLength,
     TextInputType? keyboardType,
+    List<TextInputFormatter>? inputFormatters,
     String? Function(String?)? validator,
   }) {
     return TextFormField(
       controller: controller,
       maxLength: maxLength,
       keyboardType: keyboardType,
+      inputFormatters: inputFormatters,
       validator: validator,
       decoration: InputDecoration(
         labelText: label,
