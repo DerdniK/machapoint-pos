@@ -272,7 +272,7 @@ async function abrirTurno() {
 
         localStorage.setItem(
             "cashierUsername",
-            usuarioActual.username
+            usuarioActual.name
         );
 
         localStorage.setItem(

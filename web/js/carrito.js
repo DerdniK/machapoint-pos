@@ -392,16 +392,16 @@ function generarIdCuenta() {
 
 // --- Helpers para datos que todavia no llamo ---
 
-// function obtenerShiftId() {
-//     // Sugerencia: guardar el turno activo en localStorage (p.ej. al abrir caja),
-//     // igual que se hace con 'usuario', y leerlo aquí.
-//     const turno = JSON.parse(localStorage.getItem('turnoActivo') || 'null');
-//     if (turno && turno.shiftId) {
-//         return turno.shiftId;
-//     }
-//     console.warn('No se encontró un shiftId activo en localStorage ("turnoActivo"). Usando valor temporal.');
-//     return null; // TODO: reemplazar por el id real del turno una vez implementado
-// }
+function obtenerShiftId() {
+    // Sugerencia: guardar el turno activo en localStorage (p.ej. al abrir caja),
+    // igual que se hace con 'usuario', y leerlo aquí.
+    const turno = JSON.parse(localStorage.getItem('turnoActivo') || 'null');
+    if (turno && turno.shiftId) {
+        return turno.shiftId;
+    }
+    console.warn('No se encontró un shiftId activo en localStorage ("turnoActivo"). Usando valor temporal.');
+    return null; // TODO: reemplazar por el id real del turno una vez implementado
+}
 
 function generarReferenciaTransaccion() {
     // Referencia única generada en el cliente. Si el backend/terminal de
@@ -455,8 +455,6 @@ async function procesarVentaBackend() {
             console.error('No se ha seleccionado un tipo de tarjeta.');
             return null;
         }
-        // Ajustar este texto si el backend espera valores específicos
-        // (p.ej. "Tarjeta de crédito" / "Tarjeta de débito").
         payment_method = tipoTarjeta.value;
         amount_given = total; // en tarjeta normalmente se cobra el total exacto
         change_given = 0;
@@ -465,30 +463,42 @@ async function procesarVentaBackend() {
         return null;
     }
 
-    // const usuario = obtenerUsuario();
-    // if (!usuario || !usuario.id) {
-    //     console.error('No se encontró un usuario activo con id (cashierId).');
-    //     return null;
-    // }
+    const token = localStorage.getItem('authToken');
 
-    // const shiftId = obtenerShiftId();
-    // if (!shiftId) {
-    //     console.error('No se encontró un shiftId activo. No se puede procesar la venta.');
-    //     return null;
-    // }
+    if (!token) {
+        console.error('No se encontró el JWT en localStorage.');
+        alert('No hay una sesión válida. Inicia sesión nuevamente.');
+        return null;
+    }
 
-    const payload = {
-        // shiftId: shiftId, --------------------------------------------------------------------------------------------------------------
-        cashierId: "1672c576-1e90-43f5-84d8-8cf6486275c0"   ,
+const usuario = obtenerUsuario();
+    // Obtener cashierId desde localStorage o desde el usuario activo
+    const cashierId = localStorage.getItem('cashierId') || (usuario ? usuario.id : null);
+    // Obtener shiftId desde localStorage o función auxiliar
+    const shiftId = localStorage.getItem('shiftId') || obtenerShiftId();
+
+    if (!shiftId) {
+        console.error('No se encontró un shiftId activo. No se puede procesar la venta.');
+        alert('No se encontró un turno activo (shiftId). Inicia turno antes de vender.');
+        return null;
+    }
+
+    if (!cashierId) {
+        console.error('No se encontró un cashierId activo. No se puede procesar la venta.');
+        alert('No se encontró un cajero activo (cashierId).');
+        return null;
+    }
+
+const payload = {
+        shiftId: Number(shiftId), 
+        cashierId: cashierId,
         total: Number(total.toFixed(2)),
         payment_method: payment_method,
         amount_given: Number(amount_given.toFixed(2)),
         change_given: Number(change_given.toFixed(2)),
         transaction_reference: generarReferenciaTransaccion(),
         products: carrito.map(producto => ({
-            // producto.id debe existir en tus datos de producto y corresponder
-            // al id numérico que el backend espera como productId.
-            productId: producto.id ?? producto.productId,
+            productId: Number(producto.id ?? producto.productId),
             unit_price: Number(producto.price) || 0,
             quantity: Number(producto.cantidad) || 1,
             subtotal: Number(((Number(producto.price) || 0) * (Number(producto.cantidad) || 1)).toFixed(2))
@@ -497,11 +507,15 @@ async function procesarVentaBackend() {
 
     console.log('Enviando venta al backend:', payload);
 
+
+    // ========================================================================================================================
     try {
+        const token = localStorage.getItem('authToken');
         const response = await fetch(BACKEND_VENTA_URL, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify(payload)
         });
@@ -526,6 +540,7 @@ async function procesarVentaBackend() {
         alert('Ocurrió un error al procesar la venta. Intenta de nuevo.');
         return null;
     }
+    // ========================================================================================================================
 }
 
 // Click en "Finalizar": pide confirmación y, si es afirmativa, procesa la venta.
