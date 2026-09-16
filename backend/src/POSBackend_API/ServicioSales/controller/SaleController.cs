@@ -28,13 +28,13 @@ namespace ServicioSales.Controller
         {
             try
             {
-                return Ok("Servicio Sales funcionando");
+                return Ok(true);
             }
             catch (Exception ex)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError, new 
                 { 
-                    message = "Ocurrió un error interno al registrar la venta.",
+                    message = "El servicio esta caido :(",
                     detail = ex.Message 
                 });
             }
