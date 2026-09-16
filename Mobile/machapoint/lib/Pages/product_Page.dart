@@ -150,56 +150,65 @@ class _ProductPageState extends State<ProductPage> {
         }
 
         if (snapshot.hasError) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.error_outline_rounded,
-                    size: 64,
-                    color: Colors.redAccent,
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Ocurrió un error al cargar datos',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${snapshot.error}',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: Colors.black54,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFF2B04E),
-                      foregroundColor: Colors.black,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    onPressed: _refreshProducts,
-                    icon: const Icon(Icons.refresh),
-                    label: const Text(
-                      'Reintentar',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ],
+  return Center(
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 32.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.wifi_off_rounded,
+            size: 80,
+            color: Colors.grey.shade600,
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            'Sin conexión a internet',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Comprueba tu conexión de red e inténtalo de nuevo.',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade700,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 28),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFF2B04E),
+              foregroundColor: Colors.black,
+              elevation: 2,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24,
+                vertical: 12,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
               ),
             ),
-          );
-        }
+            onPressed: _refreshProducts,
+            icon: const Icon(Icons.refresh, size: 20),
+            label: const Text(
+              'Reintentar',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
 
         if (snapshot.hasData && snapshot.data!.isNotEmpty) {
           final products = snapshot.data!;
@@ -298,12 +307,12 @@ class ProductCard extends StatelessWidget {
           ),
           const SizedBox(height: 2),
           Text(
-            product.type?.typeName ?? 'General',
+            product.type?.typeNameResolved ?? 'Funciona?',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 11,
-              color: Colors.black.withOpacity(0.7),
+              color: Colors.black.withOpacity(0.7)
             ),
           ),
           const SizedBox(height: 6),
