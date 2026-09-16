@@ -34,58 +34,26 @@ const btnAbrir = document.getElementById("btn-abrir-turno");
 const btnCerrar = document.getElementById("btn-cerrar-turno");
 
 
-// ==========================================
-// CAJEROS TEMPORALES
-// ==========================================
-//
-// Estos valores son solamente para la primera
-// versión.
-//
-// Cuando backend tenga el endpoint para listar
-// usuarios/cajeros, sustituimos esto por fetch().
-//
-// ==========================================
-
-const cajeros = [
-    {
-        id: "6be4b592-3540-4be6-81e5-8bb189fbd12e",
-        nombre: "Susu"
-    },
-
-    {
-        id: "1672c576-1e90-43f5-84d8-8cf6486275c0",
-        nombre: "Cajero 2"
-    }
-];
-
-
-
 function obtenerToken() {
-
     return localStorage.getItem("authToken");
-
 }
 
-
-function cargarCajeros() {
-
-    if (!cashierSelect) return;
-
-    cajeros.forEach(cajero => {
-
-        const option =
-            document.createElement("option");
-
-        option.value = cajero.id;
-
-        option.textContent = cajero.nombre;
-
-        cashierSelect.appendChild(option);
-
-    });
-
+//Se obtiene el usuario actual del localStorage y se devuelve un objeto con id y username. Si no hay usuario o hay un error al parsear, se devuelve null.
+function obtenerUsuarioActual() {
+    const usuario = localStorage.getItem("user");
+    if(usuario) {
+        try {
+            const userObj = JSON.parse(usuario);
+            return {
+                id: userObj.id || null,
+                username: userObj.username || null
+            }
+        } catch (error) {
+            console.error("Error al leer usuario:", error);
+            return null;
+        }
+    }
 }
-
 
 
 function mostrarMensaje(texto, tipo = "info") {
@@ -139,44 +107,19 @@ function formatoFecha(fecha) {
 }
 
 
-
-// OBTENER NOMBRE DEL CAJERO
-// checar con console.logs
-
-function obtenerNombreCajero(id) {
-
-
-    const cajero =
-        cajeros.find(c => c.id === id);
-
-    return cajero
-        ? cajero.nombre
-        : id;
-
-}
-
-
-
 async function abrirTurno() {
 
     ocultarMensaje();
 
-
-    // --------------------------------------
-    // Validaciones
-    // --------------------------------------
-
-    const cashierId =
-        cashierSelect.value;
-
+    const usuarioActual = obtenerUsuarioActual();
     const amount =
         Number(openingAmount.value);
 
 
-    if (!cashierId) {
+    if (!usuarioActual.id) {
 
         mostrarMensaje(
-            "Selecciona un cajero.",
+            "No se detectó la sesión del cajero. Por favor inicia sesión nuevamente.",
             "error"
         );
 
@@ -184,10 +127,7 @@ async function abrirTurno() {
     }
 
 
-    if (
-        isNaN(amount) ||
-        amount < 0
-    ) {
+    if (isNaN(amount) || amount < 0 || openingAmount.value.trim() === "") {
 
         mostrarMensaje(
             "Ingresa un fondo inicial válido.",
@@ -220,7 +160,7 @@ async function abrirTurno() {
 
         const body = {
 
-            cashierid: cashierId,
+            cashierid: usuarioActual.id,
 
             openingamount: amount
 
@@ -327,7 +267,12 @@ async function abrirTurno() {
 
         localStorage.setItem(
             "cashierId",
-            cashierId
+            usuarioActual.id
+        );
+
+        localStorage.setItem(
+            "cashierUsername",
+            usuarioActual.username
         );
 
         localStorage.setItem(
@@ -340,7 +285,7 @@ async function abrirTurno() {
 
         mostrarTurnoAbierto(
             shiftId,
-            cashierId,
+            usuarioActual.username,
             amount
         );
 
@@ -380,7 +325,7 @@ async function abrirTurno() {
 
 function mostrarTurnoAbierto(
     shiftId,
-    cashierId,
+    cashierUsername,
     amount
 ) {
 
@@ -402,10 +347,7 @@ function mostrarTurnoAbierto(
 
     // Información
 
-    document.getElementById(
-        "resumen-cajero"
-    ).textContent =
-        obtenerNombreCajero(cashierId);
+    document.getElementById("resumen-cajero").textContent =cashierUsername;
 
 
     document.getElementById(
@@ -459,18 +401,6 @@ async function cerrarTurno() {
         return;
     }
 
-
-    if (!cashierId) {
-
-        mostrarMensaje(
-            "No existe un cashierId asociado al turno.",
-            "error"
-        );
-
-        return;
-    }
-
-
     // --------------------------------------
     // Dinero contado
     // --------------------------------------
@@ -479,10 +409,7 @@ async function cerrarTurno() {
         Number(actualCash.value);
 
 
-    if (
-        isNaN(countedCash) ||
-        countedCash < 0
-    ) {
+    if (isNaN(countedCash) || countedCash < 0 || actualCash.value.trim() === "") {
 
         mostrarMensaje(
             "Ingresa el dinero contado en caja.",
@@ -501,17 +428,8 @@ async function cerrarTurno() {
     // Confirmación
     // --------------------------------------
 
-    const confirmar =
-        confirm(
-            "¿Estás seguro de cerrar el turno?\n\n" +
-            "Una vez cerrado no debería continuar registrando ventas en este turno."
-        );
-
-
-    if (!confirmar) {
-
+    if (!confirm("¿Estás seguro de cerrar el turno?\n\nUna vez cerrado no se registrarán más ventas en este turno.")) {
         return;
-
     }
 
 
@@ -706,36 +624,16 @@ async function obtenerCorteZ(
 
         // Obtener corte
 
-        let corte = null;
-
-
-        if (
-            Array.isArray(data.cuts) &&
-            data.cuts.length > 0
-        ) {
-
-            corte = data.cuts[0];
-
-        }
+        let corte = (Array.isArray(data.cuts) && data.cuts.length > 0) ? data.cuts[0] : null;;
 
 
         if (!corte) {
-
-            mostrarMensaje(
-                "El turno fue cerrado, pero todavía no se encontró el corte Z.",
-                "info"
-            );
-
+            mostrarMensaje("El turno fue cerrado, pero todavía no se encontró el corte Z.", "info");
             finalizarTurnoLocal();
-
             return;
-
         }
 
-
         mostrarCorte(corte);
-
-
         finalizarTurnoLocal();
 
 
@@ -910,6 +808,10 @@ function finalizarTurnoLocal() {
     );
 
     localStorage.removeItem(
+        "cashierUsername"
+    );
+
+    localStorage.removeItem(
         "openingAmount"
     );
 
@@ -920,8 +822,7 @@ function restaurarTurno() {
     const shiftId =
         localStorage.getItem("shiftId");
 
-    const cashierId =
-        localStorage.getItem("cashierId");
+    const cashierName = localStorage.getItem("cashierUsername") || "Cajero";
 
     const amount =
         localStorage.getItem("openingAmount");
@@ -929,19 +830,19 @@ function restaurarTurno() {
 
     if (
         shiftId &&
-        cashierId &&
         amount !== null
     ) {
 
         mostrarTurnoAbierto(
             shiftId,
-            cashierId,
+            cashierName,
             Number(amount)
         );
 
     }
 
 }
+
 // EVENTOS
 
 if (btnAbrir) {
@@ -962,6 +863,5 @@ if (btnCerrar) {
     );
 
 }
-cargarCajeros();
 
 restaurarTurno();

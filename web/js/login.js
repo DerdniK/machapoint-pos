@@ -92,7 +92,7 @@ if (formulario) {
             localStorage.setItem('authToken', token);
             localStorage.setItem('user', JSON.stringify({
                 username: data.username || data.Username || usuario,
-                id: data.userId || data.Userid || data.UserId || ''
+                id: data.userId || data.Userid || data.UserId || data.userid || ''
             }));
 
             // Redireccionar al catálogo
