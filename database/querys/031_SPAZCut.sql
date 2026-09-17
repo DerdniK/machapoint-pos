@@ -48,17 +48,17 @@ BEGIN
     SELECT COALESCE(SUM(sp.amount), 0.00) INTO v_expected_cash_sales
     FROM salepayments sp
     JOIN sales s ON sp.saleid = s.saleid
-    WHERE s.shiftid = p_shiftid AND s.status = 'COMPLETED' AND sp.payment_method = 'CASH';
+    WHERE s.shiftid = p_shiftid AND s.status = 'COMPLETED' AND sp.payment_method = 'EFECTIVO';
 
     SELECT COALESCE(SUM(sp.amount), 0.00) INTO v_expected_card
     FROM salepayments sp
     JOIN sales s ON sp.saleid = s.saleid
-    WHERE s.shiftid = p_shiftid AND s.status = 'COMPLETED' AND sp.payment_method IN ('CREDIT_CARD', 'DEBIT_CARD');
+    WHERE s.shiftid = p_shiftid AND s.status = 'COMPLETED' AND sp.payment_method IN ('TARJETA_CREDITO', 'TARJETA_DEBITO');
 
     SELECT COALESCE(SUM(sp.amount), 0.00) INTO v_expected_transfer
     FROM salepayments sp
     JOIN sales s ON sp.saleid = s.saleid
-    WHERE s.shiftid = p_shiftid AND s.status = 'COMPLETED' AND sp.payment_method = 'TRANSFER';
+    WHERE s.shiftid = p_shiftid AND s.status = 'COMPLETED' AND sp.payment_method = 'TRANSFERENCIA';
 
     v_total_expected_cash := v_opening_cash + v_expected_cash_sales;
     v_cash_difference := p_actual_cash - v_total_expected_cash;
