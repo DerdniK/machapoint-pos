@@ -17,6 +17,23 @@ namespace ServicioProducts.Controllers
             _productService = productService;
         }
 
+        [HttpGet("health")]
+        public IActionResult Health()
+        {
+            try
+            {
+                return Ok(true);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new 
+                { 
+                    message = "El servicio esta caido :(",
+                    detail = ex.Message 
+                });
+            }
+            
+        }
 
         [Authorize]
         [HttpGet]

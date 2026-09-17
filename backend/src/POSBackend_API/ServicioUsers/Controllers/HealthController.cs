@@ -29,7 +29,7 @@ namespace ServicioUsers.Controllers
             {
                 return Ok(new HealthResponseDto
             {
-                Status = "Ok",
+                Status = true,
                 Version = version.ToString() ?? "Unknown",
                 Timestamp = DateTime.UtcNow
             });
@@ -38,7 +38,7 @@ namespace ServicioUsers.Controllers
             {
                 return StatusCode(StatusCodes.Status503ServiceUnavailable, new HealthResponseDto
                 {
-                    Status = "ServiceUnavailable",
+                    Status = false,
                     Version = version.ToString() ?? "Unknown",
                     Timestamp = DateTime.UtcNow
                 });
