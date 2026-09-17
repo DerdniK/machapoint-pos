@@ -18,6 +18,9 @@ begin
     values (p_name, p_sku, p_precio::numeric, p_typeid, p_imageurl)
     returning productid into v_productid;
 
+    insert into inventory (productid,stock)
+    values (v_productid,50);
+
     return v_productid;
 end;
 $$;
