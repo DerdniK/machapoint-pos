@@ -130,7 +130,7 @@ function cargarCarrito() {
         </div>
 
         <button class="boton-eliminar" data-index="${index}" data-accion="eliminar" title="Eliminar producto">
-            🗑 Eliminar
+            Eliminar
         </button>
         `;
 
@@ -153,11 +153,19 @@ function actualizarCantidad(index, accion) {
     const producto = carrito[index];
 
     if (accion === 'aumentar') {
-        producto.cantidad = (Number(producto.cantidad) || 0) + 1;
+        const cantidadActual = Number(producto.cantidad) || 0;
+        
+        // NUEVA REGLA: Límite de 10 productos
+        if (cantidadActual >= 10) {
+            alert('No puedes agregar más de 10 unidades del mismo producto.');
+            producto.cantidad = 10;
+        } else {
+            producto.cantidad = cantidadActual + 1;
+        }
+        
     } else if (accion === 'disminuir') {
         producto.cantidad = (Number(producto.cantidad) || 0) - 1;
         // El botón "-" ya NO elimina el producto: se detiene en 1.
-        // Para quitar un producto del carrito se debe usar el botón "Eliminar".
         if (producto.cantidad <= 0) {
             producto.cantidad = 1;
         }
@@ -240,6 +248,28 @@ if (listaCarrito) {
         }
         else if (boton.classList.contains('boton-eliminar')) {
             eliminarProducto(index);
+        }
+    });
+}
+
+// Obtener el botón del DOM
+const btnVaciarCarrito = document.getElementById('btn-vaciar-carrito');
+
+// Evento para vaciar todo el carrito
+if (btnVaciarCarrito) {
+    btnVaciarCarrito.addEventListener('click', () => {
+        const carrito = renderizarCarrito();
+        
+        if (carrito.length === 0) {
+            alert("El carrito ya está vacío.");
+            return;
+        }
+
+        const confirmar = confirm("¿Estás seguro de que deseas eliminar todos los productos del carrito?");
+        
+        if (confirmar) {
+            limpiarCarrito(); // Tu función existente que borra el localStorage
+            resetFormularioPago(); // Resetea la parte de los pagos si había algo escrito
         }
     });
 }
@@ -501,4 +531,4 @@ if (btnFinalizar) {
         await procesarVentaBackend();
         validarBotonFinalizar(); // vuelve a evaluar el estado (carrito ya vacío)
     });
-}
+} 
