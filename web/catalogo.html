@@ -35,12 +35,42 @@
         <section class="form-section">
             <h2>Agregar Nuevo Producto</h2>
             <form id="form-crear-producto">
-                <input type="text" id="prod-name" placeholder="Nombre" required>
-                <input type="text" id="prod-sku" placeholder="SKU (ej: bc-s-pn)" required>
-                <input type="number" step="0.01" id="prod-price" placeholder="Precio" required>
-                <input type="number" id="prod-type" placeholder="TypeId (ej: 1)" required>
-                <input type="text" id="prod-img" placeholder="URL de imagen" required>
-                <button type="submit">Guardar Producto</button>
+                
+                <div class="form-group">
+                    <label for="prod-name">Nombre</label>
+                    <input type="text" id="prod-name" placeholder="Ej: Poster Chido" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="prod-sku">SKU</label>
+                    <input type="text" id="prod-sku" placeholder="Ej: bc-s-pn-gnd" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="prod-price">Precio</label>
+                    <input type="number" step="0.01" id="prod-price" placeholder=" de $1-499" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="prod-type">Type Id</label>
+                    <select id="prod-type" required>
+                        <option value="" disabled selected>Selecciona un tipo</option>
+                        <option value="1">Tipo 1 (Poster)</option>
+                        <option value="2">Tipo 2 (Pines)</option>
+                        <option value="3">Tipo 3 (Stickers)</option>
+                        <option value="4">Tipo 4 (Postales)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="prod-img">Url Image</label>
+                    <input type="text" id="prod-img" placeholder="https://..." required>
+                </div>
+                
+                <div class="form-group">
+                    <button type="submit">Guardar Producto</button>
+                </div>
+                
             </form>
             <p id="mensaje-creacion"></p>
         </section>
@@ -60,4 +90,4 @@
     <script src="js/catalogo.js"></script>
 
 </body>
-</html>
+</html> 
