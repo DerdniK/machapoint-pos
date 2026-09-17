@@ -23,6 +23,15 @@ const btnFinalizar = document.getElementById('btn-finalizar');
 
 cargarCarrito();
 
+function obtenerUsuario() {
+    try {
+        return JSON.parse(localStorage.getItem('usuario') || 'null');
+    } catch (error) {
+        console.error('Error al parsear el usuario desde localStorage:', error);
+        return null;
+    }
+}
+
 function renderizarCarrito() {
     const rawData = localStorage.getItem(CARRITO_KEY);
     // LOG 2: Ver qué hay exactamente en localStorage antes de procesarlo
@@ -287,16 +296,9 @@ if (inputEfectivo) {
 // Traduce la selección del HTML al formato exacto de la BD
 function obtenerMetodoPagoBD() {
     const metodo = metodoPago.value; // 'efectivo' o 'tarjeta'
-    
-    if (metodo === 'efectivo') {
-        return 'EFECTIVO';
-    } else if (metodo === 'tarjeta') {
-        const tipo = tipoTarjeta.value; // 'credito' o 'debito'
-        if (tipo === 'credito') return 'TARJETA_CREDITO';
-        if (tipo === 'debito') return 'TARJETA_DEBITO';
-    }
-    
-    return null; // Si no hay selección válida
+    if (metodo === 'efectivo') return 'EFECTIVO';
+    if (metodo === 'tarjeta') return tipoTarjeta.value || null; // ya es TARJETA_CREDITO / TARJETA_DEBITO
+    return null;
 }
 
 // --- Helpers para datos que todavia no llamo ---
@@ -321,20 +323,6 @@ function generarReferenciaTransaccion() {
     return `ref-${Date.now()}`;
 }
 
-// Traduce la selección del HTML al formato exacto de la BD
-function obtenerMetodoPagoBD() {
-    const metodo = metodoPago.value; // 'efectivo' o 'tarjeta'
-    
-    if (metodo === 'efectivo') {
-        return 'EFECTIVO';
-    } else if (metodo === 'tarjeta') {
-        const tipo = tipoTarjeta.value; // 'credito' o 'debito'
-        if (tipo === 'credito') return 'TARJETA_CREDITO';
-        if (tipo === 'debito') return 'TARJETA_DEBITO';
-    }
-    
-    return null; // Si no hay selección válida
-}
 
 function normalizarPaymentMethod(metodo, tipoTarjetaValue) {
     if (metodo === 'efectivo') {
@@ -379,6 +367,7 @@ async function procesarVentaBackend() {
         return null;
     }
 
+    const metodo = metodoPago.value; // 'efectivo' o 'tarjeta'
     const payment_method = obtenerMetodoPagoBD(); // Te devuelve "EFECTIVO", "TARJETA_CREDITO", etc.
 
     if (!payment_method) {
@@ -390,7 +379,7 @@ async function procesarVentaBackend() {
     let amount_given = 0;
     let change_given = 0;
 
-    if (metodo === 'EFECTIVO') {
+    if (metodo === 'efectivo') {
         amount_given = parseFloat(inputEfectivo.value) || 0;
         
         if (amount_given < total) {
@@ -410,7 +399,7 @@ async function procesarVentaBackend() {
         return null;
     }
 
-    payment_method = normalizarPaymentMethod(metodo, tipoTarjeta.value);
+    // payment_method = normalizarPaymentMethod(metodo, tipoTarjeta.value);
 
     if (!payment_method) {
         alert('No se pudo determinar el método de pago. Verifica la selección.');
@@ -427,7 +416,8 @@ async function procesarVentaBackend() {
 
 const usuario = obtenerUsuario();
     // Obtener cashierId desde localStorage o desde el usuario activo
-    const cashierId = localStorage.getItem('cashierId') || (usuario ? usuario.id : null);
+    const cashierId = localStorage.getItem('cashierId') 
+    // || (usuario ? usuario.id : null);
     // Obtener shiftId desde localStorage o función auxiliar
     const shiftId = localStorage.getItem('shiftId') || obtenerShiftId();
 
