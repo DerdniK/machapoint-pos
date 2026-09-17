@@ -448,7 +448,7 @@ async function procesarVentaBackend() {
             console.error('Dinero insuficiente para cubrir el total.');
             return null;
         }
-        payment_method = 'Efectivo';
+        payment_method = 'EFECTIVO';
         change_given = amount_given - total;
     } else if (metodo === 'tarjeta') {
         if (!tipoTarjeta.value) {
@@ -493,7 +493,7 @@ const payload = {
         shiftId: Number(shiftId), 
         cashierId: cashierId,
         total: Number(total.toFixed(2)),
-        payment_method: payment_method,
+        payment_method: payment_method.toUpperCase,
         amount_given: Number(amount_given.toFixed(2)),
         change_given: Number(change_given.toFixed(2)),
         transaction_reference: generarReferenciaTransaccion(),
