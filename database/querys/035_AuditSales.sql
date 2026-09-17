@@ -20,7 +20,7 @@ BEGIN
             saleid, shiftid, cashierid, total, status, created_at,accion, hecho_por, fecha_hora
         )
         values (
-            NEW.saleid, NEW.shiftid, NEW.cashier, NEW.total, NEW.status,NEW.created_at, 
+            NEW.saleid, NEW.shiftid, NEW.cashierid, NEW.total, NEW.status,NEW.created_at, 
             'A', v_operador, now()
         );
         return NEW;
