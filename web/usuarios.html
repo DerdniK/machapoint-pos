@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -14,16 +14,40 @@
         </div>
     </header>
 
-    <main class="container">
+<main class="container">
         <!-- Registrar Usuario -->
         <section class="card">
             <h3>Registrar Nuevo Usuario</h3>
             <form id="form-register">
-                <input type="text" id="reg-username" placeholder="Username" required>
-                <input type="password" id="reg-password" placeholder="Password" required>
-                <input type="text" id="reg-firstname" placeholder="Nombre" required>
-                <input type="text" id="reg-lastname" placeholder="Apellido" required>
-                <input type="number" id="reg-roleid" placeholder="RoleId (ej: 1)" value="1" required>
+                <div class="form-group">
+                    <label for="reg-username">Username</label>
+                    <input type="text" id="reg-username" placeholder="Ej: Conan" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="reg-password">Password</label>
+                    <input type="password" id="reg-password" placeholder="Mínimo 8 caracteres" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="reg-firstname">Nombre</label>
+                    <input type="text" id="reg-firstname" placeholder="Ej: Big" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="reg-lastname">Apellido</label>
+                    <input type="text" id="reg-lastname" placeholder="Ej: Pérez" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="reg-roleid">Rol</label>
+                    <select id="reg-roleid" required>
+                        <option value="" disabled selected>Selecciona un rol</option>
+                        <option value="1">Rol 1 (Administrador)</option>
+                        <option value="2">Rol 2 (Usuario Estándar)</option>
+                    </select>
+                </div>
+                
                 <button type="submit">Registrar</button>
             </form>
         </section>
@@ -32,8 +56,16 @@
         <section class="card">
             <h3>Modificar Username</h3>
             <form id="form-update">
-                <input type="text" id="upd-userid" placeholder="Userid (UUID)" required>
-                <input type="text" id="upd-username" placeholder="Nuevo Username" required>
+                <div class="form-group">
+                    <label for="upd-userid">Userid (UUID)</label>
+                    <input type="text" id="upd-userid" placeholder="Ej: 123e4567-e89b-12d3-a456-426614174000" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="upd-username">Nuevo Username</label>
+                    <input type="text" id="upd-username" placeholder="Ej: Conan_nuevo" required>
+                </div>
+                
                 <button type="submit">Actualizar</button>
             </form>
         </section>
@@ -42,7 +74,11 @@
         <section class="card">
             <h3>Eliminar Usuario</h3>
             <form id="form-delete">
-                <input type="text" id="del-userid" placeholder="Userid (UUID)" required>
+                <div class="form-group">
+                    <label for="del-userid">Userid (UUID)</label>
+                    <input type="text" id="del-userid" placeholder="Ej: 123e4567-e89b-12d3-a456-426614174000" required>
+                </div>
+                
                 <button type="submit" class="btn-danger">Eliminar</button>
             </form>
         </section>
