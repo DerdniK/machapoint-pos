@@ -10,7 +10,6 @@ body {
     background-color: #f4f4f9;
 }
 
-
 /* =========================
    BARRA SUPERIOR (NAVBAR)
 ========================= */
@@ -158,4 +157,71 @@ body {
     font-weight: bold;
     color: #333;
     padding: 10px;
+}
+
+
+/* =========================
+   VARIABLES (Estándar MachaPoint)
+========================= */
+:root {
+    --color-primary: #f5a623;
+    --color-ink: #2b2118;
+    --color-error: #c0392b;
+    --color-mint-dark: #27ae60;
+    --color-white: #ffffff;
+    --radius-md: 14px;
+}
+
+/* ... (Mantén tu CSS actual para body, .navbar, .container, .card, etc.) ... */
+
+/* =========================
+   SNACKBAR (Mensaje flotante)
+========================= */
+#user-status-msg {
+    visibility: hidden;
+    min-width: 280px;
+    max-width: 90%;
+    background-color: var(--color-ink);
+    color: var(--color-white);
+    text-align: center;
+    border-radius: var(--radius-md);
+    padding: 16px 20px;
+    
+    /* Posicionamiento flotante al centro inferior */
+    position: fixed;
+    z-index: 10000;
+    left: 50%;
+    bottom: 30px;
+    
+    font-size: 1rem;
+    font-weight: 600;
+    box-shadow: 0 10px 30px rgba(43, 33, 24, 0.25);
+    
+    /* Animación inicial oculta (abajo) */
+    transform: translateX(-50%) translateY(100px);
+    opacity: 0;
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), 
+                opacity 0.4s ease, 
+                visibility 0.4s ease;
+}
+
+/* Clase para mostrar el modal */
+#user-status-msg.show {
+    visibility: visible;
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* Modificadores de estado */
+#user-status-msg.error {
+    background-color: var(--color-error);
+}
+
+#user-status-msg.success {
+    background-color: var(--color-mint-dark);
+}
+
+#user-status-msg.processing {
+    background-color: var(--color-primary);
+    color: var(--color-ink);
 }

@@ -284,110 +284,19 @@ if (inputEfectivo) {
 }
 
 // obtener el usuario de localStorage
-function obtenerUsuario() {
-    const usuario = JSON.parse(localStorage.getItem('usuario'));
-
-    if (usuario) {
-        return {
-            id: usuario.id || null,
-            nombre: usuario.nombre || '',
-            correo: usuario.correo || '',
-            rol: usuario.rol || ''
-        };
-    }
-
-    return null;
-}
-
-function generarIdCuenta() {
-    const carrito = renderizarCarrito();
-
-    if (carrito.length === 0) {
-        console.error('No se puede generar una cuenta con un carrito vacío.');
-        return null;
-    }
-
-    const metodo = metodoPago.value;
-    if (!metodo) {
-        console.error('No se ha seleccionado un método de pago.');
-        return null;
-    }
-
-    const total = calcularTotal(carrito);
-    let informacionPago = {};
-
+// Traduce la selección del HTML al formato exacto de la BD
+function obtenerMetodoPagoBD() {
+    const metodo = metodoPago.value; // 'efectivo' o 'tarjeta'
+    
     if (metodo === 'efectivo') {
-        const dineroRecibido = parseFloat(inputEfectivo.value) || 0;
-
-        if (dineroRecibido < total) {
-            console.error('Dinero insuficiente para cubrir el total.');
-            return null;
-        }
-
-        informacionPago = {
-            metodo: 'efectivo',
-            dineroRecibido: dineroRecibido,
-            cambio: dineroRecibido - total
-        };
+        return 'EFECTIVO';
     } else if (metodo === 'tarjeta') {
-        if (!tipoTarjeta.value) {
-            console.error('No se ha seleccionado un tipo de tarjeta.');
-            return null;
-        }
-
-        informacionPago = {
-            metodo: 'tarjeta',
-            tipo: tipoTarjeta.value
-        };
+        const tipo = tipoTarjeta.value; // 'credito' o 'debito'
+        if (tipo === 'credito') return 'TARJETA_CREDITO';
+        if (tipo === 'debito') return 'TARJETA_DEBITO';
     }
-
-    const usuario = obtenerUsuario();
-    if (!usuario) {
-        console.error('No se encontró un usuario activo.');
-        return null;
-    }
-
-    const cuenta = {
-        id: Date.now().toString(),
-        fecha: new Date().toISOString(),
-        usuario: {
-            nombre: usuario.nombre
-        },
-        productos: carrito.map(producto => ({
-            sku: producto.sku,
-            nombre: producto.name,
-            tipo: producto.typeid,
-            precioUnitario: Number(producto.price) || 0,
-            cantidad: Number(producto.cantidad) || 1,
-            subtotal: Number(((Number(producto.price) || 0) * (Number(producto.cantidad) || 1)).toFixed(2))
-        })),
-        total: Number(total.toFixed(2)),
-        pago: {
-            metodo: metodo,
-            ...informacionPago
-        }
-    };
-
-    const cuentas = JSON.parse(localStorage.getItem(CUENTAS_KEY)) || [];
-    cuentas.push(cuenta);
-    localStorage.setItem(CUENTAS_KEY, JSON.stringify(cuentas));
-
-    console.log('cuenta guardada:', cuenta);
-
-    localStorage.removeItem(CARRITO_KEY);
-
-    alert(`Cuenta finalizada correctamente.\n\nVenta: ${cuenta.id}\nTotal: $${cuenta.total.toFixed(2)}`);
-
-    cargarCarrito();
-
-    metodoPago.value = '';
-    metodoPago.style.display = 'none';
-    inputEfectivo.value = '';
-    cambioResultado.textContent = '$0.00';
-    tipoTarjeta.value = '';
-
-    return cuenta.id;
-
+    
+    return null; // Si no hay selección válida
 }
 
 // --- Helpers para datos que todavia no llamo ---
@@ -410,6 +319,21 @@ function generarReferenciaTransaccion() {
         return crypto.randomUUID();
     }
     return `ref-${Date.now()}`;
+}
+
+// Traduce la selección del HTML al formato exacto de la BD
+function obtenerMetodoPagoBD() {
+    const metodo = metodoPago.value; // 'efectivo' o 'tarjeta'
+    
+    if (metodo === 'efectivo') {
+        return 'EFECTIVO';
+    } else if (metodo === 'tarjeta') {
+        const tipo = tipoTarjeta.value; // 'credito' o 'debito'
+        if (tipo === 'credito') return 'TARJETA_CREDITO';
+        if (tipo === 'debito') return 'TARJETA_DEBITO';
+    }
+    
+    return null; // Si no hay selección válida
 }
 
 function normalizarPaymentMethod(metodo, tipoTarjetaValue) {
@@ -455,19 +379,20 @@ async function procesarVentaBackend() {
         return null;
     }
 
-    const metodo = metodoPago.value;
-    if (!metodo) {
-        console.error('No se ha seleccionado un método de pago.');
+    const payment_method = obtenerMetodoPagoBD(); // Te devuelve "EFECTIVO", "TARJETA_CREDITO", etc.
+
+    if (!payment_method) {
+        console.error('No se ha seleccionado un método de pago válido completo.');
         return null;
     }
 
     const total = calcularTotal(carrito);
-    let payment_method = '';
     let amount_given = 0;
     let change_given = 0;
 
-    if (metodo === 'efectivo') {
+    if (metodo === 'EFECTIVO') {
         amount_given = parseFloat(inputEfectivo.value) || 0;
+        
         if (amount_given < total) {
             console.error('Dinero insuficiente para cubrir el total.');
             return null;
