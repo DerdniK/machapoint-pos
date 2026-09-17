@@ -412,6 +412,30 @@ function generarReferenciaTransaccion() {
     return `ref-${Date.now()}`;
 }
 
+function normalizarPaymentMethod(metodo, tipoTarjetaValue) {
+    if (metodo === 'efectivo') {
+        return 'EFECTIVO';
+    }
+    if (metodo === 'tarjeta') {
+        const tipo = (tipoTarjetaValue || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .trim()
+            .toLowerCase();
+
+        if (tipo.includes('cred')) {
+            return 'TARJETA_CREDITO';
+        }
+        if (tipo.includes('deb')) {
+            return 'TARJETA_DEBITO'; 
+        }
+        console.error('Tipo de tarjeta no reconocido:', tipoTarjetaValue);
+        return null;
+    }
+    console.error('Método de pago no reconocido:', metodo);
+    return null;
+}
+
 function resetFormularioPago() {
     if (metodoPago) metodoPago.value = '';
     if (seccionEfectivo) seccionEfectivo.style.display = 'none';
@@ -448,18 +472,23 @@ async function procesarVentaBackend() {
             console.error('Dinero insuficiente para cubrir el total.');
             return null;
         }
-        payment_method = 'EFECTIVO';
         change_given = amount_given - total;
     } else if (metodo === 'tarjeta') {
         if (!tipoTarjeta.value) {
             console.error('No se ha seleccionado un tipo de tarjeta.');
             return null;
         }
-        payment_method = tipoTarjeta.value;
-        amount_given = total; // en tarjeta normalmente se cobra el total exacto
+        amount_given = total;
         change_given = 0;
     } else {
         console.error('Método de pago no reconocido:', metodo);
+        return null;
+    }
+
+    payment_method = normalizarPaymentMethod(metodo, tipoTarjeta.value);
+
+    if (!payment_method) {
+        alert('No se pudo determinar el método de pago. Verifica la selección.');
         return null;
     }
 
@@ -493,7 +522,7 @@ const payload = {
         shiftId: Number(shiftId), 
         cashierId: cashierId,
         total: Number(total.toFixed(2)),
-        payment_method: payment_method.toUpperCase,
+        payment_method: payment_method,
         amount_given: Number(amount_given.toFixed(2)),
         change_given: Number(change_given.toFixed(2)),
         transaction_reference: generarReferenciaTransaccion(),
