@@ -10,7 +10,7 @@ class ShiftService {
     final response = await http.post(
       Uri.parse('$_baseUrl/open'),
       headers: {
-        'Content-Type': 'json',
+        'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
       },
       body: jsonEncode({
@@ -18,7 +18,7 @@ class ShiftService {
         'openingamount': openingAmount,
       }),
     );
-    return response.statusCode == 200;
+    return response.statusCode == 200 || response.statusCode == 201;
   }
 
   static Future<bool> closeShift({
@@ -31,7 +31,7 @@ class ShiftService {
     final response = await http.post(
       Uri.parse('$_baseUrl/close'),
       headers: {
-        'Content-Type': 'json',
+        'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
       },
       body: jsonEncode({
@@ -41,6 +41,6 @@ class ShiftService {
         'notes': notes,
       }),
     );
-    return response.statusCode == 200;
+    return response.statusCode == 200 || response.statusCode == 201;
   }
 }
