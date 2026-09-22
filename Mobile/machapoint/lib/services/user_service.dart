@@ -6,7 +6,6 @@ import 'auth.dart';
 class UserService {
   static const String baseUrl = 'https://tmvksz56enigo6ojk25lfvg6x40vigzo.lambda-url.us-east-1.on.aws';
 
-  // 1. Método exclusivo para registrar
   static Future<bool> registerUser(UserModel user) async {
     final token = await AuthService.getToken();
 
@@ -26,11 +25,11 @@ class UserService {
       }
       return true;
     } else {
-      throw Exception('Error al registrar: ${response.body}');
+      final errorMessage = _extractMessage(response.body, response.statusCode);
+      throw Exception(errorMessage);
     }
   }
 
-  // 2. Método exclusivo para actualizar usuario
   static Future<bool> updateUser({required String userId, required String username}) async {
     final token = await AuthService.getToken();
 
@@ -49,11 +48,11 @@ class UserService {
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return true;
     } else {
-      throw Exception('Error al actualizar: ${response.statusCode} - ${response.body}');
+      final errorMessage = _extractMessage(response.body, response.statusCode);
+      throw Exception(errorMessage);
     }
   }
 
-  // 3. Método exclusivo para eliminar usuario
   static Future<bool> deleteUser({required String userId}) async {
     final token = await AuthService.getToken();
 
@@ -71,7 +70,21 @@ class UserService {
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return true;
     } else {
-      throw Exception('Error al eliminar: ${response.statusCode} - ${response.body}');
+      final errorMessage = _extractMessage(response.body, response.statusCode);
+      throw Exception(errorMessage);
     }
+  }
+  static String _extractMessage(String body, int statusCode) {
+    try {
+      if (body.isNotEmpty) {
+        final data = jsonDecode(body);
+        if (data is Map) {
+          if (data.containsKey('message')) return data['message'].toString();
+          if (data.containsKey('error')) return data['error'].toString();
+          if (data.containsKey('detail')) return data['detail'].toString();
+        }
+      }
+    } catch (_) {}
+    return 'Status $statusCode: $body';
   }
 }
