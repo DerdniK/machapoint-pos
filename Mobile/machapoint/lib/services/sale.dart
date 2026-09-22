@@ -4,16 +4,18 @@ import 'auth.dart';
 
 class CartItem {
   final int productId;
+  final String? productName;
   final double unitPrice;
-  final int quantity;
-  final double subtotal;
+  int quantity;
 
   CartItem({
     required this.productId,
+    this.productName,
     required this.unitPrice,
-    required this.quantity,
-    required this.subtotal,
+    this.quantity = 1,
   });
+
+  double get subtotal => unitPrice * quantity;
 
   Map<String, dynamic> toJson() => {
         'productId': productId,
@@ -24,9 +26,10 @@ class CartItem {
 }
 
 class SaleService {
-  static const String _url = 'https://6uxm3jz7xwth5cliak6zk6dudi0iseih.lambda-url.us-east-1.on.aws/api/sale';
+  static const String _url =
+      'https://6uxm3jz7xwth5cliak6zk6dudi0iseih.lambda-url.us-east-1.on.aws/api/sale';
 
-  static Future<bool> processSale({
+  static Future<Map<String, dynamic>> processSale({
     required int shiftId,
     required String cashierId,
     required double total,
@@ -36,25 +39,58 @@ class SaleService {
     required String transactionReference,
     required List<CartItem> products,
   }) async {
-    final token = await AuthService.getToken();
-    final response = await http.post(
-      Uri.parse(_url),
-      headers: {
-        'Content-Type': 'json',
-        if (token != null) 'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
-        'shiftId': shiftId,
-        'cashierId': cashierId,
-        'total': total,
-        'payment_method': paymentMethod,
-        'amount_given': amountGiven,
-        'change_given': changeGiven,
-        'transaction_reference': transactionReference,
-        'products': products.map((p) => p.toJson()).toList(),
-      }),
-    );
+    try {
+      final token = await AuthService.getToken();
+      final response = await http.post(
+        Uri.parse(_url),
+        headers: {
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'shiftId': shiftId,
+          'cashierId': cashierId,
+          'total': total,
+          'payment_method': paymentMethod,
+          'amount_given': amountGiven,
+          'change_given': changeGiven,
+          'transaction_reference': transactionReference,
+          'products': products.map((p) => p.toJson()).toList(),
+        }),
+      );
+      print('STATUS: ${response.statusCode}');
+      print('BODY: ${response.body}');
 
-    return response.statusCode == 201 || response.statusCode == 200;
+      dynamic responseData;
+      if (response.body.isNotEmpty) {
+        try {
+          responseData = jsonDecode(response.body);
+        } catch (_) {
+          responseData = null;
+        }
+      }
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {
+          'success': true,
+          'data': responseData,
+          'message': 'Venta realizada con éxito',
+        };
+      } else {
+        return {
+          'success': false,
+            'message': responseData is Map
+              ? responseData['message']?.toString() ??
+                responseData['error']?.toString() ??
+                'Error al procesar la venta (${response.statusCode})'
+              : 'Error al procesar la venta (${response.statusCode}): ${response.body}',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Error de conexión: ${e.toString().replaceAll('Exception: ', '')}',
+      };
+    }
   }
 }
