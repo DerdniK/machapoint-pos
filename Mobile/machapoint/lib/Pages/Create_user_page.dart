@@ -12,36 +12,28 @@ class CreateUserPage extends StatefulWidget {
 class _CreateUserPageState extends State<CreateUserPage> {
   final _createFormKey = GlobalKey<FormState>();
   final _updateFormKey = GlobalKey<FormState>();
-  String _selectedAction = 'create'; // 'create', 'update', 'delete'
+  final _deleteFormKey = GlobalKey<FormState>();
 
-  // Controladores para CREAR
+  String _selectedAction = 'create';
   final _usernameCreateController = TextEditingController();
   final _passwordController = TextEditingController();
   final _firstnameController = TextEditingController();
   final _lastnameController = TextEditingController();
   final _roleIdController = TextEditingController(text: '1');
-  
-  // Controladores para ACTUALIZAR
   final _userIdUpdateController = TextEditingController();
   final _usernameUpdateController = TextEditingController();
-
-  // Controlador para ELIMINAR
   final _userIdDeleteController = TextEditingController();
 
   bool _isLoading = false;
 
   Future<void> _submitCreate() async {
-    if (!_createFormKey.currentState!.validate()) {
-      return;
-    }
+    if (!_createFormKey.currentState!.validate()) return;
 
     final roleId = int.tryParse(_roleIdController.text.trim());
     final password = _passwordController.text.trim();
 
     if (roleId == null || roleId < 1 || roleId > 2) {
-      if (mounted) {
-        _showSnackBar('El rol debe ser 1 o 2', Colors.orange);
-      }
+      if (mounted) _showSnackBar('El rol debe ser 1 o 2', Colors.orange);
       return;
     }
 
@@ -61,25 +53,36 @@ class _CreateUserPageState extends State<CreateUserPage> {
         lastname: _lastnameController.text.trim(),
         roleid: roleId,
       );
+
       await UserService.registerUser(user);
+
       if (mounted) {
-        _showSnackBar('¡Usuario registrado exitosamente!', Colors.green);
+        _showSnackBar('Usuario registrado exitosamente', Colors.green);
         _usernameCreateController.clear();
         _passwordController.clear();
         _firstnameController.clear();
         _lastnameController.clear();
       }
     } catch (e) {
-      if (mounted) _showSnackBar('Error: $e', Colors.redAccent);
+      final rawMsg = e.toString().replaceAll('Exception: ', '').toLowerCase();
+      if (mounted) {
+        if (rawMsg.contains('409') ||
+            rawMsg.contains('already exist') ||
+            rawMsg.contains('ya existe') ||
+            rawMsg.contains('ocupado') ||
+            rawMsg.contains('duplicate')) {
+          _showSnackBar('El nombre de usuario ya esta ocupado', Colors.orange);
+        } else {
+          _showSnackBar('Error: ${e.toString().replaceAll('Exception: ', '')}', Colors.redAccent);
+        }
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
   Future<void> _submitUpdate() async {
-    if (!_updateFormKey.currentState!.validate()) {
-      return;
-    }
+    if (!_updateFormKey.currentState!.validate()) return;
 
     final userId = _userIdUpdateController.text.trim();
     final username = _usernameUpdateController.text.trim();
@@ -94,17 +97,27 @@ class _CreateUserPageState extends State<CreateUserPage> {
       if (mounted) {
         if (success) {
           _showSnackBar('¡Usuario actualizado exitosamente!', Colors.green);
+          _userIdUpdateController.clear();
+          _usernameUpdateController.clear();
         } else {
           _showSnackBar('Usuario no encontrado', Colors.orange);
         }
       }
     } catch (e) {
-      final message = e.toString().toLowerCase();
+      final rawMsg = e.toString().replaceAll('Exception: ', '').toLowerCase();
       if (mounted) {
-        if (message.contains('not found') || message.contains('usuario no encontrado') || message.contains('404')) {
+        if (rawMsg.contains('409') ||
+            rawMsg.contains('already exist') ||
+            rawMsg.contains('ya existe') ||
+            rawMsg.contains('ocupado') ||
+            rawMsg.contains('duplicate')) {
+          _showSnackBar('El nuevo nombre de usuario ya esta ocupado', Colors.orange);
+        } else if (rawMsg.contains('not found') ||
+            rawMsg.contains('usuario no encontrado') ||
+            rawMsg.contains('404')) {
           _showSnackBar('Usuario no encontrado', Colors.orange);
         } else {
-          _showSnackBar('Error: $e', Colors.redAccent);
+          _showSnackBar('Error: ${e.toString().replaceAll('Exception: ', '')}', Colors.redAccent);
         }
       }
     } finally {
@@ -113,14 +126,9 @@ class _CreateUserPageState extends State<CreateUserPage> {
   }
 
   Future<void> _submitDelete() async {
-    final userId = _userIdDeleteController.text.trim();
+    if (!_deleteFormKey.currentState!.validate()) return;
 
-    if (userId.isEmpty) {
-      if (mounted) {
-        _showSnackBar('Ingrese el ID del usuario', Colors.orange);
-      }
-      return;
-    }
+    final userId = _userIdDeleteController.text.trim();
 
     setState(() => _isLoading = true);
     try {
@@ -130,19 +138,21 @@ class _CreateUserPageState extends State<CreateUserPage> {
 
       if (mounted) {
         if (success) {
-          _showSnackBar('¡Usuario eliminado exitosamente!', Colors.redAccent);
+          _showSnackBar('Usuario eliminado exitosamente', Colors.redAccent);
           _userIdDeleteController.clear();
         } else {
           _showSnackBar('Usuario no encontrado', Colors.orange);
         }
       }
     } catch (e) {
-      final message = e.toString().toLowerCase();
+      final rawMsg = e.toString().replaceAll('Exception: ', '').toLowerCase();
       if (mounted) {
-        if (message.contains('not found') || message.contains('usuario no encontrado') || message.contains('404')) {
+        if (rawMsg.contains('not found') ||
+            rawMsg.contains('usuario no encontrado') ||
+            rawMsg.contains('404')) {
           _showSnackBar('Usuario no encontrado', Colors.orange);
         } else {
-          _showSnackBar('Error: $e', Colors.redAccent);
+          _showSnackBar('Error: ${e.toString().replaceAll('Exception: ', '')}', Colors.redAccent);
         }
       }
     } finally {
@@ -179,7 +189,6 @@ class _CreateUserPageState extends State<CreateUserPage> {
         padding: const EdgeInsets.all(24.0),
         child: Column(
           children: [
-            // Selector desplegable superior
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
@@ -278,9 +287,14 @@ class _CreateUserPageState extends State<CreateUserPage> {
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: orangeColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: orangeColor,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
                   onPressed: _isLoading ? null : _submitCreate,
-                  child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text('Crear Usuario', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                  child: _isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text('Crear Usuario', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
                 ),
               ),
             ] else if (_selectedAction == 'update') ...[
@@ -317,13 +331,19 @@ class _CreateUserPageState extends State<CreateUserPage> {
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: orangeColor, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: orangeColor,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
                   onPressed: _isLoading ? null : _submitUpdate,
-                  child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text('Actualizar Usuario', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                  child: _isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text('Actualizar Usuario', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
                 ),
               ),
             ] else if (_selectedAction == 'delete') ...[
               Form(
+                key: _deleteFormKey,
                 child: TextFormField(
                   controller: _userIdDeleteController,
                   decoration: _inputDec('User ID (UUID)'),
@@ -340,9 +360,14 @@ class _CreateUserPageState extends State<CreateUserPage> {
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.redAccent,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
                   onPressed: _isLoading ? null : _submitDelete,
-                  child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text('Eliminar Usuario', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  child: _isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text('Eliminar Usuario', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
