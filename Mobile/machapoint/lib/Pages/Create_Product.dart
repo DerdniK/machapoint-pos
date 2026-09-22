@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
@@ -23,7 +22,6 @@ class _CreateProductPageState extends State<CreateProductPage> {
   int _selectedTypeId = 1;
 
   bool _isLoading = false;
-
   Future<String> _resolvePinterestUrl(String url) async {
     final trimmedUrl = url.trim();
     final lowerUrl = trimmedUrl.toLowerCase();
@@ -36,30 +34,12 @@ class _CreateProductPageState extends State<CreateProductPage> {
 
     if (lowerUrl.contains('pin.it') || lowerUrl.contains('pinterest.com')) {
       try {
-        var pinterestUrl = trimmedUrl;
-        if (lowerUrl.contains('pin.it')) {
-          final redirectResponse = await http.get(Uri.parse(trimmedUrl));
-          pinterestUrl = redirectResponse.request?.url.toString() ?? trimmedUrl;
-        }
-
-        final oembedResponse = await http.get(
-          Uri.parse(
-            'https://www.pinterest.com/oembed.json?url=${Uri.encodeComponent(pinterestUrl)}',
-          ),
-        );
-        if (oembedResponse.statusCode == 200) {
-          final data = jsonDecode(oembedResponse.body) as Map<String, dynamic>;
-          final thumbnailUrl = data['thumbnail_url']?.toString();
-          if (thumbnailUrl != null && thumbnailUrl.isNotEmpty) {
-            return thumbnailUrl;
-          }
-        }
-
         final response = await http.get(
-          Uri.parse(pinterestUrl),
+          Uri.parse(trimmedUrl),
           headers: {
             'User-Agent':
                 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept-Language': 'es-ES,es;q=0.9,en;q=0.8',
           },
         );
 
@@ -67,11 +47,11 @@ class _CreateProductPageState extends State<CreateProductPage> {
           final html = response.body;
 
           final regExp = RegExp(
-            r'''<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']''',
+            r'<meta[^>]*property=["'']og:image["''][^>]*content=["'']([^"'']+)["'']',
             caseSensitive: false,
           );
           final regExpAlt = RegExp(
-            r'''<meta\s+content=["']([^"']+)["']\s+property=["']og:image["']''',
+            r'<meta[^>]*content=["'']([^"'']+)["''][^>]*property=["'']og:image["'']',
             caseSensitive: false,
           );
 
@@ -79,15 +59,26 @@ class _CreateProductPageState extends State<CreateProductPage> {
 
           if (match != null && match.groupCount >= 1) {
             String imageUrl = match.group(1)!;
-            return imageUrl.replaceAll(RegExp(r'/\d+x/'), '/1200x/');
+            return imageUrl.replaceAll(RegExp(r'/\d+x/'), '/originals/');
           }
         }
-      } catch (_) {}
-
-      return trimmedUrl;
+      } catch (_) {
+      }
     }
 
     return trimmedUrl;
+  }
+
+  // 2. Método para limpiar los controladores, errores de validación y el estado
+  void _clearForm() {
+    _nameController.clear();
+    _skuController.clear();
+    _priceController.clear();
+    _imageUrlController.clear();
+    _formKey.currentState?.reset();
+    setState(() {
+      _selectedTypeId = 1;
+    });
   }
 
   void _submitForm() async {
@@ -115,8 +106,9 @@ class _CreateProductPageState extends State<CreateProductPage> {
           ),
         );
 
+        // Se limpian los campos inmediatamente al guardar con éxito
         _clearForm();
-        _formKey.currentState?.reset();
+
         if (widget.onProductCreated != null) {
           widget.onProductCreated!();
         } else if (Navigator.canPop(context)) {
@@ -134,14 +126,6 @@ class _CreateProductPageState extends State<CreateProductPage> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
-  }
-
-  void _clearForm() {
-    _nameController.clear();
-    _skuController.clear();
-    _priceController.clear();
-    _imageUrlController.clear();
-    setState(() => _selectedTypeId = 1);
   }
 
   @override
@@ -163,7 +147,7 @@ class _CreateProductPageState extends State<CreateProductPage> {
         backgroundColor: orangeColor,
         elevation: 0,
         title: const Text(
-          'Crear Producto',
+          'Crea tu nuevo producto',
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
         iconTheme: const IconThemeData(color: Colors.black),
