@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:MachaPoint/providers/auth_provider.dart';
 import '../services/auth.dart';
-import 'product_Page.dart';
+import 'product_Page.dart'; // Asegúrate de que el nombre del archivo coincida con el de tu proyecto
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -24,14 +26,16 @@ class _LoginPageState extends State<LoginPage> {
 
     setState(() => _isLoading = true);
 
-    bool success = await AuthService.login(
+    final authProvider = context.read<AuthProvider>();
+    bool success = await authProvider.login(
       _usernameController.text.trim(),
       _passwordController.text.trim(),
     );
 
+    if (!mounted) return;
     setState(() => _isLoading = false);
 
-    if (success && mounted) {
+    if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Sesión iniciada con éxito'),
@@ -39,11 +43,11 @@ class _LoginPageState extends State<LoginPage> {
         ),
       );
 
-      Navigator.pushReplacement(
-        context,
+      // Redirección a la pantalla de Productos
+      Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => const ProductPage()),
       );
-    } else if (mounted) {
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Error al iniciar sesión, comprueba las credenciales o conexión a internet'),
@@ -59,16 +63,21 @@ class _LoginPageState extends State<LoginPage> {
     try {
       final success = await AuthService.signInWithGoogle();
       if (!mounted) return;
-      setState(() => _isGoogleLoading = false);
 
       if (success) {
-        Navigator.of(context).pushAndRemoveUntil(
+        await context.read<AuthProvider>().initAuth();
+        if (!mounted) return;
+
+        setState(() => _isGoogleLoading = false);
+
+        // Redirección a la pantalla de Productos tras login con Google
+        Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const ProductPage()),
-          (route) => false,
         );
       } else {
+        setState(() => _isGoogleLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error al iniciar sesion con Google')),
+          const SnackBar(content: Text('Error al iniciar sesión con Google')),
         );
       }
     } catch (e) {
