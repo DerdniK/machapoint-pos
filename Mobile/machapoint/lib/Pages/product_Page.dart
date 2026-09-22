@@ -7,7 +7,6 @@ import '../providers/cart.dart';
 import '../services/auth.dart';
 import '../services/product.dart';
 import 'Login_Page.dart';
-import 'Cart.dart';
 import 'create_user_page.dart'; 
 import 'Create_product.dart';
 import 'turns_man.dart';
