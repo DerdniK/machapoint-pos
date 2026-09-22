@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:MachaPoint/providers/auth_provider.dart';
 import '../services/auth.dart';
-import 'product_Page.dart';
+import 'product_Page.dart'; // Asegúrate de que el nombre del archivo coincida con el de tu proyecto
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
 
   final _usernameController = TextEditingController();
@@ -17,35 +19,74 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _passVisible = false;
   bool _isLoading = false;
+  bool _isGoogleLoading = false;
 
   void _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
-    bool success = await AuthService.login(
+    final authProvider = context.read<AuthProvider>();
+    bool success = await authProvider.login(
       _usernameController.text.trim(),
       _passwordController.text.trim(),
     );
 
+    if (!mounted) return;
     setState(() => _isLoading = false);
 
-    if (success && mounted) {
+    if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Sesión iniciada con exito'),
+          content: Text('Sesión iniciada con éxito'),
           backgroundColor: Colors.green,
         ),
       );
 
-      Navigator.pushReplacement(
-        context,
+      // Redirección a la pantalla de Productos
+      Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => const ProductPage()),
       );
-    } else if (mounted) {
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Error al iniciar sesion, comprueba las credenciales o conexion a internet'),
+          content: Text('Error al iniciar sesión, comprueba las credenciales o conexión a internet'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _handleGoogleLogin() async {
+    setState(() => _isGoogleLoading = true);
+
+    try {
+      final success = await AuthService.signInWithGoogle();
+      if (!mounted) return;
+
+      if (success) {
+        await context.read<AuthProvider>().initAuth();
+        if (!mounted) return;
+
+        setState(() => _isGoogleLoading = false);
+
+        // Redirección a la pantalla de Productos tras login con Google
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const ProductPage()),
+        );
+      } else {
+        setState(() => _isGoogleLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error al iniciar sesión con Google')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isGoogleLoading = false);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Excepción durante el login: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -55,7 +96,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFF3E7DF),
+      backgroundColor: const Color(0xFFF3E7DF),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
@@ -70,7 +111,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height:10,),
+                const SizedBox(height: 10),
                 Image.asset(
                   'assets/Icon.png',
                   height: 120,
@@ -113,9 +154,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   validator: (value) => (value == null || value.trim().isEmpty)
-                    ? "Ingresa tu contraseña"
-                    : null,
-                    
+                      ? "Ingresa tu contraseña"
+                      : null,
                 ),
                 const SizedBox(height: 30),
                 _isLoading
@@ -123,13 +163,55 @@ class _LoginScreenState extends State<LoginScreen> {
                     : ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           minimumSize: const Size(double.infinity, 50),
-                          backgroundColor: Color(0xFFF2B04E)
+                          backgroundColor: const Color(0xFFF2B04E),
                         ),
                         onPressed: _handleLogin,
                         child: const Text(
                           "Iniciar Sesión",
                           style: TextStyle(color: Color.fromARGB(255, 0, 0, 0), fontSize: 16),
                         ),
+                      ),
+
+                const SizedBox(height: 20),
+
+                const Row(
+                  children: [
+                    Expanded(child: Divider(thickness: 1, color: Colors.grey)),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 10),
+                      child: Text("O", style: TextStyle(color: Colors.grey)),
+                    ),
+                    Expanded(child: Divider(thickness: 1, color: Colors.grey)),
+                  ],
+                ),
+
+                const SizedBox(height: 20),
+
+                _isGoogleLoading
+                    ? const CircularProgressIndicator()
+                    : OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(double.infinity, 50),
+                          backgroundColor: Colors.white,
+                          side: const BorderSide(color: Colors.grey),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        icon: const Icon(
+                          Icons.g_mobiledata,
+                          size: 34,
+                          color: Color(0xFF4285F4),
+                        ),
+                        label: const Text(
+                          "Continuar con Google",
+                          style: TextStyle(
+                            color: Colors.black87,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        onPressed: _handleGoogleLogin,
                       ),
               ],
             ),
