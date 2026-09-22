@@ -16,7 +16,7 @@ class ProductService {
       if (token == null || token.isEmpty) {
         throw Exception('No se encontró token de sesión.');
       }
-      final url = Uri.parse('$_baseUrl/api/products/product/get');
+      final url = Uri.parse('$_baseUrl/api/products/product');
       final response = await http.get(
         url,
         headers: {
