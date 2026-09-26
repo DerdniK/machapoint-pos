@@ -123,5 +123,31 @@ namespace ServicioProducts.Controllers
                 });
             }
         }
+
+        [Authorize]
+        [HttpDelete("delete/{id:int}")]
+        public async Task<IActionResult> DeleteProduct([FromRoute] int id)
+        {
+            try
+            {
+                var result = await _productService.DeleteProductAsync(id);
+
+                if (!result.Success)
+                {
+                    return NotFound(result); // O BadRequest(result) según prefieras
+                }
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    Error = ex.Message,
+                    InnerError = ex.InnerException?.Message,
+                    Stack = ex.StackTrace
+                });
+            }
+        }
     }
 }
