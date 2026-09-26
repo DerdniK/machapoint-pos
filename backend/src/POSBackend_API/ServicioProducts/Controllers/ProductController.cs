@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using ServicioProducts.Dtos.Create;
 using ServicioProducts.Dtos.Read;
 using ServicioProducts.Dtos.Search;
+using ServicioProducts.Dtos.Update;
 using ServicioProducts.Services;
 
 namespace ServicioProducts.Controllers
@@ -135,6 +136,32 @@ namespace ServicioProducts.Controllers
                 if (!result.Success)
                 {
                     return NotFound(result); // O BadRequest(result) según prefieras
+                }
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    Error = ex.Message,
+                    InnerError = ex.InnerException?.Message,
+                    Stack = ex.StackTrace
+                });
+            }
+        }
+
+        [Authorize]
+        [HttpPatch("update/{id:int}")]
+        public async Task<IActionResult> UpdateProduct([FromRoute] int id, [FromBody] UpdateProductRequestDto request)
+        {
+            try
+            {
+                var result = await _productService.UpdateProductAsync(id, request);
+
+                if (!result.Success)
+                {
+                    return NotFound(result);
                 }
 
                 return Ok(result);
