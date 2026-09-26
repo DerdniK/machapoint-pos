@@ -4,6 +4,7 @@ using Npgsql;
 using NpgsqlTypes;
 using ServicioSales.Data;
 using ServicioSales.Dtos;
+using ServicioSales.Dtos.Search;
 
 namespace ServicioSales.Service
 {
@@ -41,6 +42,32 @@ namespace ServicioSales.Service
                 Created_at = DateTime.Now,
                 ProductsList = request.Products
             };
+        }
+
+        public async Task<List<SaleByShiftDto>> GetSalesByShiftAsync(int shiftId)
+        {
+            var param = new NpgsqlParameter("p_shiftid", NpgsqlTypes.NpgsqlDbType.Integer)
+            {
+                Value = shiftId
+            };
+
+            return await _context.Database
+                .SqlQueryRaw<SaleByShiftDto>(
+                    @"SELECT 
+                        saleid, 
+                        shiftid, 
+                        cashier_username, 
+                        total, 
+                        status, 
+                        created_at, 
+                        payment_method, 
+                        amount_given, 
+                        change_given, 
+                        items::text AS items
+                    FROM public.sp_search_sales_by_shift(@p_shiftid)",
+                    param
+                )
+                .ToListAsync();
         }
     }
 }
