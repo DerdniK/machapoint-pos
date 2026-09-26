@@ -20,23 +20,23 @@ namespace ServicioProducts.Services
         }
 
         
-        public async Task<IEnumerable<GetAllProductsResponseDto>> GetAllProductsAsync()
-        {
+        // public async Task<IEnumerable<GetAllProductsResponseDto>> GetAllProductsAsync()
+        // {
             
-            return await _context.ProductsTable.AsNoTracking()
-            .Select(p => new GetAllProductsResponseDto
-            {
-                Productid = p.Productid,
-                Name = p.Name,
-                SKU = p.SKU,
-                Type = new ProductTypesResponseDTO{
-                    Typeid = p.ProductTypes.Typeid ,
-                    TypeName = p.ProductTypes.TypeName
-                },
-                Price = p.Price, 
-                ImageURL = p.ImageURL ?? "https://images.vexels.com/media/users/3/144131/isolated/preview/29576a7e0442960346703d3ecd6bac04-icono-de-doodle-de-imagen.png"
-            }).ToListAsync();
-        }
+        //     return await _context.ProductsTable.AsNoTracking()
+        //     .Select(p => new GetAllProductsResponseDto
+        //     {
+        //         Productid = p.Productid,
+        //         Name = p.Name,
+        //         SKU = p.SKU,
+        //         Type = new ProductTypesResponseDTO{
+        //             Typeid = p.ProductTypes.Typeid ,
+        //             TypeName = p.ProductTypes.TypeName
+        //         },
+        //         Price = p.Price, 
+        //         ImageURL = p.ImageURL ?? "https://images.vexels.com/media/users/3/144131/isolated/preview/29576a7e0442960346703d3ecd6bac04-icono-de-doodle-de-imagen.png"
+        //     }).ToListAsync();
+        // }
 
         public async Task<CreateProductResponseDto> CreateProductAsync(CreateProductRequestDto request)
         {
@@ -58,25 +58,32 @@ namespace ServicioProducts.Services
             };
         }
 
-        public async Task<GetProductResponseDto> GetProductsAsync(GetProductRequestDto request)
+        public async Task<IEnumerable<ProductItemResponseDto>> GetProductsAsync(GetProductRequestDto request)
         {
             var sql = "SELECT * FROM public.sp_view_products(@p_productid)";
 
             var parameter = new NpgsqlParameter("p_productid", NpgsqlTypes.NpgsqlDbType.Integer)
             {
-                Value = (object?)request.ProductId ?? DBNull.Value
+                Value = (object?)request?.ProductId ?? DBNull.Value
             };
 
-            var products = await _context.Database
-            .SqlQueryRaw<ViewProductModel>(sql, parameter)
-            .ToListAsync();
+            var rawProducts = await _context.Database
+                .SqlQueryRaw<ViewProductModel>(sql, parameter)
+                .ToListAsync();
 
-            return new GetProductResponseDto
+            return rawProducts.Select(p => new ProductItemResponseDto
             {
-                Success = true,
-                Message = products.Any() ? "Productos obtenidos con éxito" : "No se encontraron productos",
-                Product = products
-            };
+                Productid = p.ProductId,
+                Name = p.Name,
+                SKU = p.SKU,
+                Type = new ProductTypesResponseDTO
+                {
+                    Typeid = p.Typeid,
+                    TypeName = p.Typename
+                },
+                Price = (double)p.Price,
+                ImageURL = p.ImageURL ?? "https://images.vexels.com/media/users/3/144131/isolated/preview/29576a7e0442960346703d3ecd6bac04-icono-de-producto.png"
+            }).ToList();
         }
 
         public async Task<SearchProductResponseDto> SearchProductsAsync(SearchProductRequestDto request)
