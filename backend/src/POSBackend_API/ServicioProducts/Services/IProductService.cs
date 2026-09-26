@@ -3,6 +3,7 @@ using ServicioProducts.Dtos.Create;
 using ServicioProducts.Dtos.Delete;
 using ServicioProducts.Dtos.Read;
 using ServicioProducts.Dtos.Search;
+using ServicioProducts.Dtos.Update;
 
 namespace ServicioProducts.Services
 {
@@ -13,5 +14,6 @@ namespace ServicioProducts.Services
         Task<IEnumerable<ProductItemResponseDto>> GetProductsAsync(GetProductRequestDto request);
         Task<SearchProductResponseDto> SearchProductsAsync(SearchProductRequestDto request);
         Task<DeleteProductResponseDto> DeleteProductAsync(int productId);
+        Task<UpdateProductResponseDto> UpdateProductAsync(int productId, UpdateProductRequestDto request);
     }
 }
