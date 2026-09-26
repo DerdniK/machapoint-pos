@@ -7,6 +7,7 @@ using ServicioProducts.Dtos.Create;
 using ServicioProducts.Dtos.Delete;
 using ServicioProducts.Dtos.Read;
 using ServicioProducts.Dtos.Search;
+using ServicioProducts.Dtos.Update;
 using ServicioProducts.Models.Views;
 
 namespace ServicioProducts.Services
@@ -155,6 +156,48 @@ namespace ServicioProducts.Services
             {
                 Success = true,
                 Message = "Producto eliminado con éxito."
+            };
+        }
+
+        public async Task<UpdateProductResponseDto> UpdateProductAsync(int productId, UpdateProductRequestDto request)
+        {
+            var parameters = new[]
+            {
+                new NpgsqlParameter("p_productid", NpgsqlTypes.NpgsqlDbType.Integer) { Value = productId },
+                new NpgsqlParameter("p_name", NpgsqlTypes.NpgsqlDbType.Text) { Value = (object?)request.Name ?? DBNull.Value },
+                new NpgsqlParameter("p_sku", NpgsqlTypes.NpgsqlDbType.Text) { Value = (object?)request.SKU ?? DBNull.Value },
+                new NpgsqlParameter("p_typeid", NpgsqlTypes.NpgsqlDbType.Integer) { Value = (object?)request.TypeId ?? DBNull.Value },
+                new NpgsqlParameter("p_price", NpgsqlTypes.NpgsqlDbType.Numeric) { Value = (object?)request.Price ?? DBNull.Value },
+                new NpgsqlParameter("p_imageurl", NpgsqlTypes.NpgsqlDbType.Text) { Value = (object?)request.ImageURL ?? DBNull.Value }
+            };
+
+            var wasUpdated = await _context.Database
+                .SqlQueryRaw<bool>(
+                    @"SELECT public.sp_c_update_product(
+                        @p_productid, 
+                        @p_name, 
+                        @p_sku, 
+                        @p_typeid, 
+                        @p_price, 
+                        @p_imageurl
+                    ) AS ""Value""",
+                    parameters
+                )
+                .FirstOrDefaultAsync();
+
+            if (!wasUpdated)
+            {
+                return new UpdateProductResponseDto
+                {
+                    Success = false,
+                    Message = "No se pudo actualizar el producto o no existe."
+                };
+            }
+
+            return new UpdateProductResponseDto
+            {
+                Success = true,
+                Message = "Producto actualizado con éxito."
             };
         }
     }
