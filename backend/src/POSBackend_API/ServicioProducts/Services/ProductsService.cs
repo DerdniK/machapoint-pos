@@ -1,10 +1,11 @@
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using ServicioProducts.Data;
 using ServicioProducts.Dtos;
 using ServicioProducts.Dtos.Create;
 using ServicioProducts.Dtos.Read;
-using ServicioProducts.Models;
+using ServicioProducts.Dtos.Search;
 using ServicioProducts.Models.Views;
 
 namespace ServicioProducts.Services
@@ -75,6 +76,46 @@ namespace ServicioProducts.Services
                 Success = true,
                 Message = products.Any() ? "Productos obtenidos con éxito" : "No se encontraron productos",
                 Product = products
+            };
+        }
+
+        public async Task<SearchProductResponseDto> SearchProductsAsync(SearchProductRequestDto request)
+        {
+            var param = new NpgsqlParameter("p_name", NpgsqlTypes.NpgsqlDbType.Text)
+            {
+                Value = string.IsNullOrWhiteSpace(request?.Name) ? (object)DBNull.Value : request.Name
+            };
+
+            // Consultamos usando el DTO que coincide exactamente con las columnas de Postgres
+            var result = await _context.Database
+                .SqlQueryRaw<ProductDbResult>(
+                    "SELECT productid, name, sku, typeid, price, imageurl FROM public.sp_search_product(@p_name)",
+                    param
+                )
+                .ToListAsync();
+
+            if (result == null)
+            {
+                return new SearchProductResponseDto
+                {
+                    Success = false,
+                    Message = "No se encontró ningún producto con ese nombre."
+                };
+            }
+
+            return new SearchProductResponseDto
+            {
+                Success = true,
+                Message = "El/los producto/s que buscabas si existe/n",
+                Data = result.Select((ProductDbResult r) => new ProductItemDto
+                {
+                    ProductId = r.productid,
+                    Name = r.name,
+                    SKU = r.sku,
+                    TypeId = r.typeid,
+                    Price = (double)r.price,
+                    ImageURL = r.imageurl
+                }).ToList()
             };
         }
     }
