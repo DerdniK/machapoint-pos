@@ -4,6 +4,7 @@ using Npgsql;
 using ServicioProducts.Data;
 using ServicioProducts.Dtos;
 using ServicioProducts.Dtos.Create;
+using ServicioProducts.Dtos.Delete;
 using ServicioProducts.Dtos.Read;
 using ServicioProducts.Dtos.Search;
 using ServicioProducts.Models.Views;
@@ -123,6 +124,37 @@ namespace ServicioProducts.Services
                     Price = (double)r.price,
                     ImageURL = r.imageurl
                 }).ToList()
+            };
+        }
+
+        public async Task<DeleteProductResponseDto> DeleteProductAsync(int productId)
+        {
+            var parameter = new NpgsqlParameter("p_productid", NpgsqlTypes.NpgsqlDbType.Integer)
+            {
+                Value = productId
+            };
+
+            // SqlQueryRaw<bool> captura directamente el valor booleano que retorna la función
+            var wasDeleted = await _context.Database
+                .SqlQueryRaw<bool>(
+                    @"SELECT public.sp_b_delete_product(@p_productid) AS ""Value""",
+                    parameter
+                )
+                .FirstOrDefaultAsync();
+
+            if (!wasDeleted)
+            {
+                return new DeleteProductResponseDto
+                {
+                    Success = false,
+                    Message = "No se pudo eliminar el producto o no existe."
+                };
+            }
+
+            return new DeleteProductResponseDto
+            {
+                Success = true,
+                Message = "Producto eliminado con éxito."
             };
         }
     }
