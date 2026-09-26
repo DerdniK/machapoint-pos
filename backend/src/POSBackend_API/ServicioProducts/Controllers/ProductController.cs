@@ -36,21 +36,21 @@ namespace ServicioProducts.Controllers
             
         }
 
-        [Authorize]
-        [HttpGet]
-        public async Task<IActionResult> GetAllProducts()
-        {
-            try
-            {
-                var product = await _productService.GetAllProductsAsync();
-                return Ok(product);
-            }
-            catch (System.Exception ex)
-            {
+        // [Authorize]
+        // [HttpGet]
+        // public async Task<IActionResult> GetAllProducts()
+        // {
+        //     try
+        //     {
+        //         var product = await _productService.GetAllProductsAsync();
+        //         return Ok(product);
+        //     }
+        //     catch (System.Exception ex)
+        //     {
                 
-                return StatusCode(500, new { success = false, message = ex.Message });
-            }
-        }
+        //         return StatusCode(500, new { success = false, message = ex.Message });
+        //     }
+        // }
 
         [Authorize] //TODO: (Roles = "Admin")
         [HttpPost("create")]
@@ -84,17 +84,11 @@ namespace ServicioProducts.Controllers
         {
             try
             {
-                var product = await _productService.GetProductsAsync(request);
-
-                if (!product.Success)
-                {
-                    return BadRequest(product);
-                }
-                return Ok(product);
+                var products = await _productService.GetProductsAsync(request);
+                return Ok(products);
             }
             catch (Exception ex)
             {
-                
                 return StatusCode(500, new
                 {
                     Error = ex.Message,
