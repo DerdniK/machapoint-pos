@@ -13,6 +13,7 @@ CREATE TABLE Products (
 );
 
 Alter table products add imageurl varchar(100);
+Alter table products alter column imageurl type varchar(10000);
 
 insert into product_types(typename) values ('posters'),('pines'),('stickers'),('postales');
 
