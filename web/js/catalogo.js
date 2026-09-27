@@ -72,8 +72,8 @@ async function cargarProductos() {
 
     try {
         mensaje.textContent = 'Cargando productos...';
-
-        const response = await fetch(API_URL + "/api/products/product/get", {
+        const response = await fetch(API_URL + "/api/products/product", {
+        // const response = await fetch(API_URL + "/api/products/product/get", {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -141,18 +141,19 @@ function mostrarProductos(productos) {
 
         article.innerHTML = `
             <img 
-                src="/img/product.jpg" 
+                src="${producto.imageURL || '/img/product.jpg'}" 
                 alt="${producto.name}"
                 class="producto-imagen"
+                onerror="this.src='/img/product.jpg'"
             >
 
             <div class="producto-info">
                 <h3>${producto.name}</h3>
                 <p class="producto-precio"> $${Number(producto.price).toFixed(2)} </p>
                 <p> SKU: ${producto.sku} </p>
-                <p> Tipo: ${producto.typeid} </p>
+                <p> Tipo: ${producto.type?.typeName ?? 'Sin tipo'} </p>
 
-                <button class="boton-agregar" data-id="${producto.productId}" > 
+                <button class="boton-agregar" data-id="${producto.productid}" > 
                     Agregar al carrito 
                 </button>
 
@@ -173,13 +174,13 @@ function agregarEventosBotones() {
     botones.forEach(boton => {
 
         boton.addEventListener('click', () => {
-            const productId = boton.dataset.id;
+            const productid = boton.dataset.id;
             // console.log('Producto agregado:', productId);
             const producto = productosActuales.find( 
-                p => String(p.productId) === String(productId)
+                p => String(p.productid) === String(productid)
             );
             if (!producto) { 
-                console.error("No se encontró el producto:", productId); return; 
+                console.error("No se encontró el producto:", productid); return; 
                 } 
             agregarAlCarrito(producto);
         });
@@ -192,7 +193,7 @@ function agregarAlCarrito(producto) {
 
     // agregar unicamente la infomación necesaria del producto al carrito
     const productoCarrito = {
-        id: producto.productId,
+        id: producto.type?.typeid,
         name: producto.name,
         sku: producto.sku,
         price: producto.price,
@@ -289,7 +290,7 @@ if (formCrear) {
             SKU: skuVal,
             Price: priceVal,
             TypeId: typeIdVal,
-            ImageUrl: imgVal
+            ImageURL: imgVal
         };
 
         try {
