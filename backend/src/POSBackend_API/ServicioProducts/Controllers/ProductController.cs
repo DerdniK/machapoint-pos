@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ServicioProducts.Dtos.Create;
 using ServicioProducts.Dtos.Read;
+using ServicioProducts.Dtos.Search;
+using ServicioProducts.Dtos.Update;
 using ServicioProducts.Services;
 
 namespace ServicioProducts.Controllers
@@ -35,21 +37,21 @@ namespace ServicioProducts.Controllers
             
         }
 
-        [Authorize]
-        [HttpGet]
-        public async Task<IActionResult> GetAllProducts()
-        {
-            try
-            {
-                var product = await _productService.GetAllProductsAsync();
-                return Ok(product);
-            }
-            catch (System.Exception ex)
-            {
+        // [Authorize]
+        // [HttpGet]
+        // public async Task<IActionResult> GetAllProducts()
+        // {
+        //     try
+        //     {
+        //         var product = await _productService.GetAllProductsAsync();
+        //         return Ok(product);
+        //     }
+        //     catch (System.Exception ex)
+        //     {
                 
-                return StatusCode(500, new { success = false, message = ex.Message });
-            }
-        }
+        //         return StatusCode(500, new { success = false, message = ex.Message });
+        //     }
+        // }
 
         [Authorize] //TODO: (Roles = "Admin")
         [HttpPost("create")]
@@ -83,7 +85,27 @@ namespace ServicioProducts.Controllers
         {
             try
             {
-                var product = await _productService.GetProductsAsync(request);
+                var products = await _productService.GetProductsAsync(request);
+                return Ok(products);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    Error = ex.Message,
+                    InnerError = ex.InnerException?.Message,
+                    Stack = ex.StackTrace
+                });
+            }
+        }
+
+        [Authorize]
+        [HttpGet("search")]
+        public async Task<IActionResult> SearchProductsAsync([FromQuery] SearchProductRequestDto request)
+        {
+            try
+            {
+                var product = await _productService.SearchProductsAsync(request);
 
                 if (!product.Success)
                 {
@@ -95,6 +117,58 @@ namespace ServicioProducts.Controllers
             {
                 
                 return StatusCode(500, new
+                {
+                    Error = ex.Message,
+                    InnerError = ex.InnerException?.Message,
+                    Stack = ex.StackTrace
+                });
+            }
+        }
+
+        [Authorize]
+        [HttpDelete("delete/{id:int}")]
+        public async Task<IActionResult> DeleteProduct([FromRoute] int id)
+        {
+            try
+            {
+                var result = await _productService.DeleteProductAsync(id);
+
+                if (!result.Success)
+                {
+                    return NotFound(result); // O BadRequest(result) según prefieras
+                }
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    Error = ex.Message,
+                    InnerError = ex.InnerException?.Message,
+                    Stack = ex.StackTrace
+                });
+            }
+        }
+
+        [Authorize]
+        [HttpPatch("update/{id:int}")]
+        public async Task<IActionResult> UpdateProduct([FromRoute] int id, [FromBody] UpdateProductRequestDto request)
+        {
+            try
+            {
+                var result = await _productService.UpdateProductAsync(id, request);
+
+                if (!result.Success)
+                {
+                    return NotFound(result);
+                }
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
                 {
                     Error = ex.Message,
                     InnerError = ex.InnerException?.Message,

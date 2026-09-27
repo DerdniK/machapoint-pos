@@ -60,5 +60,29 @@ namespace ServicioSales.Controller
             }
         }
 
+        [Authorize]
+        [HttpGet("by-shift")]
+        public async Task<IActionResult> GetSalesByShift([FromQuery] int shiftId)
+        {
+            try
+            {
+                var sales = await _saleService.GetSalesByShiftAsync(shiftId);
+                return Ok(new
+                {
+                    success = true,
+                    totalSales = sales.Count,
+                    data = sales
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    message = "Ocurrió un error al obtener las ventas del turno.",
+                    detail = ex.Message
+                });
+            }
+        }
+
     }
 }

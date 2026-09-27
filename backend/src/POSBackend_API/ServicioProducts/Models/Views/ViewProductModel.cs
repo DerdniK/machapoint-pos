@@ -16,5 +16,9 @@ namespace ServicioProducts.Models.Views
         public double Price {get; set;}
         [Column("imageurl")]
         public string ImageURL {get; set;}
+        [Column("typeid")]
+        public int Typeid { get; set; }
+        [Column("typename")]
+        public string Typename { get; set; }
     }
 }
