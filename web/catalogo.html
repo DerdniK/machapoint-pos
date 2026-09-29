@@ -4,6 +4,9 @@
 <!DOCTYPE html>
 <html lang="es">
 
+<link rel="stylesheet" href="styles/role.css">
+<script src="js/role.js"></script>
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -34,7 +37,7 @@
 
         <section class="form-section">
             <h2>Agregar Nuevo Producto</h2>
-            <form id="form-crear-producto">
+            <form id="form-crear-producto" data-role="admin">
                 
                 <div class="form-group">
                     <label for="prod-name">Nombre</label>
@@ -77,6 +80,10 @@
 
         <div class="contenido">
             <h2>Inventario de productos</h2>
+
+            <div class="buscador-container">
+                <input type="search" id="buscador" placeholder="Buscar por nombre o SKU..." autocomplete="off" aria-label="Buscar productos">
+            </div>
 
             <div id="mensaje"></div>
 
