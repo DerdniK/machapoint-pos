@@ -1,0 +1,446 @@
+/* =========================================================
+MachaPoint POS — Hoja de Estilos Global (global.css)
+
+Descripción:
+Este archivo centraliza los estilos fundamentales y recurrentes
+de la aplicación POS. Sirve como única fuente de verdad para
+mantener la consistencia visual y estandarizar la interfaz.
+NINGÚN otro archivo debe declarar valores "crudos" si ya existen aquí.
+
+Contenido:
+
+DESIGN TOKENS (Variables root)
+
+Colores (Marca, Superficies, Texto, Líneas, Estados)
+
+Tipografía, Radios y Sombras
+
+Layout, Espaciado y Transiciones
+
+RESET & BASE
+
+Configuración general del body, html y tipografía base
+
+ACCESIBILIDAD
+
+Focus visible y reducción de animaciones (prefers-reduced-motion)
+
+COMPONENTES COMPARTIDOS (Prefijo 'mp-')
+
+Layout: Header y Barra de Navegación (.mp-header)
+
+Contenedores: Tarjetas (.mp-card)
+
+Controles: Botones (.mp-btn) y Formularios (.mp-field)
+
+Indicadores: Badges / Píldoras de estado (.mp-badge)
+
+Alertas: Toasts flotantes y Mensajes en línea (.mp-toast)
+
+Móvil: Menú Hamburguesa (.mp-hamburger)
+========================================================= */
+
+/* =========================================================
+
+DESIGN TOKENS
+========================================================= */
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
+:root {
+/* ---- Color / Marca ---- */
+--color-primary: #f5a623;
+--color-primary-dark: #d9880a;
+
+/* ---- Color / Superficies ---- /
+--color-cream: #fff8ec;      / fondo general de página /
+--color-surface: #f8f6f0;    / fondo de inputs / bloques secundarios /
+--color-white: #ffffff;      / tarjetas */
+
+/* ---- Color / Texto ---- /
+--color-ink: #2b2118;        / texto principal /
+--color-ink-soft: #6b5f52;   / texto secundario /
+--color-ink-muted: #8c7f70;  / texto deshabilitado / terciario */
+
+/* ---- Color / Líneas ---- */
+--color-line: #e2d9c8;
+--color-line-light: #eee7da;
+
+/* ---- Color / Estado ---- /
+--color-mint: #7fc8a9;
+--color-mint-dark: #27ae60;  / éxito /
+--color-blush: #f7d9d9;
+--color-error: #c0392b;      / error /
+--color-warning: #996c00;    / usado en "sobrante" de cortes de caja */
+--color-warning-bg: #fff8e1;
+
+/* ---- Tipografía ---- /
+--font-display: "Inter", sans-serif; / títulos, precios, cifras clave /
+--font-body: "Inter", sans-serif;    / texto general, formularios */
+
+/* ---- Radios ---- /
+--radius-lg: 20px;   / tarjetas grandes / secciones /
+--radius-md: 12px;   / inputs, botones, sub-bloques /
+--radius-sm: 8px;    / controles pequeños (steppers, chips) /
+--radius-pill: 999px; / badges/estado tipo píldora */
+
+/* ---- Sombras ---- */
+--shadow-sm: 0 4px 12px rgba(43, 33, 24, 0.04);
+--shadow-md: 0 8px 24px rgba(43, 33, 24, 0.08);
+
+/* ---- Layout ---- */
+--header-height: 65px;
+--container-max: 1200px;
+
+/* ---- Espaciado (escala 4px) ---- */
+--space-1: 4px;
+--space-2: 8px;
+--space-3: 12px;
+--space-4: 16px;
+--space-5: 20px;
+--space-6: 24px;
+--space-8: 32px;
+
+/* ---- Transiciones ---- */
+--transition-fast: 0.2s ease;
+--transition-base: 0.3s ease;
+}
+
+/* =========================================================
+2. RESET & BASE
+========================================================= */
+
+* {
+box-sizing: border-box;
+}
+
+html {
+scroll-behavior: smooth;
+}
+
+body {
+margin: 0;
+min-height: 100vh;
+background: var(--color-cream);
+font-family: var(--font-body);
+font-optical-sizing: auto; /* Ayuda a que la fuente variable se ajuste ópticamente */
+color: var(--color-ink);
+-webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+font-family: var(--font-display);
+margin: 0;
+color: var(--color-ink);
+}
+
+a {
+color: inherit;
+}
+
+button {
+font-family: var(--font-body);
+}
+
+/* =========================================================
+3. ACCESIBILIDAD
+========================================================= */
+:focus-visible {
+outline: 3px solid var(--color-primary);
+outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+* {
+scroll-behavior: auto !important;
+transition: none !important;
+animation: none !important;
+}
+}
+
+/* =========================================================
+4. COMPONENTES COMPARTIDOS
+Clases con prefijo mp- para evitar colisiones.
+========================================================= */
+
+/* --- HEADER / NAVBAR --- */
+.mp-header {
+position: fixed;
+top: 0;
+left: 0;
+width: 100%;
+height: var(--header-height);
+padding: 0 30px;
+background: linear-gradient(160deg, var(--color-primary), var(--color-primary-dark));
+display: flex;
+align-items: center;
+justify-content: space-between;
+box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+z-index: 1000;
+}
+
+.mp-header h1 {
+color: var(--color-white);
+font-family: var(--font-display);
+font-size: 1.8rem;
+font-weight: 800;
+letter-spacing: 0.5px;
+}
+
+.mp-header nav,
+.mp-header ul {
+display: flex;
+align-items: center;
+gap: 10px;
+margin: 0;
+padding: 0;
+list-style: none;
+}
+
+.mp-header a {
+display: inline-block;
+padding: 9px 16px;
+color: var(--color-white);
+text-decoration: none;
+font-weight: 600;
+font-size: 0.95rem;
+border-radius: 10px;
+transition: background var(--transition-fast), transform var(--transition-fast);
+}
+
+.mp-header a:hover {
+background: rgba(255, 255, 255, 0.2);
+transform: translateY(-1px);
+}
+
+.mp-header a.activo,
+.mp-header a[aria-current="page"] {
+background: rgba(255, 255, 255, 0.28);
+}
+
+/* Espaciador para compensar el header fijo */
+.mp-content-offset {
+margin-top: calc(var(--header-height) + 30px);
+}
+
+/* --- TARJETA (CARD) --- */
+.mp-card {
+background: var(--color-white);
+border: 2px solid var(--color-line);
+border-radius: var(--radius-lg);
+box-shadow: var(--shadow-sm);
+padding: var(--space-8);
+}
+
+.mp-card__title {
+margin: 0 0 var(--space-6);
+font-size: 1.5rem;
+border-bottom: 3px solid var(--color-primary);
+padding-bottom: 6px;
+display: inline-block;
+}
+
+/* --- BOTONES --- */
+.mp-btn {
+display: inline-flex;
+align-items: center;
+justify-content: center;
+gap: var(--space-2);
+border: none;
+border-radius: var(--radius-md);
+padding: 12px 20px;
+font-family: var(--font-body);
+font-size: 0.95rem;
+font-weight: 700;
+cursor: pointer;
+transition: background var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.mp-btn:disabled {
+opacity: 0.45;
+cursor: not-allowed;
+transform: none !important;
+box-shadow: none !important;
+}
+
+.mp-btn--primary {
+background: var(--color-primary);
+color: var(--color-ink);
+}
+.mp-btn--primary:hover:not(:disabled) {
+background: var(--color-primary-dark);
+color: var(--color-white);
+transform: translateY(-2px);
+}
+
+.mp-btn--dark {
+background: var(--color-ink);
+color: var(--color-white);
+box-shadow: var(--shadow-sm);
+}
+.mp-btn--dark:hover:not(:disabled) {
+background: var(--color-primary-dark);
+transform: translateY(-2px);
+box-shadow: var(--shadow-md);
+}
+
+.mp-btn--danger {
+background: var(--color-error);
+color: var(--color-white);
+}
+.mp-btn--danger:hover:not(:disabled) {
+background: #a5311f;
+}
+
+.mp-btn--icon {
+width: 32px;
+height: 32px;
+padding: 0;
+border: 1px solid var(--color-line);
+border-radius: var(--radius-sm);
+background: var(--color-white);
+color: var(--color-ink);
+font-size: 1.1rem;
+line-height: 1;
+}
+.mp-btn--icon:hover:not(:disabled) {
+background: var(--color-primary);
+border-color: var(--color-primary-dark);
+}
+.mp-btn--icon:active:not(:disabled) {
+transform: scale(0.95);
+}
+
+.mp-btn--block {
+width: 100%;
+}
+
+/* --- FORMULARIOS --- */
+.mp-field {
+display: flex;
+flex-direction: column;
+gap: 6px;
+}
+
+.mp-field label {
+font-size: 0.85rem;
+font-weight: 700;
+color: var(--color-ink-soft);
+}
+
+.mp-field input,
+.mp-field select,
+.mp-field textarea,
+.mp-input {
+width: 100%;
+padding: 12px 14px;
+border: 1px solid var(--color-line);
+border-radius: var(--radius-md);
+font-family: var(--font-body);
+font-size: 0.95rem;
+background: var(--color-surface);
+color: var(--color-ink);
+outline: none;
+transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.mp-field input:focus,
+.mp-field select:focus,
+.mp-field textarea:focus,
+.mp-input:focus {
+border-color: var(--color-primary-dark);
+background: var(--color-white);
+box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.2);
+}
+
+.mp-field select {
+cursor: pointer;
+appearance: none;
+background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%232b2118%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+background-repeat: no-repeat;
+background-position: right 15px top 50%;
+background-size: 10px auto;
+padding-right: 35px;
+}
+
+/* --- BADGE / ESTADO (píldora) --- */
+.mp-badge {
+display: inline-block;
+padding: 8px 15px;
+border-radius: var(--radius-pill);
+font-size: 0.85rem;
+font-weight: 700;
+background: var(--color-surface);
+color: var(--color-ink-soft);
+}
+.mp-badge--success { background: #e8f7ee; color: var(--color-mint-dark); }
+.mp-badge--error   { background: var(--color-blush); color: var(--color-error); }
+.mp-badge--warning { background: var(--color-warning-bg); color: var(--color-warning); }
+
+/* --- MENSAJES Y TOASTS --- */
+.mp-toast {
+visibility: hidden;
+position: fixed;
+z-index: 10000;
+left: 50%;
+bottom: 30px;
+min-width: 280px;
+max-width: 90%;
+background: var(--color-ink);
+color: var(--color-white);
+text-align: center;
+border-radius: var(--radius-md);
+padding: 16px 20px;
+font-size: 1rem;
+font-weight: 600;
+box-shadow: var(--shadow-md);
+transform: translateX(-50%) translateY(100px);
+opacity: 0;
+transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+opacity var(--transition-base), visibility var(--transition-base);
+}
+.mp-toast.show {
+visibility: visible;
+opacity: 1;
+transform: translateX(-50%) translateY(0);
+}
+.mp-toast.error      { background: var(--color-error); }
+.mp-toast.success    { background: var(--color-mint-dark); }
+.mp-toast.processing { background: var(--color-primary); color: var(--color-ink); }
+
+/* Mensaje inline (no flotante) */
+.mp-inline-msg {
+text-align: center;
+font-size: 0.9rem;
+font-weight: 600;
+color: var(--color-ink-soft);
+padding: 14px 18px;
+border-radius: var(--radius-md);
+background: var(--color-surface);
+}
+.mp-inline-msg--success { background: #e8f7ee; color: var(--color-mint-dark); }
+.mp-inline-msg--error   { background: var(--color-blush); color: var(--color-error); }
+
+/* --- MENÚ HAMBURGUESA (MÓVIL) --- */
+.mp-hamburger {
+display: none;
+flex-direction: column;
+justify-content: center;
+gap: 5px;
+width: 40px;
+height: 40px;
+padding: 8px;
+cursor: pointer;
+border-radius: 8px;
+}
+.mp-hamburger .bar {
+width: 25px;
+height: 3px;
+background: var(--color-white);
+border-radius: 5px;
+transition: all var(--transition-base);
+}
+
+@media (max-width: 768px) {
+.mp-hamburger { display: flex; }
+}

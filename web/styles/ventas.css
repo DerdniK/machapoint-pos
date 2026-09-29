@@ -1,583 +1,434 @@
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
+/* =========================================================
+   MachaPoint POS — Ventas
+   Carga: 00-tokens.css → 01-base.css → 02-components.css → ventas.css
+   Antes este archivo usaba Arial y una paleta gris/azul
+   independiente. Se migró a los tokens de marca para que
+   coincida visualmente con carrito/catálogo/usuarios.
+   Si el gris "neutral" era intencional (p.ej. para diferenciar
+   el módulo de ventas), dímelo y lo revertimos solo a él.
+   ========================================================= */
+@import url('global.css');
 
-body {
-    font-family: Arial, Helvetica, sans-serif;
-    background: #f4f6f8;
-    color: #222;
-}
-
-
-/* =========================
+/* =========================================================
    NAVBAR
-========================= */
-
+   ========================================================= */
 .navbar {
-    height: 70px;
-    background: #ffffff;
-    border-bottom: 1px solid #ddd;
-
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-
-    padding: 0 40px;
+  height: var(--header-height);
+  background: linear-gradient(160deg, var(--color-primary), var(--color-primary-dark));
+  border-bottom: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 40px;
 }
-
 .navbar-logo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-
-    font-size: 20px;
-    font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--color-white);
 }
-
 .navbar-logo img {
-    width: 42px;
-    height: 42px;
-    object-fit: contain;
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
 }
-
 .navbar nav {
-    display: flex;
-    gap: 25px;
+  display: flex;
+  gap: var(--space-5);
 }
-
 .navbar nav a {
-    color: #555;
-    text-decoration: none;
-    font-size: 15px;
+  color: var(--color-white);
+  text-decoration: none;
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 9px 16px;
+  border-radius: 10px;
+  transition: background var(--transition-fast);
 }
-
 .navbar nav a:hover {
-    color: #000;
+  background: rgba(255, 255, 255, 0.2);
 }
-
 .navbar nav a.activo {
-    color: #000;
-    font-weight: bold;
+  background: rgba(255, 255, 255, 0.28);
+  font-weight: 700;
 }
 
-
-/* =========================
+/* =========================================================
    CONTENEDOR
-========================= */
-
+   ========================================================= */
 .contenedor {
-    width: 90%;
-    max-width: 1100px;
-    margin: 35px auto 60px;
+  width: 90%;
+  max-width: var(--container-max);
+  margin: 35px auto 60px;
 }
 
-
-/* =========================
+/* =========================================================
    ENCABEZADO
-========================= */
-
+   ========================================================= */
 .encabezado {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-
-    margin-bottom: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-6);
 }
-
 .encabezado h1 {
-    font-size: 30px;
-    margin-bottom: 6px;
+  font-size: 1.9rem;
+  margin-bottom: 6px;
 }
-
 .encabezado p {
-    color: #777;
+  color: var(--color-ink-soft);
 }
 
-
-/* =========================
-   ESTADO
-========================= */
-
+/* =========================================================
+   ESTADO (badge)
+   ========================================================= */
 .estado {
-    padding: 10px 16px;
-    border-radius: 20px;
-
-    font-size: 14px;
-    font-weight: bold;
+  padding: 8px 15px;
+  border-radius: var(--radius-pill);
+  font-size: 0.85rem;
+  font-weight: 700;
 }
-
 .estado.abierto {
-    background: #e8f7ee;
-    color: #198754;
+  background: #e8f7ee;
+  color: var(--color-mint-dark);
 }
-
 .estado.cerrado {
-    background: #f1f1f1;
-    color: #666;
+  background: var(--color-surface);
+  color: var(--color-ink-muted);
 }
 
-
-/* =========================
+/* =========================================================
    TARJETAS
-========================= */
-
+   ========================================================= */
 .tarjeta {
-    background: white;
-
-    border-radius: 12px;
-
-    padding: 28px;
-
-    margin-bottom: 25px;
-
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  background: var(--color-white);
+  border: 2px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  padding: var(--space-8);
+  margin-bottom: var(--space-6);
+  box-shadow: var(--shadow-sm);
 }
-
 .tarjeta-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-
-    margin-bottom: 25px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-6);
 }
-
 .tarjeta-header h2 {
-    font-size: 21px;
-    margin-bottom: 5px;
+  font-size: 1.3rem;
+  margin-bottom: 5px;
+  border-bottom: 3px solid var(--color-primary);
+  padding-bottom: 4px;
+  display: inline-block;
 }
-
 .tarjeta-header span {
-    color: #888;
-    font-size: 14px;
+  color: var(--color-ink-soft);
+  font-size: 0.9rem;
 }
 
-
-/* =========================
+/* =========================================================
    FORMULARIO
-========================= */
-
+   ========================================================= */
 .formulario {
-    display: grid;
-
-    grid-template-columns: repeat(2, 1fr);
-
-    gap: 20px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-5);
 }
-
 .campo {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
 }
-
 .campo-completo {
-    grid-column: 1 / -1;
+  grid-column: 1 / -1;
 }
-
 .campo label {
-    font-size: 14px;
-    font-weight: bold;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-ink-soft);
 }
-
 .campo small {
-    color: #888;
-    font-size: 12px;
+  color: var(--color-ink-muted);
+  font-size: 0.75rem;
 }
 
 select,
 input,
 textarea {
-    width: 100%;
-
-    padding: 12px;
-
-    border: 1px solid #ccc;
-    border-radius: 7px;
-
-    font-size: 15px;
-
-    background: white;
-
-    outline: none;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  outline: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
-
 select:focus,
 input:focus,
 textarea:focus {
-    border-color: #555;
+  border-color: var(--color-primary-dark);
+  background: var(--color-white);
+  box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.2);
 }
-
 textarea {
-    resize: vertical;
+  resize: vertical;
 }
 
-
-/* =========================
+/* =========================================================
    MONEDA
-========================= */
-
+   ========================================================= */
 .input-moneda {
-    display: flex;
-    align-items: center;
-
-    border: 1px solid #ccc;
-    border-radius: 7px;
-
-    overflow: hidden;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--color-surface);
 }
-
 .input-moneda span {
-    padding-left: 12px;
-
-    color: #666;
-
-    font-weight: bold;
+  padding-left: 12px;
+  color: var(--color-ink-soft);
+  font-weight: 700;
 }
-
 .input-moneda input {
-    border: none;
+  border: none;
+  background: transparent;
 }
 
-
-/* =========================
+/* =========================================================
    BOTONES
-========================= */
-
+   ========================================================= */
 .acciones {
-    display: flex;
-    justify-content: flex-end;
-
-    margin-top: 25px;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-6);
 }
-
 .btn {
-    border: none;
-
-    padding: 12px 22px;
-
-    border-radius: 7px;
-
-    font-size: 14px;
-    font-weight: bold;
-
-    cursor: pointer;
-
-    transition: 0.2s;
+  border: none;
+  padding: 12px 22px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
 }
-
 .btn:hover {
-    transform: translateY(-1px);
+  transform: translateY(-2px);
 }
-
 .btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
 }
-
 .btn-principal {
-    background: #222;
-    color: white;
+  background: var(--color-ink);
+  color: var(--color-white);
+  box-shadow: var(--shadow-sm);
 }
-
 .btn-principal:hover {
-    background: #000;
+  background: var(--color-primary-dark);
+  box-shadow: var(--shadow-md);
 }
-
 .btn-danger {
-    background: #dc3545;
-    color: white;
+  background: var(--color-error);
+  color: var(--color-white);
 }
-
 .btn-danger:hover {
-    background: #bb2d3b;
+  background: #a5311f;
 }
 
-
-/* =========================
-   RESUMEN TURNO
-========================= */
-
+/* =========================================================
+   RESUMEN DE TURNO
+   ========================================================= */
 .resumen-grid {
-    display: grid;
-
-    grid-template-columns: repeat(4, 1fr);
-
-    gap: 15px;
-
-    margin-bottom: 25px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
 }
-
 .resumen-item {
-    background: #f7f7f7;
-
-    border-radius: 8px;
-
-    padding: 18px;
+  background: var(--color-surface);
+  border-radius: var(--radius-sm);
+  padding: var(--space-5);
 }
-
 .resumen-item span {
-    display: block;
-
-    color: #777;
-
-    font-size: 13px;
-
-    margin-bottom: 8px;
+  display: block;
+  color: var(--color-ink-soft);
+  font-size: 0.8rem;
+  margin-bottom: var(--space-2);
 }
-
 .resumen-item strong {
-    font-size: 17px;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
 }
-
 .texto-verde {
-    color: #198754;
+  color: var(--color-mint-dark);
 }
 
-
-/* =========================
+/* =========================================================
    AVISO
-========================= */
-
+   ========================================================= */
 .aviso {
-    background: #f5f5f5;
-
-    border-left: 4px solid #555;
-
-    padding: 15px 18px;
-
-    border-radius: 5px;
+  background: var(--color-surface);
+  border-left: 4px solid var(--color-ink-soft);
+  padding: 15px 18px;
+  border-radius: 5px;
 }
-
 .aviso strong {
-    display: block;
-    margin-bottom: 5px;
+  display: block;
+  margin-bottom: 5px;
 }
-
 .aviso p {
-    color: #666;
-    font-size: 14px;
+  color: var(--color-ink-soft);
+  font-size: 0.9rem;
 }
 
-
-/* =========================
+/* =========================================================
    SEPARADOR
-========================= */
-
+   ========================================================= */
 .separador {
-    height: 1px;
-
-    background: #eee;
-
-    margin: 30px 0;
+  height: 1px;
+  background: var(--color-line-light);
+  margin: 30px 0;
 }
 
-
-/* =========================
-   CORTE
-========================= */
-
+/* =========================================================
+   CORTE DE CAJA
+   ========================================================= */
 .corte-grid {
-    display: grid;
-
-    grid-template-columns: repeat(3, 1fr);
-
-    gap: 15px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4);
 }
-
 .corte-item {
-    background: #f7f7f7;
-
-    border-radius: 8px;
-
-    padding: 18px;
+  background: var(--color-surface);
+  border-radius: var(--radius-sm);
+  padding: var(--space-5);
 }
-
 .corte-item span {
-    display: block;
-
-    color: #777;
-
-    font-size: 13px;
-
-    margin-bottom: 8px;
+  display: block;
+  color: var(--color-ink-soft);
+  font-size: 0.8rem;
+  margin-bottom: var(--space-2);
 }
-
 .corte-item strong {
-    font-size: 17px;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
 }
-
 .corte-item.diferencia {
-    background: #fafafa;
+  background: var(--color-line-light);
 }
 
-
-/* =========================
-   RESULTADO CORTE
-========================= */
-
+/* =========================================================
+   RESULTADO DEL CORTE
+   ========================================================= */
 .resultado-corte {
-    margin-top: 25px;
-
-    padding: 18px;
-
-    border-radius: 8px;
-
-    text-align: center;
-
-    font-size: 18px;
-    font-weight: bold;
-
-    background: #f1f1f1;
+  margin-top: var(--space-6);
+  padding: var(--space-5);
+  border-radius: var(--radius-md);
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 800;
+  background: var(--color-surface);
 }
-
 .resultado-corte.correcto {
-    background: #e8f7ee;
-    color: #198754;
+  background: #e8f7ee;
+  color: var(--color-mint-dark);
 }
-
 .resultado-corte.faltante {
-    background: #fff0f0;
-    color: #dc3545;
+  background: var(--color-blush);
+  color: var(--color-error);
 }
-
 .resultado-corte.sobrante {
-    background: #fff8e1;
-    color: #996c00;
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
 }
 
-
-/* =========================
+/* =========================================================
    OBSERVACIONES
-========================= */
-
+   ========================================================= */
 .observaciones-corte {
-    margin-top: 20px;
-
-    padding-top: 20px;
-
-    border-top: 1px solid #eee;
+  margin-top: var(--space-5);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--color-line-light);
 }
-
 .observaciones-corte span {
-    font-size: 13px;
-    font-weight: bold;
+  font-size: 0.8rem;
+  font-weight: 700;
 }
-
 .observaciones-corte p {
-    margin-top: 8px;
-
-    color: #666;
-
-    font-size: 14px;
+  margin-top: var(--space-2);
+  color: var(--color-ink-soft);
+  font-size: 0.9rem;
 }
 
-
-/* =========================
+/* =========================================================
    MENSAJES
-========================= */
-
+   ========================================================= */
 .mensaje {
-    padding: 14px 18px;
-
-    border-radius: 7px;
-
-    margin-bottom: 20px;
-
-    background: #eeeeee;
-
-    font-size: 14px;
+  padding: 14px 18px;
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-5);
+  background: var(--color-surface);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-ink-soft);
 }
-
 .mensaje.exito {
-    background: #e8f7ee;
-    color: #198754;
+  background: #e8f7ee;
+  color: var(--color-mint-dark);
 }
-
 .mensaje.error {
-    background: #fff0f0;
-    color: #dc3545;
+  background: var(--color-blush);
+  color: var(--color-error);
 }
-
 .mensaje.info {
-    background: #eeeeee;
-    color: #555;
+  background: var(--color-surface);
+  color: var(--color-ink-soft);
 }
 
-
-/* =========================
+/* =========================================================
    UTILIDADES
-========================= */
-
+   ========================================================= */
 .oculto {
-    display: none !important;
+  display: none !important;
 }
 
-
-/* =========================
-   RESPONSIVE
-========================= */
-
+/* =========================================================
+   RESPONSIVO
+   ========================================================= */
 @media (max-width: 800px) {
-
-    .navbar {
-        padding: 0 20px;
-    }
-
-    .navbar nav {
-        gap: 12px;
-    }
-
-    .contenedor {
-        width: 94%;
-    }
-
-    .formulario {
-        grid-template-columns: 1fr;
-    }
-
-    .resumen-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    .corte-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
+  .navbar { padding: 0 20px; }
+  .navbar nav { gap: 12px; }
+  .contenedor { width: 94%; }
+  .formulario { grid-template-columns: 1fr; }
+  .resumen-grid { grid-template-columns: repeat(2, 1fr); }
+  .corte-grid { grid-template-columns: repeat(2, 1fr); }
 }
-
 
 @media (max-width: 500px) {
-
-    .encabezado {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 15px;
-    }
-
-    .navbar {
-        height: auto;
-
-        padding: 15px;
-
-        flex-direction: column;
-
-        gap: 15px;
-    }
-
-    .resumen-grid,
-    .corte-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .acciones {
-        justify-content: stretch;
-    }
-
-    .btn {
-        width: 100%;
-    }
-
+  .encabezado {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-4);
+  }
+  .navbar {
+    height: auto;
+    padding: 15px;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+  .resumen-grid,
+  .corte-grid {
+    grid-template-columns: 1fr;
+  }
+  .acciones { justify-content: stretch; }
+  .btn { width: 100%; }
 }

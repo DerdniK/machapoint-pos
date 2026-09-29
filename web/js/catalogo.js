@@ -1,10 +1,10 @@
 
 const API_URL ='https://4upkj2tafvod2ubwcsbnagviyu0feljy.lambda-url.us-east-1.on.aws';
-// const API_URL ='http://localhost:8081';
-
 const productosContainer = document.getElementById('productos');
 const mensaje = document.getElementById('mensaje');
 
+const buscador = document.getElementById('buscador');
+let terminoBusqueda = '';
 // Nota: Actualmente se guarda el carrito en localStorage, pero se recomienda cambiarlo a backend para persistencia y seguridad
 // Guardamos temporalmente los productos recibidos de la API 
 let productosActuales = []; 
@@ -23,6 +23,42 @@ function mostrarMensajeGeneral(texto, tipo = 'info') {
     if (!mensaje) return;
     mensaje.textContent = texto;
     mensaje.style.color = tipo === 'error' ? '#d9534f' : (tipo === 'exito' ? '#2e7d32' : '#333');
+}
+
+// buscador 
+
+
+function normalizar(texto) {
+    return String(texto ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+
+function aplicarFiltro() {
+    const termino = normalizar(terminoBusqueda);
+    const filtrados = termino
+        ? productosActuales.filter(p =>
+            normalizar(p.name).includes(termino) || normalizar(p.sku).includes(termino))
+        : productosActuales;
+
+    if (termino && filtrados.length === 0) {
+        productosContainer.innerHTML = '';
+        mostrarMensajeGeneral(`No se encontraron productos para "${terminoBusqueda.trim()}".`);
+        return;
+    }
+    mostrarProductos(filtrados);
+}
+
+if (buscador) {
+    buscador.addEventListener('input', () => {
+        terminoBusqueda = buscador.value;
+        aplicarFiltro();
+    });
+    buscador.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            buscador.value = '';
+            terminoBusqueda = '';
+            aplicarFiltro();
+        }
+    });
 }
 
 // Validaciones de producto
@@ -72,8 +108,8 @@ async function cargarProductos() {
 
     try {
         mensaje.textContent = 'Cargando productos...';
-
         const response = await fetch(API_URL + "/api/products/product/get", {
+        // const response = await fetch(API_URL + "/api/products/product/get", {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -112,7 +148,8 @@ async function cargarProductos() {
         productosActuales = lista; // Guardar los productos cargados
         console.log("Se guardo con exito la siguiente lista:", productosActuales);
 
-        mostrarProductos(lista);
+        // mostrarProductos(lista);    
+        aplicarFiltro();   // respeta el texto del buscador al recargar la lista
 
     } catch (err) {
         console.error("Error en fetch:", err);
@@ -141,18 +178,19 @@ function mostrarProductos(productos) {
 
         article.innerHTML = `
             <img 
-                src="/img/product.jpg" 
+                src="${producto.imageURL || '/img/product.jpg'}" 
                 alt="${producto.name}"
                 class="producto-imagen"
+                onerror="this.src='/img/product.jpg'"
             >
 
             <div class="producto-info">
                 <h3>${producto.name}</h3>
                 <p class="producto-precio"> $${Number(producto.price).toFixed(2)} </p>
                 <p> SKU: ${producto.sku} </p>
-                <p> Tipo: ${producto.typeid} </p>
+                <p> Tipo: ${producto.type?.typeName ?? 'Sin tipo'} </p>
 
-                <button class="boton-agregar" data-id="${producto.productId}" > 
+                <button class="boton-agregar" data-id="${producto.productid}" > 
                     Agregar al carrito 
                 </button>
 
@@ -173,13 +211,13 @@ function agregarEventosBotones() {
     botones.forEach(boton => {
 
         boton.addEventListener('click', () => {
-            const productId = boton.dataset.id;
+            const productid = boton.dataset.id;
             // console.log('Producto agregado:', productId);
             const producto = productosActuales.find( 
-                p => String(p.productId) === String(productId)
+                p => String(p.productid) === String(productid)
             );
             if (!producto) { 
-                console.error("No se encontró el producto:", productId); return; 
+                console.error("No se encontró el producto:", productid); return; 
                 } 
             agregarAlCarrito(producto);
         });
@@ -192,7 +230,7 @@ function agregarAlCarrito(producto) {
 
     // agregar unicamente la infomación necesaria del producto al carrito
     const productoCarrito = {
-        id: producto.productId,
+        id: producto.type?.typeid,
         name: producto.name,
         sku: producto.sku,
         price: producto.price,
@@ -289,7 +327,7 @@ if (formCrear) {
             SKU: skuVal,
             Price: priceVal,
             TypeId: typeIdVal,
-            ImageUrl: imgVal
+            ImageURL: imgVal
         };
 
         try {
