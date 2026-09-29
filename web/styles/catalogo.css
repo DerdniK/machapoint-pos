@@ -56,6 +56,7 @@
    FORMULARIO AGREGAR PRODUCTO
    ========================================================= */
 .form-section {
+  /* display: none; oculta formulario por defecto */
   width: 90%;
   max-width: var(--container-max);
   margin: 90px auto 30px;

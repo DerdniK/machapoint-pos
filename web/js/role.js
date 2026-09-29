@@ -1,14 +1,11 @@
 /* ==========================================================================
    auth.js - Sesión, roles y cierre de sesión (MachaPoint)
    Cargar en el <head>, ANTES de los demás scripts de la página:
-
      <script src="js/auth.js"></script>                       -> exige sesión
      <script src="js/auth.js" data-require="admin"></script>  -> exige sesión + admin
    - Redirige a index.html si no hay token o ya expiró.
    - En páginas con data-require="admin", manda a catalogo.html a quien no sea admin.
-   - Elimina del DOM todo elemento con data-role="admin" (y los links a usuarios.html)
-     cuando el usuario no es admin.
-   - Inyecta "usuario (rol)" + botón "Cerrar sesión" en nav / header.
+   - Elimina del DOM todo elemento con data-role="admin" cuando el usuario no es admin.
    - Expone window.Auth para el resto de scripts.
    ========================================================================== */
 (function () {
@@ -20,11 +17,9 @@
     const LOGIN_PAGE = 'index.html';
     const HOME_PAGE = 'catalogo.html';
 
-    // AJUSTAR SI HACE FALTA: valores de rol que cuentan como administrador.
     // Según usuarios.html: roleid 1 = Administrador, 2 = Usuario estándar.
     const ADMIN_ROLES = ['1', 'admin', 'Admin', 'administrator'];
 
-    // Nombres de claim / propiedad donde puede venir el rol.
     const ROLE_KEYS = ['roleid', 'roleId', 'Roleid', 'RoleId',];
 
     const script = document.currentScript;
