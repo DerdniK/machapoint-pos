@@ -4,3 +4,5 @@ CREATE TABLE inventory (
     stock INT NOT NULL DEFAULT 0 CHECK (stock >= 0),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+Alter table inventory alter column stock set default 500;
