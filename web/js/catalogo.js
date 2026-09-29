@@ -72,7 +72,7 @@ async function cargarProductos() {
 
     try {
         mensaje.textContent = 'Cargando productos...';
-        const response = await fetch(API_URL + "/api/products/product", {
+        const response = await fetch(API_URL + "/api/products/product/get", {
         // const response = await fetch(API_URL + "/api/products/product/get", {
             method: 'GET',
             headers: {
