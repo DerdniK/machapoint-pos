@@ -1,10 +1,10 @@
 
 const API_URL ='https://4upkj2tafvod2ubwcsbnagviyu0feljy.lambda-url.us-east-1.on.aws';
-// const API_URL ='http://localhost:8081';
-
 const productosContainer = document.getElementById('productos');
 const mensaje = document.getElementById('mensaje');
 
+const buscador = document.getElementById('buscador');
+let terminoBusqueda = '';
 // Nota: Actualmente se guarda el carrito en localStorage, pero se recomienda cambiarlo a backend para persistencia y seguridad
 // Guardamos temporalmente los productos recibidos de la API 
 let productosActuales = []; 
@@ -23,6 +23,42 @@ function mostrarMensajeGeneral(texto, tipo = 'info') {
     if (!mensaje) return;
     mensaje.textContent = texto;
     mensaje.style.color = tipo === 'error' ? '#d9534f' : (tipo === 'exito' ? '#2e7d32' : '#333');
+}
+
+// buscador 
+
+
+function normalizar(texto) {
+    return String(texto ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+
+function aplicarFiltro() {
+    const termino = normalizar(terminoBusqueda);
+    const filtrados = termino
+        ? productosActuales.filter(p =>
+            normalizar(p.name).includes(termino) || normalizar(p.sku).includes(termino))
+        : productosActuales;
+
+    if (termino && filtrados.length === 0) {
+        productosContainer.innerHTML = '';
+        mostrarMensajeGeneral(`No se encontraron productos para "${terminoBusqueda.trim()}".`);
+        return;
+    }
+    mostrarProductos(filtrados);
+}
+
+if (buscador) {
+    buscador.addEventListener('input', () => {
+        terminoBusqueda = buscador.value;
+        aplicarFiltro();
+    });
+    buscador.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            buscador.value = '';
+            terminoBusqueda = '';
+            aplicarFiltro();
+        }
+    });
 }
 
 // Validaciones de producto
@@ -112,7 +148,8 @@ async function cargarProductos() {
         productosActuales = lista; // Guardar los productos cargados
         console.log("Se guardo con exito la siguiente lista:", productosActuales);
 
-        mostrarProductos(lista);
+        // mostrarProductos(lista);    
+        aplicarFiltro();   // respeta el texto del buscador al recargar la lista
 
     } catch (err) {
         console.error("Error en fetch:", err);
@@ -327,4 +364,3 @@ if (formCrear) {
         }
     });
 }
-

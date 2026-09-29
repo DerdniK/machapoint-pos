@@ -228,11 +228,52 @@
   color: var(--color-primary-dark) !important;
 }
 
+/* BOTON CERRAR SESION */
+.mp-btn--danger,
+.btn-logout {
+  background: #ff0000;
+  color: var(--color-white);
+  padding: 20px 16px; 
+  border-radius: var(--radius-sm);
+  border: none;
+  font-size: 0.9rem;
+  box-shadow: var(--shadow-sm);
+  border-radius: 20%;
+}
+.mp-btn--danger:hover:not(:disabled),
+.btn-logout:hover:not(:disabled) {
+  background: #ff0000;  
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+ 
+/* --- BUSCADOR --- */
+.mp-buscador-container {
+margin: 0 0 var(--space-4);
+}
+
+.mp-buscador-container input {
+width: 100%;
+max-width: 420px;
+padding: 10px 14px;
+border: 1px solid var(--color-line);
+border-radius: var(--radius-sm);
+font-size: 1rem;
+font-family: var(--font-body);
+background: var(--color-white);
+color: var(--color-ink);
+outline: none;
+transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+/* Detalles de contorno naranjas al hacer focus */
+.mp-buscador-container input:focus {
+border-color: var(--color-primary);
+box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.25);
+}
+
 /* =========================================================
    BOTÓN AGREGAR
-   NOTA: este .btn-agregar es un botón ANCHO de "agregar al
-   carrito" — distinto del .btn-agregar cuadrado de carrito.css.
-   Mismo nombre, dos componentes. Ver README.
    ========================================================= */
 .btn-agregar,
 .boton-agregar {
@@ -241,12 +282,12 @@
   padding: 11px 15px;
   border: none;
   border-radius: var(--radius-md);
-  background: var(--color-ink);
-  color: var(--color-white);
+  background: var(--color-primary);
+  color: var(--color-ink);
   font-family: var(--font-body);
   font-size: 0.9rem;
   font-weight: 700;
-  cursor: pointer;
+  /* cursor: pointer; */
   transition: background var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
 }
 .btn-agregar:hover,
@@ -301,4 +342,6 @@
   #form-crear-producto {
     grid-template-columns: 1fr;
   }
+  
 }
+
