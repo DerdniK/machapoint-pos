@@ -272,7 +272,7 @@ async function abrirTurno() {
 
         localStorage.setItem(
             "cashierUsername",
-            usuarioActual.name
+            usuarioActual.username
         );
 
         localStorage.setItem(
@@ -824,9 +824,9 @@ function restaurarTurno() {
 
     const cashierName = localStorage.getItem("cashierUsername") || "Cajero";
 
-    const amount =
-        localStorage.getItem("openingAmount");
+    const amount = localStorage.getItem("openingAmount");
 
+    
 
     if (
         shiftId &&

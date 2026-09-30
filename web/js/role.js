@@ -1,12 +1,14 @@
 /* ==========================================================================
-   auth.js - Sesión, roles y cierre de sesión (MachaPoint)
+   role.js - Sesión, roles y cierre de sesión (MachaPoint)
    Cargar en el <head>, ANTES de los demás scripts de la página:
-     <script src="js/auth.js"></script>                       -> exige sesión
-     <script src="js/auth.js" data-require="admin"></script>  -> exige sesión + admin
+     <script src="js/role.js"></script>                       -> exige sesión
+     <script src="js/role.js" data-require="admin"></script>  -> exige sesión + admin
    - Redirige a index.html si no hay token o ya expiró.
    - En páginas con data-require="admin", manda a catalogo.html a quien no sea admin.
    - Elimina del DOM todo elemento con data-role="admin" cuando el usuario no es admin.
+   - Cerrar sesión: bloqueada mientras haya un turno abierto; si no borra TODOS los datos locales.
    - Expone window.Auth para el resto de scripts.
+   - Obtiene el usuario y rol del JWT o Login
    ========================================================================== */
 (function () {
     'use strict';
@@ -17,10 +19,11 @@
     const LOGIN_PAGE = 'index.html';
     const HOME_PAGE = 'catalogo.html';
 
-    // Según usuarios.html: roleid 1 = Administrador, 2 = Usuario estándar.
-    const ADMIN_ROLES = ['1', 'admin', 'Admin', 'administrator'];
+    // Claves del turno guardadas por ventas.js
+    const SHIFT_KEYS = ['shiftId', 'cashierId', 'cashierUsername', 'openingAmount'];
 
-    const ROLE_KEYS = ['roleid', 'roleId', 'Roleid', 'RoleId',];
+    // Según usuarios.html: roleid 1 = Administrador, 2 = Usuario estándar.
+    const ADMIN_ROLES = ['1', 'admin', 'administrator'];
 
     const script = document.currentScript;
     const requirement = (script && script.dataset.require) || 'auth'; // 'auth' | 'admin' | 'none'
@@ -62,22 +65,26 @@
 
     /* ---------- Roles ---------- */
 
-    function rolesFrom(source) {
-        if (!source || typeof source !== 'object') return [];
-        const found = [];
-        ROLE_KEYS.forEach(key => {
-            if (source[key] !== undefined && source[key] !== null) {
-                found.push(...[].concat(source[key]));
-            }
-        });
-        return found.map(r => String(r).trim().toLowerCase()).filter(Boolean);
+    function extractRole(source) {
+        if (!source || typeof source !== 'object') return null;
+        // Busca las variaciones comunes del ID de rol en el objeto
+        return source.roleid || source.roleId || source.role || null;
     }
 
-    // Prioridad: claims del JWT. Si el token no trae rol, se usa user.role (guardado en el login).
     function getRoles() {
         const claims = decodeJwt(getToken());
-        const fromToken = [...rolesFrom(claims), ...rolesFrom(claims && claims.app_metadata)];
-        return fromToken.length ? fromToken : rolesFrom(getUser());
+        const user = getUser();
+
+        // 1. Intenta obtener el rol directamente del token (raíz o metadata)
+        const tokenRole = extractRole(claims) || extractRole(claims && claims.app_metadata);
+
+        // 2. Intenta obtener el rol de los datos de usuario guardados en login
+        const loginRole = extractRole(user);
+
+        // Prioridad: JWT primero, Login después.
+        const activeRole = tokenRole || loginRole;
+
+        return activeRole ? [String(activeRole).trim().toLowerCase()] : [];
     }
 
     function isAdmin() {
@@ -86,37 +93,53 @@
 
     /* ---------- Cerrar sesión ---------- */
 
-    function clearSession() {
-        [TOKEN_KEY, USER_KEY, 'usuario', 'carrito'].forEach(k => localStorage.removeItem(k));
-        // Sesión de Supabase (Google OAuth)
-        Object.keys(localStorage)
-            .filter(k => k.startsWith('sb-'))
-            .forEach(k => localStorage.removeItem(k));
-        // los datos del turno (shiftId, cashierId, ...) se conservan a propósito
-        // para poder retomar un turno abierto al volver a iniciar sesión.
+    // Borra TODO lo que la app guarda en el navegador (incluye turno y sesión de Supabase).
+    function wipeAllData() {
+        localStorage.clear();
+        sessionStorage.clear();
     }
 
-    function forceLogout(message) {
-        clearSession();
+    function leaveToLogin(message) {
         if (message) sessionStorage.setItem(FLASH_KEY, message);
         window.location.replace(LOGIN_PAGE);
     }
 
+    // Salida involuntaria (token vencido / 401): NO se puede cerrar el turno sin sesión válida,
+    // así que se borra la sesión pero se CONSERVAN los datos del turno para poder cerrarlo
+    // después de volver a iniciar sesión.
+    function forceLogout(message) {
+        const turno = SHIFT_KEYS
+            .map(k => [k, localStorage.getItem(k)])
+            .filter(([, v]) => v !== null);
+        wipeAllData();
+        turno.forEach(([k, v]) => localStorage.setItem(k, v));
+        leaveToLogin(message);
+    }
+
+    // Cerrar sesión: solo se permite si NO hay un turno abierto.
+    // El turno se cierra desde ventas.html (arqueo de caja); al cerrarlo, ventas.js
+    // borra shiftId y el botón vuelve a funcionar.
     function logout() {
-        const avisos = [];
-        if (localStorage.getItem('shiftId')) avisos.push('Tienes un turno abierto (sigue abierto en el sistema).');
+        if (localStorage.getItem('shiftId')) {
+            const irAVentas = confirm(
+                'Tienes un turno abierto. Ciérralo antes de cerrar sesión.\n\n' +
+                '¿Ir a la pantalla de ventas para cerrarlo?'
+            );
+            if (irAVentas) window.location.href = 'ventas.html';
+            return;
+        }
+
+        let avisoCarrito = '';
         try {
             if (JSON.parse(localStorage.getItem('carrito') || '[]').length > 0) {
-                avisos.push('El carrito actual se vaciara.');
+                avisoCarrito = 'El carrito actual se vaciará.\n\n';
             }
         } catch { /* carrito corrupto: se limpia igual */ }
 
-        const texto = avisos.length
-            ? `${avisos.join('\n')}\n\n¿Cerrar sesión de todos modos?`
-            : '¿Cerrar sesión?';
+        if (!confirm(`${avisoCarrito}¿Cerrar sesión?`)) return;
 
-        if (!confirm(texto)) return;
-        forceLogout();
+        wipeAllData();
+        leaveToLogin('Sesión cerrada.');
     }
 
     /* ---------- UI ---------- */

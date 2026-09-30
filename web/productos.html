@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MachaPoint - Productos</title>
+    <link rel="stylesheet" href="styles/productos.css">
+    <link rel="stylesheet" href="styles/role.css">
+    <!-- Solo administradores -->
+    <script src="js/role.js" data-require="admin"></script>
+</head>
+
+<body>
+
+    <header class="mp-header">
+        <h1>MachaPoint</h1>
+        <nav>
+            <ul>
+                <li><a href="catalogo.html">Catálogo</a></li>
+                <li><a href="ventas.html">Ventas</a></li>
+                <li><a href="carrito.html">Carrito</a></li>
+                <li><a href="productos.html" class="activo" aria-current="page">Productos</a></li>
+                <li><a href="usuarios.html">Usuarios</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="pp-container">
+
+        <!-- ========================= -->
+        <!-- AGREGAR PRODUCTO -->
+        <!-- ========================= -->
+        <section class="mp-card">
+            <h2 class="mp-card__title">Agregar producto</h2>
+
+            <form id="form-crear-producto" class="pp-form" novalidate>
+                <div class="mp-field">
+                    <label for="prod-name">Nombre</label>
+                    <input type="text" id="prod-name" placeholder="Ej: Poster Chido" required>
+                </div>
+
+                <div class="mp-field">
+                    <label for="prod-sku">SKU (máx. 20 caracteres)</label>
+                    <input type="text" id="prod-sku" placeholder="Ej: bc-s-pn-gnd" maxlength="20" required>
+                </div>
+
+                <div class="mp-field">
+                    <label for="prod-price">Precio (mayor a 0 y hasta 500)</label>
+                    <input type="number" id="prod-price" step="0.01" min="0.01" max="500" placeholder="0.00" required>
+                </div>
+
+                <div class="mp-field">
+                    <label for="prod-type">Tipo</label>
+                    <select id="prod-type" required>
+                        <option value="" disabled selected>Selecciona un tipo</option>
+                    </select>
+                </div>
+
+                <div class="mp-field pp-full">
+                    <label for="prod-img">URL de la imagen</label>
+                    <input type="text" id="prod-img" placeholder="https://..." required>
+                </div>
+
+                <div class="pp-actions">
+                    <button type="submit" class="mp-btn mp-btn--primary" id="btn-crear">Guardar producto</button>
+                </div>
+            </form>
+
+            <p id="mensaje-creacion" class="mp-inline-msg" role="status"></p>
+        </section>
+
+
+        <!-- ========================= -->
+        <!-- EDITAR PRODUCTOS -->
+        <!-- ========================= -->
+        <section class="mp-card">
+            <h2 class="mp-card__title">Editar productos</h2>
+
+            <div class="pp-buscador">
+                <input type="search" id="buscador" placeholder="Buscar por nombre o SKU..."
+                       autocomplete="off" aria-label="Buscar productos">
+            </div>
+
+            <p id="mensaje" class="mp-inline-msg" role="status"></p>
+
+            <div class="pp-tabla-wrap">
+                <table class="pp-tabla">
+                    <thead>
+                        <tr>
+                            <th scope="col">Imagen</th>
+                            <th scope="col">Nombre</th>
+                            <th scope="col">SKU</th>
+                            <th scope="col">Tipo</th>
+                            <th scope="col" class="num">Precio</th>
+                            <th scope="col"><span class="sr-only">Acciones</span></th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-productos">
+                        <!-- Las filas se generan mediante JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+
+    <!-- ========================= -->
+    <!-- DIÁLOGO DE EDICIÓN -->
+    <!-- ========================= -->
+    <dialog id="dialogo-editar" class="pp-dialog" aria-labelledby="titulo-edicion">
+        <form id="form-editar" class="pp-form" novalidate>
+            <h2 id="titulo-edicion" class="mp-card__title pp-full">Editar producto</h2>
+
+            <div class="mp-field">
+                <label for="ed-name">Nombre</label>
+                <input type="text" id="ed-name" required>
+            </div>
+
+            <div class="mp-field">
+                <label for="ed-sku">SKU (máx. 20 caracteres)</label>
+                <input type="text" id="ed-sku" maxlength="20" required>
+            </div>
+
+            <div class="mp-field">
+                <label for="ed-price">Precio (mayor a 0 y hasta 500)</label>
+                <input type="number" id="ed-price" step="0.01" min="0.01" max="500" required>
+            </div>
+
+            <div class="mp-field">
+                <label for="ed-type">Tipo</label>
+                <select id="ed-type" required></select>
+            </div>
+
+            <div class="mp-field pp-full">
+                <label for="ed-img">URL de la imagen</label>
+                <input type="text" id="ed-img" required>
+            </div>
+
+            <p id="mensaje-edicion" class="mp-inline-msg pp-full" role="status"></p>
+
+            <div class="pp-actions">
+                <button type="button" class="mp-btn pp-btn-secondary" id="btn-cancelar-edicion">Cancelar</button>
+                <button type="submit" class="mp-btn mp-btn--primary" id="btn-guardar-edicion">Guardar cambios</button>
+            </div>
+        </form>
+    </dialog>
+
+    <script src="js/productos.js"></script>
+</body>
+
+</html>
