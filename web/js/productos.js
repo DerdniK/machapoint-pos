@@ -17,6 +17,23 @@ const TIPOS = [
     { id: 4, nombre: 'Postales' }
 ];
 
+// ---------- Reglas de validación ----------
+const MAX_LONGITUD = 20;
+const PRECIO_MIN = 54;      
+const PRECIO_MAX = 500;    
+const MAX_LONGITUD_PRECIO = 6; // "499.99"
+
+// Nombre: letras (con acentos y ñ), números, espacios y . , ' & ( ) - _
+const NOMBRE_VALIDO = /^[\p{L}\p{N} .,'&()\-_]+$/u;
+const NOMBRE_INVALIDOS = /[^\p{L}\p{N} .,'&()\-_]/gu;
+
+// SKU: letras (sin acentos), números, guion, guion bajo y punto. Sin espacios.
+const SKU_VALIDO = /^[A-Za-z0-9\-_.]+$/;
+const SKU_INVALIDOS = /[^A-Za-z0-9\-_.]/g;
+
+// Precio: dígitos con máximo 2 decimales
+const PRECIO_VALIDO = /^\d+(\.\d{1,2})?$/;
+
 // ---------- DOM ----------
 const formCrear = document.getElementById('form-crear-producto');
 const btnCrear = document.getElementById('btn-crear');
@@ -94,7 +111,65 @@ function normalizarProducto(p) {
     };
 }
 
-// ---------- Validación (mismas reglas que catalogo.js) ----------
+// ---------- Bloqueo de input ----------
+// Impide escribir o pegar caracteres no permitidos y respeta la longitud máxima.
+
+function sanitizarNombre(valor) {
+    return valor.replace(NOMBRE_INVALIDOS, '').slice(0, MAX_LONGITUD);
+}
+
+function sanitizarSku(valor) {
+    return valor.replace(SKU_INVALIDOS, '').slice(0, MAX_LONGITUD);
+}
+
+function sanitizarPrecio(valor) {
+    valor = valor.replace(/[^\d.]/g, '');                 // solo dígitos y punto
+    const i = valor.indexOf('.');
+    if (i !== -1) {                                       // un solo punto, máx. 2 decimales
+        valor = valor.slice(0, i + 1) + valor.slice(i + 1).replace(/\./g, '').slice(0, 2);
+    }
+    return valor.slice(0, MAX_LONGITUD_PRECIO);
+}
+
+function bloquearInput(input, sanitizar) {
+    if (!input) return;
+
+    // 1) Bloquea la tecla/pegado ANTES de que llegue al campo
+    input.addEventListener('beforeinput', (e) => {
+        if (e.data == null || e.inputType.startsWith('delete')) return;
+        const ini = input.selectionStart ?? input.value.length;
+        const fin = input.selectionEnd ?? input.value.length;
+        const resultado = input.value.slice(0, ini) + e.data + input.value.slice(fin);
+        if (sanitizar(resultado) !== resultado) e.preventDefault();
+    });
+
+    // 2) Respaldo (autocompletar, arrastrar texto, etc.): limpia el valor
+    input.addEventListener('input', () => {
+        const limpio = sanitizar(input.value);
+        if (limpio !== input.value) input.value = limpio;
+    });
+}
+
+function aplicarBloqueos() {
+    [['prod-name', sanitizarNombre], ['ed-name', sanitizarNombre],
+     ['prod-sku', sanitizarSku], ['ed-sku', sanitizarSku]].forEach(([id, fn]) => {
+        const input = document.getElementById(id);
+        if (input) input.maxLength = MAX_LONGITUD;
+        bloquearInput(input, fn);
+    });
+
+    ['prod-price', 'ed-price'].forEach(id => {
+        const input = document.getElementById(id);
+        if (!input) return;
+        // type="number" no permite controlar bien el texto escrito
+        input.type = 'text';
+        input.inputMode = 'decimal';
+        input.maxLength = MAX_LONGITUD_PRECIO;
+        bloquearInput(input, sanitizarPrecio);
+    });
+}
+
+// ---------- Validación ----------
 // Recibe los textos crudos del formulario y devuelve { error } o { valores }
 
 function validarCampos({ name, sku, price, typeId, img }) {
@@ -103,28 +178,115 @@ function validarCampos({ name, sku, price, typeId, img }) {
     price = price.trim();
     img = img.trim();
 
-    if (!name) return { error: 'El nombre del producto es obligatorio.' };
+    // ==========================
+    // VALIDAR NOMBRE
+    // ==========================
 
-    if (!sku) return { error: 'El SKU es obligatorio.' };
-    if (sku.length > 20) return { error: `El SKU no puede tener más de 20 caracteres (tiene ${sku.length}).` };
+    if (!name) {
+        console.error('Validación: El nombre del producto es obligatorio.');
+        return { error: 'El nombre del producto es obligatorio.' };
+    }
 
-    if (!price) return { error: 'El precio es obligatorio.' };
+    if (name.length > MAX_LONGITUD) {
+        console.error(`Validación: El nombre no puede tener más de ${MAX_LONGITUD} caracteres. Tiene ${name.length}.`);
+        return { error: `El nombre no puede tener más de ${MAX_LONGITUD} caracteres (tiene ${name.length}).` };
+    }
+
+    if (!NOMBRE_VALIDO.test(name)) {
+        console.error(`Validación: El nombre "${name}" contiene caracteres no válidos.`);
+        return { error: "El nombre solo puede contener letras, números, espacios y . , ' & ( ) - _" };
+    }
+
+    // ==========================
+    // VALIDAR SKU
+    // ==========================
+
+    if (!sku) {
+        console.error('Validación: El SKU es obligatorio.');
+        return { error: 'El SKU es obligatorio.' };
+    }
+
+    if (sku.length > MAX_LONGITUD) {
+        console.error(`Validación: El SKU no puede tener más de ${MAX_LONGITUD} caracteres. Tiene ${sku.length}.`);
+        return { error: `El SKU no puede tener más de ${MAX_LONGITUD} caracteres (tiene ${sku.length}).` };
+    }
+
+    if (!SKU_VALIDO.test(sku)) {
+        console.error(`Validación: El SKU "${sku}" contiene caracteres no válidos.`);
+        return { error: 'El SKU solo puede contener letras (sin acentos), números, guion (-), guion bajo (_) y punto (.), sin espacios.' };
+    }
+
+    // ==========================
+    // VALIDAR PRECIO
+    // ==========================
+
+    if (!price) {
+        console.error('Validación: El precio es obligatorio.');
+        return { error: 'El precio es obligatorio.' };
+    }
+
+    if (!PRECIO_VALIDO.test(price)) {
+        console.error(`Validación: El precio "${price}" no es válido. Debe ser un número positivo con máximo 2 decimales.`);
+        return { error: 'El precio debe ser un número positivo y tener máximo 2 decimales.' };
+    }
+
     const precio = Number(price);
-    if (Number.isNaN(precio)) return { error: 'El precio debe ser un número válido.' };
-    if (precio <= 0 || precio > 500) return { error: 'El precio debe ser mayor a 0 y no puede exceder 500.' };
+
+    if (!Number.isFinite(precio)) {
+        console.error('Validación: El precio no es un número válido.');
+        return { error: 'El precio debe ser un número válido.' };
+    }
+
+if (precio < PRECIO_MIN) { // Cambio de = a <
+        console.error(`Validación: El precio debe ser mayor o igual a ${PRECIO_MIN}. Valor recibido: ${precio}`);
+        return { error: `El precio debe ser mayor o igual a $${PRECIO_MIN}.` };
+    }
+
+    if (precio > PRECIO_MAX) { // Cambio de = a >
+        console.error(`Validación: El precio debe ser menor o igual a ${PRECIO_MAX}. Valor recibido: ${precio}`);
+        return { error: `El precio debe ser menor o igual a $${PRECIO_MAX}.` };
+    }
+
+    // ==========================
+    // VALIDAR TIPO
+    // ==========================
 
     const tipo = parseInt(typeId, 10);
-    if (Number.isNaN(tipo) || tipo <= 0) return { error: 'Selecciona un tipo de producto.' };
 
-    if (!img) return { error: 'La URL de imagen es obligatoria.' };
+    if (Number.isNaN(tipo) || tipo <= 0) {
+        console.error(`Validación: Tipo de producto inválido. Valor recibido: ${typeId}`);
+        return { error: 'Selecciona un tipo de producto.' };
+    }
+
+    // ==========================
+    // VALIDAR IMAGEN
+    // ==========================
+
+    if (!img) {
+        console.error('Validación: La URL de imagen es obligatoria.');
+        return { error: 'La URL de imagen es obligatoria.' };
+    }
+
     try {
         const url = new URL(img);
-        if (!['http:', 'https:'].includes(url.protocol)) throw new Error('protocolo');
+
+        if (!['http:', 'https:'].includes(url.protocol)) {
+            throw new Error('protocolo');
+        }
     } catch {
+        console.error(`Validación: La URL de imagen no es válida. Valor recibido: ${img}`);
         return { error: 'La URL de imagen no es válida (debe incluir http:// o https://).' };
     }
 
-    return { valores: { name, sku, price: precio, typeId: tipo, img } };
+    return {
+        valores: {
+            name,
+            sku,
+            price: precio,
+            typeId: tipo,
+            img
+        }
+    };
 }
 
 // ---------- Listado ----------
@@ -224,10 +386,7 @@ formCrear.addEventListener('submit', async (e) => {
 
     if (!esAdmin()) {
         setMsg(msgCreacion, 'No tienes permisos para crear productos.', 'error');
-<<<<<<< HEAD
-        await new Promise(resolve => setTimeout(resolve, 3000));        
-=======
->>>>>>> origin/main
+        await new Promise(resolve => setTimeout(resolve, 3000));
         return;
     }
 
@@ -298,10 +457,7 @@ formEditar.addEventListener('submit', async (e) => {
 
     if (!esAdmin()) {
         setMsg(msgEdicion, 'No tienes permisos para editar productos.', 'error');
-<<<<<<< HEAD
-        await new Promise(resolve => setTimeout(resolve, 3000));        
-=======
->>>>>>> origin/main
+        await new Promise(resolve => setTimeout(resolve, 3000));
         return;
     }
     if (!productoEnEdicion) return;
@@ -371,4 +527,5 @@ formEditar.addEventListener('submit', async (e) => {
     });
 });
 
+aplicarBloqueos();
 cargarProductos();
