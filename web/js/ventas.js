@@ -3,7 +3,6 @@
 // Gestión de turnos y cortes
 // ==========================================
 
-
 // ==========================================
 // URLs DE LOS SERVICIOS
 // ==========================================
@@ -108,92 +107,35 @@ function formatoFecha(fecha) {
 
 
 async function abrirTurno() {
-
     ocultarMensaje();
 
     const usuarioActual = obtenerUsuarioActual();
-    const amount =
-        Number(openingAmount.value);
+    const amount = Number(openingAmount.value);
 
-
-    if (!usuarioActual.id) {
-
-        mostrarMensaje(
-            "No se detectó la sesión del cajero. Por favor inicia sesión nuevamente.",
-            "error"
-        );
-
+    if (!usuarioActual || !usuarioActual.id) {
+        mostrarMensaje("No se detectó la sesión del cajero. Por favor inicia sesión nuevamente.","error");
         return;
     }
-
 
     if (isNaN(amount) || amount < 0 || openingAmount.value.trim() === "") {
-
-        mostrarMensaje(
-            "Ingresa un fondo inicial válido.",
-            "error"
-        );
-
+        mostrarMensaje("Ingresa un fondo inicial válido.","error");
         return;
     }
 
-
-    // --------------------------------------
-    // Deshabilitar botón
-    // --------------------------------------
-
     btnAbrir.disabled = true;
-
-    btnAbrir.textContent =
-        "Abriendo turno...";
-
+    btnAbrir.textContent = "Abriendo turno...";
 
     try {
 
-        const token =
-            obtenerToken();
-
-
-        // ----------------------------------
-        // Body
-        // ----------------------------------
-
-        const body = {
-
-            cashierid: usuarioActual.id,
-
-            openingamount: amount
-
-        };
-
-
-        // ----------------------------------
-        // Headers
-        // ----------------------------------
-
-        const headers = {
-
-            "Content-Type":
-                "application/json"
-
-        };
-
+        const token = obtenerToken();
+        const body = {cashierid: usuarioActual.id, openingamount: amount};
+        const headers = {"Content-Type":"application/json"};
 
         if (token) {
-
-            headers["Authorization"] =
-                `Bearer ${token}`;
-
+            headers["Authorization"] = `Bearer ${token}`;
         }
 
-
-        // ----------------------------------
-        // Petición
-        // ----------------------------------
-
-        const response =
-            await fetch(
-                `${API_SHIFT_URL}/api/shift/open`,
+        const response = await fetch(`${API_SHIFT_URL}/api/shift/open`,
                 {
                     method: "POST",
                     headers: headers,
@@ -201,93 +143,33 @@ async function abrirTurno() {
                 }
             );
 
-
-        const data =
-            await response.json()
-                .catch(() => ({}));
-
-
-        // ----------------------------------
-        // Error HTTP
-        // ----------------------------------
+        const data = await response.json().catch(() => ({}));
 
         if (!response.ok) {
-
-            const error =
-                data.message ||
-                data.Message ||
-                data.error ||
-                `HTTP ${response.status}`;
-
+            const error = data.message || data.Message || data.error || `HTTP ${response.status}`;
             throw new Error(error);
-
         }
 
-
-        // ----------------------------------
-        // IMPORTANTE
-        // ----------------------------------
-        //
-        // El backend actualmente debería
-        // devolver shiftId.
-        //
-        // Si todavía no lo devuelve,
-        // no podemos asociar correctamente
-        // las ventas al turno.
-        //
-
-        const shiftId =
-            data.shiftId ||
-            data.shiftid ||
-            data.id;
+        const shiftId = data.shiftId || data.shiftid || data.id;
 
 
         if (!shiftId) {
-
-            mostrarMensaje(
-                "El turno se abrió, pero el backend no devolvió shiftId. Solicita que /api/shift/open incluya el identificador del turno.",
-                "error"
-            );
-
-            console.warn(
-                "Respuesta de /api/shift/open:",
-                data
-            );
-
+            mostrarMensaje("El turno se abrió, pero el backend no devolvió shiftId. Solicita que /api/shift/open incluya el identificador del turno.","error");
+            console.warn("Respuesta de /api/shift/open:",data);
             return;
         }
 
-
         // GUARDAR TURNO
 
-        localStorage.setItem(
-            "shiftId",
-            shiftId
-        );
-
-        localStorage.setItem(
-            "cashierId",
-            usuarioActual.id
-        );
-
-        localStorage.setItem(
-            "cashierUsername",
-            usuarioActual.username
-        );
-
-        localStorage.setItem(
-            "openingAmount",
-            amount
-        );
+        localStorage.setItem("shiftId",shiftId);
+        localStorage.setItem("cashierId",usuarioActual.id);
+        localStorage.setItem("cashierUsername",usuarioActual.username);
+        localStorage.setItem("openingAmount",amount);
 
 
         // Actualizar interfaz
 
-        mostrarTurnoAbierto(
-            shiftId,
-            usuarioActual.username,
-            amount
-        );
+        mostrarTurnoAbierto(shiftId,usuarioActual.username,amount);
 
 
         mostrarMensaje(
@@ -378,26 +260,16 @@ function mostrarTurnoAbierto(
 
 
 async function cerrarTurno() {
-
     ocultarMensaje();
 
-
-    // Recuperar datos
-
-    const shiftId =
-        localStorage.getItem("shiftId");
-
-    const cashierId =
-        localStorage.getItem("cashierId");
-
+    const shiftId = localStorage.getItem("shiftId");
+    const cashierId = localStorage.getItem("cashierId");
 
     if (!shiftId) {
-
-        mostrarMensaje(
-            "No existe un turno activo.",
-            "error"
-        );
-
+        mostrarMensaje("No existe un turno activo.","error");
+        finalizarTurnoLocal();
+        seccionTurno.classList.add("oculto");
+        seccionApertura.classList.remove("oculto");
         return;
     }
 
@@ -511,15 +383,18 @@ async function cerrarTurno() {
 
 
         if (!response.ok) {
+            const error = data.message || data.Message || data.error || `HTTP ${response.status}`;
 
-            const error =
-                data.message ||
-                data.Message ||
-                data.error ||
-                `HTTP ${response.status}`;
+            if (error.includes("no existe") || error.includes("cerrado")){
+                finalizarTurnoLocal();
+                seccionTurno.classList.add("oculto");
+                seccionApertura.classList.remove("oculto");
+                estadoTurno.textContent = "● Sin turno activo";
+                estadoTurno.className = "estado sin-turno";
 
+                throw new Error("El turno anterior fue cerrado anteriormente. Se ha restablecido la pantalla para que puedas abrir un nuevo turno.");
+            }
             throw new Error(error);
-
         }
 
 
@@ -562,7 +437,6 @@ async function cerrarTurno() {
     }
 
 }
-
 
 async function obtenerCorteZ(
     shiftId
@@ -819,28 +693,20 @@ function finalizarTurnoLocal() {
 
 function restaurarTurno() {
 
-    const shiftId =
-        localStorage.getItem("shiftId");
-
+    const shiftId = localStorage.getItem("shiftId");
     const cashierName = localStorage.getItem("cashierUsername") || "Cajero";
+    const amount = localStorage.getItem("openingAmount");
 
-    const amount =
-        localStorage.getItem("openingAmount");
-
-
-    if (
-        shiftId &&
-        amount !== null
-    ) {
-
+    if (shiftId && amount !== null) {
         mostrarTurnoAbierto(
             shiftId,
             cashierName,
             Number(amount)
         );
-
+    }else{
+        seccionApertura.classList.remove("oculto");
+        seccionTurno.classList.add("oculto");
     }
-
 }
 
 // EVENTOS
