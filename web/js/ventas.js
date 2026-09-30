@@ -13,7 +13,7 @@ const API_SHIFT_URL =
 const API_CUT_URL =
     "https://2v34s2xxn4rxq6utaxaaoawpb40soivi.lambda-url.us-east-1.on.aws";
 
-
+const API_SALES_BY_SHIFT_URL = "https://6uxm3jz7xwth5cliak6zk6dudi0iseih.lambda-url.us-east-1.on.aws/api/sale/by-shift";
 // ==========================================
 // ELEMENTOS DEL DOM
 // ==========================================
@@ -31,10 +31,94 @@ const closeNotes = document.getElementById("close-notes");
 
 const btnAbrir = document.getElementById("btn-abrir-turno");
 const btnCerrar = document.getElementById("btn-cerrar-turno");
-
+let salesPollingInterval = null;
 
 function obtenerToken() {
     return localStorage.getItem("authToken");
+}
+
+//Ventas del turno
+async function cargarVentasTurno(shiftId) {
+    if (!shiftId) return;
+
+    try {
+        const token = obtenerToken();
+        const headers = {"Content-Type":"application/json"};
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+
+        const response = await fetch(`${API_SALES_BY_SHIFT_URL}?shiftId=${shiftId}`, {
+            method: "GET",
+            headers: headers
+        });
+
+        if (!response.ok) return;
+        const data = await response.json();
+
+        if (data.success && Array.isArray(data.data)) {
+            renderizarTablaVentas(data.data);
+        }
+    }catch (error) {
+        console.error("Error al cargar ventas del turno:", error);
+    }
+}
+
+function renderizarTablaVentas(ventas,totalSales) {
+    const tbody = document.getElementById("tabla-ventas-body");
+
+    if (!tbody) return;
+
+    tbody.innerHTML = "";
+
+    if (ventas.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="texto-vacio">No hay ventas registradas en este turno.</td></tr>`;
+        return;
+    }
+
+    ventas.forEach(sale => {
+        //Formato de hora
+        const hora = sale.createdAt 
+            ? new Date(sale.createdAt).toLocaleTimeString("es-MX", { hour: '2-digit', minute: '2-digit' }) 
+            : "-";
+
+        // Obtener resumen de items en texto
+        const itemsSummary = Array.isArray(sale.items) && sale.items.length > 0
+            ? sale.items.map(item => {
+        const nombreProducto = item.product_name || item.productName || item.name || 'Producto';
+        const cantidad = item.quantity || 1;
+        return `${cantidad}x ${nombreProducto}`;
+    }).join(", ")
+    : "Sin detalle de ítems";
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td><strong>#${sale.saleId}</strong></td>
+            <td>${hora}</td>
+            <td>${sale.paymentMethod || 'Efectivo'}</td>
+            <td><small>${itemsSummary}</small></td>
+            <td><strong>${formatoDinero(sale.total)}</strong></td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function iniciarPollingVentas(shiftId) {
+    // Detener cualquier polling anterior para no duplicar intervalos
+    detenerPollingVentas();
+
+    // Carga inicial
+    cargarVentasTurno(shiftId);
+
+    // Consultar cada 10 segundos
+    salesPollingInterval = setInterval(() => {
+        cargarVentasTurno(shiftId);
+    }, 10000); 
+}
+
+function detenerPollingVentas() {
+    if (salesPollingInterval) {
+        clearInterval(salesPollingInterval);
+        salesPollingInterval = null;
+    }
 }
 
 //Se obtiene el usuario actual del localStorage y se devuelve un objeto con id y username. Si no hay usuario o hay un error al parsear, se devuelve null.
@@ -271,6 +355,7 @@ function mostrarTurnoAbierto(
 
     closeNotes.value = "";
 
+    iniciarPollingVentas(shiftId);
 }
 
 
@@ -687,7 +772,7 @@ function mostrarCorte(corte) {
 // LIMPIAR TURNO LOCAL
 
 function finalizarTurnoLocal() {
-
+    detenerPollingVentas();
     localStorage.removeItem(
         "shiftId"
     );
