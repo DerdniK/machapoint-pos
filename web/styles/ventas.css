@@ -432,3 +432,47 @@ textarea {
   .acciones { justify-content: stretch; }
   .btn { width: 100%; }
 }
+
+/*Tabla de Ventas del turno*/
+
+.ventas-container {
+    margin-top: 20px;
+    background: #ffffff;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+}
+
+.resumen-ventas-cards {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.card-metrica {
+    background: #f8f9fa;
+    padding: 10px 15px;
+    border-radius: 6px;
+}
+
+.tabla-ventas {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9em;
+}
+
+.tabla-ventas th, .tabla-ventas td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.tabla-ventas th {
+    background-color: #f4f4f4;
+}
+
+.texto-vacio {
+    text-align: center;
+    color: #777;
+    font-style: italic;
+}
