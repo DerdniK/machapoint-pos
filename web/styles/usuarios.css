@@ -57,9 +57,8 @@
    CONTENEDOR PRINCIPAL
    ========================================================= */
 .container {
-  width: 85%;
   max-width: 800px;
-  margin: 50px auto;
+  margin: 90px auto;
   display: flex;
   flex-direction: column;
   gap: var(--space-8);

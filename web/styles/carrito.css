@@ -40,7 +40,7 @@ nav,
   padding: 0;
   list-style: none;
 }
-nav a,
+header a,
 .nav-menu a {
   display: inline-block;
   padding: 9px 16px;
@@ -51,7 +51,7 @@ nav a,
   border-radius: 10px;
   transition: background var(--transition-fast), transform var(--transition-fast);
 }
-nav a:hover,
+header a:hover,
 .nav-menu a:hover {
   background: rgba(255, 255, 255, 0.2);
   transform: translateY(-1px);
@@ -350,4 +350,52 @@ input:focus {
   .cantidad-articulo {
     width: fit-content;
   }
+}
+/* =========================================================
+   BOTÓN CERRAR SESIÓN
+   ========================================================= */
+
+.mp-btn--danger,
+.btn-logout {
+  background: var(--color-error);
+  color: var(--color-white);
+
+  padding: 9px 30px;
+
+  border: none;
+  border-radius: var(--radius-md);
+
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  box-shadow: var(--shadow-sm);
+
+  transition:
+    background var(--transition-fast),
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.mp-btn--danger:not(:disabled),
+.btn-logout:not(:disabled) {
+  background: #a5311f;
+  color: var(--color-white);
+
+  transform: translateY(-1px);
+
+  box-shadow: var(--shadow-md);
+}
+
+.mp-btn--danger:active:not(:disabled),
+.btn-logout:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.mp-btn--danger:disabled,
+.btn-logout:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }

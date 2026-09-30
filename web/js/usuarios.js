@@ -74,19 +74,19 @@ function esUUIDValido(valor) {
     return regexUUID.test(valor.trim());
 }
 
-// 1. Health check
-async function checkHealth() {
-    const healthEl = document.getElementById('health-status');
-    if (!healthEl) return;
+// // 1. Health check
+// async function checkHealth() {
+//     const healthEl = document.getElementById('health-status');
+//     if (!healthEl) return;
 
-    try {
-        const res = await fetch(`${API_USERS_URL}/health`);
-        healthEl.textContent = res.ok ? "Servicio Users: Operativo" : "Servicio Users: Con fallas";
-    } catch {
-        healthEl.textContent = "Servicio Users: Offline";
-    }
-}
-checkHealth();
+//     try {
+//         const res = await fetch(`${API_USERS_URL}/health`);
+//         healthEl.textContent = res.ok ? "Servicio Users: Operativo" : "Servicio Users: Con fallas";
+//     } catch {
+//         healthEl.textContent = "Servicio Users: Offline";
+//     }
+// }
+// checkHealth();
 
 // 2. Registro (POST /api/users/auth/register)
 const formRegister = document.getElementById('form-register');
@@ -198,18 +198,18 @@ async function ejecutarPeticion(url, method, body, contexto) {
     mostrarProcesando();
 
     const currentToken = obtenerToken();
-    const headers = {
-        'Content-Type': 'application/json'
-    };
+    // const headers = {
+    //     'Content-Type': 'application/json'
+    // };
 
-    if (currentToken) {
-        headers['Authorization'] = `Bearer ${currentToken}`;
-    }
+    // if (currentToken) {
+    //     headers['Authorization'] = `Bearer ${currentToken}`;
+    // }
 
     try {
         const res = await fetch(url, {
             method: method,
-            headers: headers,
+            // headers: headers,
             body: JSON.stringify(body)
         });
 
