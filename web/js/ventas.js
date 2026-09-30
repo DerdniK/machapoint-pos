@@ -161,10 +161,25 @@ async function abrirTurno() {
 
         // GUARDAR TURNO
 
-        localStorage.setItem("shiftId",shiftId);
-        localStorage.setItem("cashierId",usuarioActual.id);
-        localStorage.setItem("cashierUsername",usuarioActual.username);
-        localStorage.setItem("openingAmount",amount);
+        localStorage.setItem(
+            "shiftId",
+            shiftId
+        );
+
+        localStorage.setItem(
+            "cashierId",
+            usuarioActual.id
+        );
+
+        localStorage.setItem(
+            "cashierUsername",
+            usuarioActual.username
+        );
+
+        localStorage.setItem(
+            "openingAmount",
+            amount
+        );
 
 
         // Actualizar interfaz

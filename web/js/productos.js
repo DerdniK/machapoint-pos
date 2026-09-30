@@ -224,7 +224,10 @@ formCrear.addEventListener('submit', async (e) => {
 
     if (!esAdmin()) {
         setMsg(msgCreacion, 'No tienes permisos para crear productos.', 'error');
+<<<<<<< HEAD
         await new Promise(resolve => setTimeout(resolve, 3000));        
+=======
+>>>>>>> origin/main
         return;
     }
 
@@ -295,7 +298,10 @@ formEditar.addEventListener('submit', async (e) => {
 
     if (!esAdmin()) {
         setMsg(msgEdicion, 'No tienes permisos para editar productos.', 'error');
+<<<<<<< HEAD
         await new Promise(resolve => setTimeout(resolve, 3000));        
+=======
+>>>>>>> origin/main
         return;
     }
     if (!productoEnEdicion) return;
