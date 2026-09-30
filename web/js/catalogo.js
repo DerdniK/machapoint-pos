@@ -12,12 +12,6 @@ let productosActuales = [];
 const CARRITO_KEY = 'carrito';
 
 // Utilidades de mensajes
-function mostrarMensajeCreacion(texto, tipo = 'info') {
-    const el = document.getElementById('mensaje-creacion');
-    if (!el) return;
-    el.textContent = texto;
-    el.style.color = tipo === 'error' ? '#d9534f' : (tipo === 'exito' ? '#2e7d32' : '#333');
-}
 
 function mostrarMensajeGeneral(texto, tipo = 'info') {
     if (!mensaje) return;
@@ -59,38 +53,6 @@ if (buscador) {
             aplicarFiltro();
         }
     });
-}
-
-// Validaciones de producto
-function esTextoNoVacio(valor) {
-    return typeof valor === 'string' && valor.trim().length > 0;
-}
- 
-function esSkuValido(valor) {
-    if (!esTextoNoVacio(valor)) return false;
-    return valor.trim().length <= 20;
-}
- 
-function esPrecioValido(valor) {
-    // valor debe venir ya como number (resultado de parseFloat)
-    if (typeof valor !== 'number' || Number.isNaN(valor)) return false;
-    return valor > 0 && valor <= 500;
-}
- 
-function esTypeIdValido(valor) {
-    // valor debe venir ya como number (resultado de parseInt)
-    if (typeof valor !== 'number' || Number.isNaN(valor)) return false;
-    return Number.isInteger(valor) && valor > 0;
-}
- 
-function esUrlValida(valor) {
-    if (!esTextoNoVacio(valor)) return false;
-    try {
-        new URL(valor.trim());
-        return true;
-    } catch {
-        return false;
-    }
 }
 
 
@@ -251,116 +213,3 @@ function agregarAlCarrito(producto) {
 // Ejecutar cuando cargue la página
 cargarProductos();
 
-const formCrear = document.getElementById('form-crear-producto');
-// const msgCreacion = document.getElementById('mensaje-creacion');
-
-if (formCrear) {
-    formCrear.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const token = localStorage.getItem('authToken');
-        
-        if (!token) {
-            mostrarMensajeCreacion("No hay sesión activa. Inicia sesión de nuevo.", 'error');
-            return;
-        }
-
-        const nameVal = document.getElementById('prod-name').value.trim();
-        const skuVal = document.getElementById('prod-sku').value.trim();
-        const priceInput = document.getElementById('prod-price').value.trim();
-        const typeInput = document.getElementById('prod-type').value.trim();
-        const imgVal = document.getElementById('prod-img').value.trim();
-
-        // --- Validaciones ---
-        if (!esTextoNoVacio(nameVal)) {
-            mostrarMensajeCreacion("El nombre del producto es obligatorio.", 'error');
-            return;
-        }
- 
-        if (!esTextoNoVacio(skuVal)) {
-            mostrarMensajeCreacion("El SKU es obligatorio.", 'error');
-            return;
-        }
-        if (!esSkuValido(skuVal)) {
-            mostrarMensajeCreacion(`El SKU no puede tener más de 20 caracteres (tiene ${skuVal.length}).`, 'error');
-            return;
-        }
- 
-        if (!esTextoNoVacio(priceInput)) {
-            mostrarMensajeCreacion("El precio es obligatorio.", 'error');
-            return;
-        }
-        const priceVal = parseFloat(priceInput);
-        if (Number.isNaN(priceVal)) {
-            mostrarMensajeCreacion("El precio debe ser un número válido.", 'error');
-            return;
-        }
-        if (!esPrecioValido(priceVal)) {
-            mostrarMensajeCreacion("El precio debe ser mayor a 0 y no puede exceder 500.", 'error');
-            return;
-        }
- 
-        if (!esTextoNoVacio(typeInput)) {
-            mostrarMensajeCreacion("El TypeId es obligatorio.", 'error');
-            return;
-        }
-        const typeIdVal = parseInt(typeInput, 10);
-        if (Number.isNaN(typeIdVal)) {
-            mostrarMensajeCreacion("El TypeId debe ser un número entero válido.", 'error');
-            return;
-        }
-        if (!esTypeIdValido(typeIdVal)) {
-            mostrarMensajeCreacion("El TypeId debe ser un número entero mayor a 0.", 'error');
-            return;
-        }
- 
-        if (!esTextoNoVacio(imgVal)) {
-            mostrarMensajeCreacion("La URL de imagen es obligatoria.", 'error');
-            return;
-        }
-        if (!esUrlValida(imgVal)) {
-            mostrarMensajeCreacion("La URL de imagen no tiene un formato válido (debe incluir http:// o https://).", 'error');
-            return;
-        }
-
-        const payload = {
-            Name: nameVal,
-            SKU: skuVal,
-            Price: priceVal,
-            TypeId: typeIdVal,
-            ImageURL: imgVal
-        };
-
-        try {
-            // Usamos tu helper en lugar de la variable comentada
-            mostrarMensajeCreacion("Creando producto...", 'info');
-
-            const res = await fetch(`${API_URL}/api/products/product/create`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(payload)
-            });
-
-            const data = await res.json().catch(() => null);
-
-            if (!res.ok) {
-                // Simplificamos el manejo del error para evitar referencias rotas
-                const serverMsg = data?.message || data?.Message || data?.error || `Error HTTP ${res.status}`;
-                throw new Error(serverMsg);
-            }
-
-            console.log("Respuesta creación exitosa:", data);
-            mostrarMensajeCreacion("¡Producto creado con éxito!", 'exito');
-            
-            formCrear.reset();
-            cargarProductos(); 
-            
-        } catch (err) {
-            console.error("Error al registrar producto:", err);
-            // Mostrar error usando la función segura
-            mostrarMensajeCreacion("Error al crear: " + err.message, 'error');
-        }
-    });
-}

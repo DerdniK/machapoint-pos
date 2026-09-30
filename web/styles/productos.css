@@ -1,0 +1,210 @@
+@import url('global.css');
+
+/* =========================================================
+   HEADER (extras sobre .mp-header)
+   ========================================================= */
+
+/* Controles de sesión que inyecta role.js dentro del header */
+.mp-header .user-badge {
+  color: var(--color-white);
+  font-size: 0.9rem;
+  font-weight: 600;
+  opacity: 1;
+}
+
+.mp-header .btn-logout {
+  padding: 9px 16px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--color-error);
+  color: var(--color-white);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background var(--transition-fast), transform var(--transition-fast);
+}
+.mp-header .btn-logout:hover:not(:disabled) {
+  background: #a5311f;
+  transform: translateY(-1px);
+}
+
+/* =========================================================
+   LAYOUT
+   ========================================================= */
+.pp-container {
+  width: 90%;
+  max-width: var(--container-max);
+  margin: calc(var(--header-height) + var(--space-8)) auto 0;
+  padding-bottom: 50px;
+  display: grid;
+  gap: var(--space-6);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* =========================================================
+   FORMULARIOS (alta y edición)
+   ========================================================= */
+.pp-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-4);
+  align-items: end;
+}
+
+.pp-full {
+  grid-column: 1 / -1;
+}
+
+.pp-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+/* Botón secundario (global.css no tiene variante neutra) */
+.pp-btn-secondary {
+  background: var(--color-surface);
+  color: var(--color-ink);
+  border: 1px solid var(--color-line);
+}
+.pp-btn-secondary:hover:not(:disabled) {
+  background: var(--color-line-light);
+}
+
+.pp-btn-sm {
+  padding: 8px 14px;
+  font-size: 0.85rem;
+}
+
+/* Mensajes en línea: se ocultan cuando no tienen texto */
+.mp-inline-msg:empty {
+  display: none;
+}
+.mp-card .mp-inline-msg {
+  margin-top: var(--space-4);
+}
+.pp-form .mp-inline-msg {
+  margin: 0;
+}
+
+/* =========================================================
+   BUSCADOR (mismo look que el del catálogo)
+   ========================================================= */
+.pp-buscador {
+  margin: 0 0 var(--space-4);
+}
+.pp-buscador input {
+  width: 100%;
+  max-width: 420px;
+  padding: 10px 14px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  background: var(--color-white);
+  color: var(--color-ink);
+  outline: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.pp-buscador input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.25);
+}
+
+/* =========================================================
+   TABLA DE PRODUCTOS
+   ========================================================= */
+.pp-tabla-wrap {
+  margin-top: var(--space-4);
+  overflow-x: auto;
+  border: 1px solid var(--color-line-light);
+  border-radius: var(--radius-md);
+}
+
+.pp-tabla {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+}
+
+.pp-tabla th {
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-ink-soft);
+  background: var(--color-surface);
+  border-bottom: 2px solid var(--color-line);
+}
+
+.pp-tabla td {
+  padding: var(--space-3) var(--space-4);
+  font-size: 0.95rem;
+  color: var(--color-ink);
+  border-bottom: 1px solid var(--color-line-light);
+  vertical-align: middle;
+}
+
+.pp-tabla tbody tr:last-child td {
+  border-bottom: none;
+}
+.pp-tabla tbody tr:hover {
+  background: var(--color-cream);
+}
+
+/* SKU en texto secundario */
+.pp-tabla td:nth-child(3) {
+  color: var(--color-ink-soft);
+}
+
+/* Precio, igual que en las tarjetas del catálogo */
+.pp-tabla th.num,
+.pp-tabla td.num {
+  text-align: right;
+  white-space: nowrap;
+}
+.pp-tabla td.num {
+  font-family: var(--font-display);
+  font-weight: 800;
+  color: var(--color-primary-dark);
+}
+
+.pp-miniatura {
+  display: block;
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  background: var(--color-blush);
+  border: 1px solid var(--color-line);
+}
+
+/* =========================================================
+   DIÁLOGO DE EDICIÓN
+   ========================================================= */
+.pp-dialog {
+  width: min(640px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  padding: var(--space-8);
+  background: var(--color-white);
+  color: var(--color-ink);
+  border: 2px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  /* box-shadow: var(--shadow-md); */
+}
+.pp-dialog {
+  background: rgb(249, 249, 248);
+}
