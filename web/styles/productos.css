@@ -12,21 +12,53 @@
   opacity: 1;
 }
 
-.mp-header .btn-logout {
-  padding: 9px 16px;
-  border: none;
-  border-radius: var(--radius-md);
+/* =========================================================
+   BOTÓN CERRAR SESIÓN
+   ========================================================= */
+
+.mp-btn--danger,
+.btn-logout {
   background: var(--color-error);
   color: var(--color-white);
+
+  padding: 9px 30px;
+
+  border: none;
+  border-radius: var(--radius-md);
+
   font-family: var(--font-body);
   font-size: 0.9rem;
   font-weight: 700;
+
   cursor: pointer;
-  transition: background var(--transition-fast), transform var(--transition-fast);
+
+  box-shadow: var(--shadow-sm);
+
+  transition:
+    background var(--transition-fast),
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
-.mp-header .btn-logout:hover:not(:disabled) {
+
+.mp-btn--danger:not(:disabled),
+.btn-logout:not(:disabled) {
   background: #a5311f;
+  color: var(--color-white);
+
   transform: translateY(-1px);
+
+  box-shadow: var(--shadow-md);
+}
+
+.mp-btn--danger:active:not(:disabled),
+.btn-logout:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.mp-btn--danger:disabled,
+.btn-logout:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 /* =========================================================
