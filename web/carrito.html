@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="es">
 
+<link rel="stylesheet" href="styles/auth.css">
+<script src="js/role.js"></script>
+
 <head>
 
     <meta charset="UTF-8">
@@ -32,14 +35,16 @@
 
             <h2>Carrito</h2>
 
+            <!-- NUEVO BOTÓN: Vaciar todo el carrito -->
+            <button id="btn-vaciar-carrito" class="btn-vaciar" style="margin-bottom: 15px; cursor: pointer;">
+                Vaciar todo el carrito
+            </button>
+
             <p id="mensaje-carrito">El carrito esta vacio</p>
 
             <div id="lista-carrito">
 
-                <!--
-                    Los productos se generan
-                    mediante JavaScript
-                -->
+                <!-- Los productos se generan mediante JavaScript -->
 
             </div>
         </section>
@@ -77,8 +82,8 @@
                     <label for="tipo-tarjeta"> Tipo de tarjeta: </label> 
                     <select id="tipo-tarjeta"> 
                         <option value=""> Seleccionar </option> 
-                        <option value="credito"> Crédito </option> 
-                        <option value="debito"> Débito </option> 
+                        <option value="TARJETA_CREDITO"> Crédito </option> 
+                        <option value="TARJETA_DEBITO"> Débito </option>
                     </select> 
                 </div> 
                 <!-- ================================= --> <!-- FINALIZAR --> <!-- ================================= --> 

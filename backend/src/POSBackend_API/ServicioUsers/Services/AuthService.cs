@@ -35,6 +35,7 @@ namespace ServicioUsers.Services
             {
                 Success = false,
                 Message = "You don't introduce a username",
+                UserId = null,
                 AuthData = null
             };
         }
@@ -45,13 +46,22 @@ namespace ServicioUsers.Services
             {
                 Success = false,
                 Message = "You don't introduce a password",
+                UserId = null,
                 AuthData = null
             };
         }
 
         var user = await _context.UserTable
             .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.Username == credentials.Username);
+            .Where(x => x.Username == credentials.Username)
+            .Select(x => new
+            {
+                x.UserId,
+                x.Username,
+                x.RoleID,
+                x.PasswordHash
+            })
+            .FirstOrDefaultAsync();
 
         if (user is null || !BCrypt.Net.BCrypt.Verify(credentials.Password, user.PasswordHash))
         {
@@ -59,6 +69,7 @@ namespace ServicioUsers.Services
             {
                 Success = false,
                 Message = "Wrong credentials",
+                UserId = null,
                 AuthData = null
             };
         }
@@ -110,10 +121,12 @@ namespace ServicioUsers.Services
         {
             Success = true,
             Message = "login succesfull",
+            UserId = user.UserId,
             AuthData = new AuthResponseDto
             {
                 Token = tokenString
             }
+            
         };
     }
 

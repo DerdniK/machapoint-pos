@@ -1,19 +1,62 @@
-// NOTAS DE PUSH: 
-// añadí botones y logica para poder agregar productos al carrito, pero de momento el carrito se guarda en localStorage, se recomienda cambiarlo a backend para persistencia y seguridad
-
 
 const API_URL ='https://4upkj2tafvod2ubwcsbnagviyu0feljy.lambda-url.us-east-1.on.aws';
-// const API_URL ='http://localhost:8081';
-
 const productosContainer = document.getElementById('productos');
 const mensaje = document.getElementById('mensaje');
 
+const buscador = document.getElementById('buscador');
+let terminoBusqueda = '';
 // Nota: Actualmente se guarda el carrito en localStorage, pero se recomienda cambiarlo a backend para persistencia y seguridad
 // Guardamos temporalmente los productos recibidos de la API 
 let productosActuales = []; 
 // Nombre que utilizaremos en localStorage 
 const CARRITO_KEY = 'carrito';
 
+// Utilidades de mensajes
+
+function mostrarMensajeGeneral(texto, tipo = 'info') {
+    if (!mensaje) return;
+    mensaje.textContent = texto;
+    mensaje.style.color = tipo === 'error' ? '#d9534f' : (tipo === 'exito' ? '#2e7d32' : '#333');
+}
+
+// buscador 
+
+
+function normalizar(texto) {
+    return String(texto ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+
+function aplicarFiltro() {
+    const termino = normalizar(terminoBusqueda);
+    const filtrados = termino
+        ? productosActuales.filter(p =>
+            normalizar(p.name).includes(termino) || normalizar(p.sku).includes(termino))
+        : productosActuales;
+
+    if (termino && filtrados.length === 0) {
+        productosContainer.innerHTML = '';
+        mostrarMensajeGeneral(`No se encontraron productos para "${terminoBusqueda.trim()}".`);
+        return;
+    }
+    mostrarProductos(filtrados);
+}
+
+if (buscador) {
+    buscador.addEventListener('input', () => {
+        terminoBusqueda = buscador.value;
+        aplicarFiltro();
+    });
+    buscador.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            buscador.value = '';
+            terminoBusqueda = '';
+            aplicarFiltro();
+        }
+    });
+}
+
+
+// Productos (GET)
 async function cargarProductos() {
     const token = localStorage.getItem('authToken');
 
@@ -27,8 +70,8 @@ async function cargarProductos() {
 
     try {
         mensaje.textContent = 'Cargando productos...';
-
         const response = await fetch(API_URL + "/api/products/product/get", {
+        // const response = await fetch(API_URL + "/api/products/product/get", {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -40,13 +83,18 @@ async function cargarProductos() {
 
         if (response.status === 401) {
             mensaje.textContent = "Error 401: El backend rechazó el token (Unauthorized).";
-            // localStorage.removeItem('authToken'); // COMENTA ESTO TEMPORALMENTE
-            // window.location.href = 'index.html';
             return;
         }
 
         if (response.status === 403) {
             mensaje.textContent = "Error 403: Token válido pero sin permisos requeridos (Forbidden).";
+            return;
+        }
+
+        if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            const detalle = data.message || data.Message || data.error || `HTTP ${response.status}`;
+            mostrarMensajeGeneral("No se pudieron cargar los productos: " + detalle, 'error');
             return;
         }
 
@@ -62,7 +110,8 @@ async function cargarProductos() {
         productosActuales = lista; // Guardar los productos cargados
         console.log("Se guardo con exito la siguiente lista:", productosActuales);
 
-        mostrarProductos(lista);
+        // mostrarProductos(lista);    
+        aplicarFiltro();   // respeta el texto del buscador al recargar la lista
 
     } catch (err) {
         console.error("Error en fetch:", err);
@@ -91,28 +140,19 @@ function mostrarProductos(productos) {
 
         article.innerHTML = `
             <img 
-                src="/img/product.jpg" 
+                src="${producto.imageURL || '/img/product.jpg'}" 
                 alt="${producto.name}"
                 class="producto-imagen"
+                onerror="this.src='/img/product.jpg'"
             >
 
             <div class="producto-info">
-
                 <h3>${producto.name}</h3>
+                <p class="producto-precio"> $${Number(producto.price).toFixed(2)} </p>
+                <p> SKU: ${producto.sku} </p>
+                <p> Tipo: ${producto.type?.typeName ?? 'Sin tipo'} </p>
 
-                <p class="producto-precio">
-                    $${Number(producto.price).toFixed(2)}
-                </p>
-
-                <p>
-                    SKU: ${producto.sku}
-                </p>
-
-                <p>
-                    Tipo: ${producto.typeid}
-                </p>
-
-                <button class="boton-agregar" data-id="${producto.productId}" > 
+                <button class="boton-agregar" data-id="${producto.productid}" > 
                     Agregar al carrito 
                 </button>
 
@@ -129,32 +169,20 @@ function mostrarProductos(productos) {
 function agregarEventosBotones() {
 
     const botones = document.querySelectorAll('.boton-agregar');
-
+    
     botones.forEach(boton => {
 
         boton.addEventListener('click', () => {
-
-            const productId = boton.dataset.id;
-
-            console.log('Producto agregado:', productId);
-
-            // Posteriormente aquí conectaremos el carrito
-            // Buscar el producto completo en la lista 
+            const productid = boton.dataset.id;
+            // console.log('Producto agregado:', productId);
             const producto = productosActuales.find( 
-                p => String(p.productId) === String(productId)
+                p => String(p.productid) === String(productid)
             );
-            
             if (!producto) { 
-                console.error("No se encontró el producto:", productId); return; 
+                console.error("No se encontró el producto:", productid); return; 
                 } 
             agregarAlCarrito(producto);
-
-            // productosActuales es un arreglo que contiene todos los productos cargados actualmente, se debe definir en el ámbito global para que esté disponible aquí.
-            // se necesita modificar la API para que conserve el estado del carrito en el backend y no en localStorage
-
-
         });
-
     });
 }
 
@@ -164,18 +192,15 @@ function agregarAlCarrito(producto) {
 
     // agregar unicamente la infomación necesaria del producto al carrito
     const productoCarrito = {
-        id: producto.productId,
+        id: producto.type?.typeid,
         name: producto.name,
         sku: producto.sku,
         price: producto.price,
         typeid: producto.typeid,
-        quantity: 1 // cantidad inicial
-        // para quantity se puede implementar un input en el modal de carrito.html para que el usuario pueda modificar la cantidad de cada producto
+        quantity: 1 
     };
 
     carrito.push(productoCarrito);
-
-
     // guardar de nuevo en localStorage
     localStorage.setItem(CARRITO_KEY, JSON.stringify(carrito));
 
@@ -184,113 +209,7 @@ function agregarAlCarrito(producto) {
 
     mensaje.textContent = `Producto "${producto.name}" agregado al carrito.`;
 }
-
-
-
-
-
-
 
 // Ejecutar cuando cargue la página
 cargarProductos();
 
-const formCrear = document.getElementById('form-crear-producto');
-const msgCreacion = document.getElementById('mensaje-creacion');
-
-if (formCrear) {
-    formCrear.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const token = localStorage.getItem('authToken');
-
-        const nameVal = document.getElementById('prod-name').value.trim();
-        const skuVal = document.getElementById('prod-sku').value.trim();
-        const priceVal = parseFloat(document.getElementById('prod-price').value) || 0;
-        const typeIdVal = parseInt(document.getElementById('prod-type').value, 10) || 1;
-        const imgVal = document.getElementById('prod-img').value.trim();
-
-        // Enviamos nombres en PascalCase y camelCase para cubrir cualquier mapeo de EF/DTO
-        const payload = {
-            Name: nameVal,
-            name: nameVal,
-            SKU: skuVal,
-            Sku: skuVal,
-            sku: skuVal,
-            Price: priceVal,
-            price: priceVal,
-            TypeId: typeIdVal,
-            typeId: typeIdVal,
-            ImageUrl: imgVal,
-            ImageURL: imgVal,
-            imageUrl: imgVal
-        };
-
-
-        //
-
-        try {
-            msgCreacion.textContent = "Creando producto...";
-            if (msgCreacion) msgCreacion.textContent = "Creando producto...";
-
-            const res = await fetch(`${API_URL}/api/products/product/create`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(payload)
-            });
-
-            msgCreacion.textContent = "¡Producto creado con éxito!";
-            // Extraer respuesta del backend antes de validar el status
-            const data = await res.json().catch(() => null);
-
-            if (!res.ok) {
-                console.error("Detalle completo del error 500:", data);
-                const serverMsg = data?.message || data?.Message || data?.error || data?.title || JSON.stringify(data);
-                throw new Error(`HTTP ${res.status}: ${serverMsg}`);
-            }
-
-            console.log("Respuesta creación exitosa:", data);
-            if (msgCreacion) msgCreacion.textContent = "¡Producto creado con éxito!";
-            formCrear.reset();
-            cargarProductos(); // recargar productos para reflejar el nuevo producto
-            
-            if (typeof cargarProductos === 'function') {
-                cargarProductos();
-            }
-        } catch (err) {
-            msgCreacion.textContent = "Error al crear producto: " + err.message;
-            console.error("Error al registrar producto:", err);
-            if (msgCreacion) msgCreacion.textContent = "Error al crear: " + err.message;
-        }
-    });
-}
-
-
-function agregarAlCarrito(producto) {
-    // Obtener el carrito actual desde localStorage
-    let carrito = JSON.parse(localStorage.getItem(CARRITO_KEY)) || [];
-
-    // agregar unicamente la infomación necesaria del producto al carrito
-    const productoCarrito = {
-        id: producto.productId, // asi esta el nombre dentro de la api, estoy probando si es el error de que solo se guarde el primer producto de la lista 
-        name: producto.name,
-        sku: producto.sku,
-        price: producto.price,
-        typeid: producto.typeid,
-        quantity: 1 // cantidad inicial
-        // para quantity se puede implementar un input en el modal de carrito.html para que el usuario pueda modificar la cantidad de cada producto
-    };
-    
-
-    carrito.push(productoCarrito);
-
-
-    // guardar de nuevo en localStorage
-    localStorage.setItem(CARRITO_KEY, JSON.stringify(carrito));
-
-    console.log("Producto agregado al carrito:", productoCarrito);
-    console.log("Carrito actual:", carrito);
-
-    mensaje.textContent = `Producto "${producto.name}" agregado al carrito.`;
-}

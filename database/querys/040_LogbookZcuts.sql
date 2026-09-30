@@ -1,0 +1,22 @@
+create table bitacora_z_cuts(
+  bitacora_id serial primary key,
+  zcutid int,
+  shiftid int,
+  cashierid uuid,
+  opened_at timestamp,
+  closed_at timestamp,
+  firstsaleid int,
+  lastsaleid int,
+  opening_cash numeric,
+  total_sales numeric,
+  total_sales_count int,
+  expected_cash numeric,
+  expected_card numeric,
+  expected_transfer numeric,
+  actual_cash numeric,
+  cash_difference numeric,
+  notes text,
+  accion varchar(10),
+  hecho_por uuid,
+  fecha_hora timestamp default now()
+);

@@ -7,5 +7,6 @@ namespace ServicioUsers.Dtos.Auth.Login
         public bool Success {get; set;} 
         public string? Message {get; set;}
         public AuthResponseDto? AuthData {get; set;}
+        public Guid? UserId {get; set;}
     }
 }

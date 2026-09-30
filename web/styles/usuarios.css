@@ -1,161 +1,213 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: Arial, sans-serif;
-}
+/* =========================================================
+   MachaPoint POS — Usuarios
+   Carga: 00-tokens.css → 01-base.css → 02-components.css → usuarios.css
+   (Antes este archivo tenía dos bloques de variables y un
+   bloque de comentario duplicado; ambos se eliminaron.)
+   ========================================================= */
+@import url('global.css');
 
-body {
-    min-height: 100vh;
-    background-color: #f4f4f9;
-}
-
-
-/* =========================
+/* =========================================================
    BARRA SUPERIOR (NAVBAR)
-========================= */
-
+   Antes: altura 115px y color #ffbd59 hardcoded.
+   Ahora usa var(--color-primary) para quedar alineado con
+   carrito/catálogo/ventas.
+   ========================================================= */
 .navbar {
-    height: 115px;
-    background-color: #ffbd59;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 50px;
+  height: 100px;
+  background: linear-gradient(160deg, var(--color-primary), var(--color-primary-dark));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 50px;
 }
-
 .navbar h1 {
-    font-size: 32px;
-    font-weight: 500;
+  color: var(--color-white);
+  font-size: 1.8rem;
+  font-weight: 800;
 }
-
 .navbar div {
-    display: flex;
-    align-items: center;
-    gap: 20px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
 }
-
 #health-status {
-    font-size: 15px;
-    font-weight: 600;
-    color: #333;
-    background-color: rgba(255, 255, 255, 0.6);
-    padding: 8px 15px;
-    border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-ink);
+  background: rgba(255, 255, 255, 0.7);
+  padding: 8px 15px;
+  border-radius: var(--radius-pill);
 }
-
 .navbar a {
-    color: black;
-    text-decoration: none;
-    font-size: 18px;
-    font-weight: bold;
-    background-color: #ffffff;
-    padding: 10px 20px;
-    border-radius: 12px;
-    transition: background-color 0.2s, transform 0.2s;
+  color: var(--color-ink);
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 700;
+  background: var(--color-white);
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+  transition: background var(--transition-fast), transform var(--transition-fast);
 }
-
 .navbar a:hover {
-    background-color: #eee;
-    transform: scale(1.03);
+  background: var(--color-cream);
+  transform: scale(1.03);
 }
 
-
-/* =========================
+/* =========================================================
    CONTENEDOR PRINCIPAL
-========================= */
-
+   ========================================================= */
 .container {
-    width: 85%;
-    max-width: 800px;
-    margin: 50px auto;
-    display: flex;
-    flex-direction: column;
-    gap: 30px;
+  width: 85%;
+  max-width: 800px;
+  margin: 50px auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
 }
 
-
-/* =========================
+/* =========================================================
    TARJETAS (CARDS) Y FORMULARIOS
-========================= */
-
+   ========================================================= */
 .card {
-    background-color: #ffffff;
-    border-radius: 15px;
-    padding: 30px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  background: var(--color-white);
+  border-radius: var(--radius-lg);
+  padding: var(--space-8);
+  box-shadow: var(--shadow-sm);
+  border: 2px solid var(--color-line);
 }
-
 .card h3 {
-    font-size: 22px;
-    margin-bottom: 20px;
-    color: #333;
-    border-bottom: 3px solid #ffbd59;
-    padding-bottom: 6px;
-    display: inline-block;
+  font-size: 1.35rem;
+  margin-bottom: var(--space-5);
+  border-bottom: 3px solid var(--color-primary);
+  padding-bottom: 6px;
+  display: inline-block;
 }
-
 .card form {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
 }
 
-.card form input {
-    padding: 12px 15px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    font-size: 16px;
-    outline: none;
-    transition: border-color 0.2s;
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.form-group label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-ink-soft);
+  padding-left: 2px;
 }
 
-.card form input:focus {
-    border-color: #ffbd59;
+.card form input,
+.card form select {
+  padding: 12px 15px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  width: 100%;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  appearance: none;
+}
+.card form select {
+  cursor: pointer;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%232b2118%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+  background-repeat: no-repeat;
+  background-position: right 15px top 50%;
+  background-size: 10px auto;
+  padding-right: 35px;
+}
+.card form input:focus,
+.card form select:focus {
+  border-color: var(--color-primary-dark);
+  background: var(--color-white);
+  box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.2);
 }
 
-
-/* =========================
+/* =========================================================
    BOTONES
-========================= */
-
+   ========================================================= */
 .card form button {
-    margin-top: 10px;
-    padding: 12px 20px;
-    border: none;
-    border-radius: 8px;
-    background-color: #ffbd59;
-    font-size: 16px;
-    font-weight: bold;
-    color: #000;
-    cursor: pointer;
-    align-self: flex-start;
-    transition: background-color 0.2s, transform 0.2s;
+  margin-top: 10px;
+  padding: 12px 20px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--color-primary);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-ink);
+  cursor: pointer;
+  align-self: flex-start;
+  transition: background var(--transition-fast), transform var(--transition-fast);
 }
-
 .card form button:hover {
-    background-color: #ffaa2b;
-    transform: scale(1.02);
+  background: var(--color-primary-dark);
+  color: var(--color-white);
+  transform: translateY(-2px);
 }
-
 .card form button.btn-danger {
-    background-color: #ff7777;
-    color: #ffffff;
+  background: var(--color-error);
+  color: var(--color-white);
 }
-
 .card form button.btn-danger:hover {
-    background-color: #ff5555;
+  background: #a5311f;
 }
 
-
-/* =========================
-   MENSAJE DE ESTADO DEL USUARIO
-========================= */
-
+/* =========================================================
+   SNACKBAR — MENSAJE DE ESTADO DEL USUARIO
+   ========================================================= */
 #user-status-msg {
-    text-align: center;
-    font-size: 18px;
-    font-weight: bold;
-    color: #333;
-    padding: 10px;
+  visibility: hidden;
+  min-width: 280px;
+  max-width: 90%;
+  background: var(--color-ink);
+  color: var(--color-white);
+  text-align: center;
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  position: fixed;
+  z-index: 10000;
+  left: 50%;
+  bottom: 30px;
+  font-size: 1rem;
+  font-weight: 600;
+  box-shadow: var(--shadow-md);
+  transform: translateX(-50%) translateY(100px);
+  opacity: 0;
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+              opacity var(--transition-base), visibility var(--transition-base);
+}
+#user-status-msg.show {
+  visibility: visible;
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+#user-status-msg.error {
+  background: var(--color-error);
+}
+#user-status-msg.success {
+  background: var(--color-mint-dark);
+}
+#user-status-msg.processing {
+  background: var(--color-primary);
+  color: var(--color-ink);
+}
+
+/* =========================================================
+   RESPONSIVO
+   ========================================================= */
+@media (max-width: 700px) {
+  .navbar {
+    height: auto;
+    padding: 15px 20px;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+  .container {
+    width: 92%;
+  }
 }

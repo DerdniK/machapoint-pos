@@ -23,6 +23,15 @@ const btnFinalizar = document.getElementById('btn-finalizar');
 
 cargarCarrito();
 
+function obtenerUsuario() {
+    try {
+        return JSON.parse(localStorage.getItem('usuario') || 'null');
+    } catch (error) {
+        console.error('Error al parsear el usuario desde localStorage:', error);
+        return null;
+    }
+}
+
 function renderizarCarrito() {
     const rawData = localStorage.getItem(CARRITO_KEY);
     // LOG 2: Ver qué hay exactamente en localStorage antes de procesarlo
@@ -121,7 +130,7 @@ function cargarCarrito() {
         </div>
 
         <button class="boton-eliminar" data-index="${index}" data-accion="eliminar" title="Eliminar producto">
-            🗑 Eliminar
+            Eliminar
         </button>
         `;
 
@@ -144,11 +153,19 @@ function actualizarCantidad(index, accion) {
     const producto = carrito[index];
 
     if (accion === 'aumentar') {
-        producto.cantidad = (Number(producto.cantidad) || 0) + 1;
+        const cantidadActual = Number(producto.cantidad) || 0;
+        
+        // NUEVA REGLA: Límite de 10 productos
+        if (cantidadActual >= 10) {
+            alert('No puedes agregar más de 10 unidades del mismo producto.');
+            producto.cantidad = 10;
+        } else {
+            producto.cantidad = cantidadActual + 1;
+        }
+        
     } else if (accion === 'disminuir') {
         producto.cantidad = (Number(producto.cantidad) || 0) - 1;
         // El botón "-" ya NO elimina el producto: se detiene en 1.
-        // Para quitar un producto del carrito se debe usar el botón "Eliminar".
         if (producto.cantidad <= 0) {
             producto.cantidad = 1;
         }
@@ -235,6 +252,28 @@ if (listaCarrito) {
     });
 }
 
+// Obtener el botón del DOM
+const btnVaciarCarrito = document.getElementById('btn-vaciar-carrito');
+
+// Evento para vaciar todo el carrito
+if (btnVaciarCarrito) {
+    btnVaciarCarrito.addEventListener('click', () => {
+        const carrito = renderizarCarrito();
+        
+        if (carrito.length === 0) {
+            alert("El carrito ya está vacío.");
+            return;
+        }
+
+        const confirmar = confirm("¿Estás seguro de que deseas eliminar todos los productos del carrito?");
+        
+        if (confirmar) {
+            limpiarCarrito(); // Tu función existente que borra el localStorage
+            resetFormularioPago(); // Resetea la parte de los pagos si había algo escrito
+        }
+    });
+}
+
 // cambiar metodo de pago
 if (metodoPago) {
     metodoPago.addEventListener('change', () => {
@@ -284,124 +323,26 @@ if (inputEfectivo) {
 }
 
 // obtener el usuario de localStorage
-function obtenerUsuario() {
-    const usuario = JSON.parse(localStorage.getItem('usuario'));
-
-    if (usuario) {
-        return {
-            id: usuario.id || null,
-            nombre: usuario.nombre || '',
-            correo: usuario.correo || '',
-            rol: usuario.rol || ''
-        };
-    }
-
+// Traduce la selección del HTML al formato exacto de la BD
+function obtenerMetodoPagoBD() {
+    const metodo = metodoPago.value; // 'efectivo' o 'tarjeta'
+    if (metodo === 'efectivo') return 'EFECTIVO';
+    if (metodo === 'tarjeta') return tipoTarjeta.value || null; // ya es TARJETA_CREDITO / TARJETA_DEBITO
     return null;
-}
-
-function generarIdCuenta() {
-    const carrito = renderizarCarrito();
-
-    if (carrito.length === 0) {
-        console.error('No se puede generar una cuenta con un carrito vacío.');
-        return null;
-    }
-
-    const metodo = metodoPago.value;
-    if (!metodo) {
-        console.error('No se ha seleccionado un método de pago.');
-        return null;
-    }
-
-    const total = calcularTotal(carrito);
-    let informacionPago = {};
-
-    if (metodo === 'efectivo') {
-        const dineroRecibido = parseFloat(inputEfectivo.value) || 0;
-
-        if (dineroRecibido < total) {
-            console.error('Dinero insuficiente para cubrir el total.');
-            return null;
-        }
-
-        informacionPago = {
-            metodo: 'efectivo',
-            dineroRecibido: dineroRecibido,
-            cambio: dineroRecibido - total
-        };
-    } else if (metodo === 'tarjeta') {
-        if (!tipoTarjeta.value) {
-            console.error('No se ha seleccionado un tipo de tarjeta.');
-            return null;
-        }
-
-        informacionPago = {
-            metodo: 'tarjeta',
-            tipo: tipoTarjeta.value
-        };
-    }
-
-    const usuario = obtenerUsuario();
-    if (!usuario) {
-        console.error('No se encontró un usuario activo.');
-        return null;
-    }
-
-    const cuenta = {
-        id: Date.now().toString(),
-        fecha: new Date().toISOString(),
-        usuario: {
-            nombre: usuario.nombre
-        },
-        productos: carrito.map(producto => ({
-            sku: producto.sku,
-            nombre: producto.name,
-            tipo: producto.typeid,
-            precioUnitario: Number(producto.price) || 0,
-            cantidad: Number(producto.cantidad) || 1,
-            subtotal: Number(((Number(producto.price) || 0) * (Number(producto.cantidad) || 1)).toFixed(2))
-        })),
-        total: Number(total.toFixed(2)),
-        pago: {
-            metodo: metodo,
-            ...informacionPago
-        }
-    };
-
-    const cuentas = JSON.parse(localStorage.getItem(CUENTAS_KEY)) || [];
-    cuentas.push(cuenta);
-    localStorage.setItem(CUENTAS_KEY, JSON.stringify(cuentas));
-
-    console.log('cuenta guardada:', cuenta);
-
-    localStorage.removeItem(CARRITO_KEY);
-
-    alert(`Cuenta finalizada correctamente.\n\nVenta: ${cuenta.id}\nTotal: $${cuenta.total.toFixed(2)}`);
-
-    cargarCarrito();
-
-    metodoPago.value = '';
-    metodoPago.style.display = 'none';
-    inputEfectivo.value = '';
-    cambioResultado.textContent = '$0.00';
-    tipoTarjeta.value = '';
-
-    return cuenta.id;
-
 }
 
 // --- Helpers para datos que todavia no llamo ---
 
-// function obtenerShiftId() {
-//     // Sugerencia: guardar el turno activo en localStorage (p.ej. al abrir caja),
-//     // igual que se hace con 'usuario', y leerlo aquí.
-//     const turno = JSON.parse(localStorage.getItem('turnoActivo') || 'null');
-//     if (turno && turno.shiftId) {
-//         return turno.shiftId;
-//     }
-//     console.warn('No se encontró un shiftId activo en localStorage ("turnoActivo"). Usando valor temporal.');
-//     return null; // TODO: reemplazar por el id real del turno una vez implementado
-// }
+function obtenerShiftId() {
+    // Sugerencia: guardar el turno activo en localStorage (p.ej. al abrir caja),
+    // igual que se hace con 'usuario', y leerlo aquí.
+    const turno = JSON.parse(localStorage.getItem('turnoActivo') || 'null');
+    if (turno && turno.shiftId) {
+        return turno.shiftId;
+    }
+    console.warn('No se encontró un shiftId activo en localStorage ("turnoActivo"). Usando valor temporal.');
+    return null; // TODO: reemplazar por el id real del turno una vez implementado
+}
 
 function generarReferenciaTransaccion() {
     // Referencia única generada en el cliente. Si el backend/terminal de
@@ -410,6 +351,31 @@ function generarReferenciaTransaccion() {
         return crypto.randomUUID();
     }
     return `ref-${Date.now()}`;
+}
+
+
+function normalizarPaymentMethod(metodo, tipoTarjetaValue) {
+    if (metodo === 'efectivo') {
+        return 'EFECTIVO';
+    }
+    if (metodo === 'tarjeta') {
+        const tipo = (tipoTarjetaValue || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .trim()
+            .toLowerCase();
+
+        if (tipo.includes('cred')) {
+            return 'TARJETA_CREDITO';
+        }
+        if (tipo.includes('deb')) {
+            return 'TARJETA_DEBITO'; 
+        }
+        console.error('Tipo de tarjeta no reconocido:', tipoTarjetaValue);
+        return null;
+    }
+    console.error('Método de pago no reconocido:', metodo);
+    return null;
 }
 
 function resetFormularioPago() {
@@ -431,64 +397,82 @@ async function procesarVentaBackend() {
         return null;
     }
 
-    const metodo = metodoPago.value;
-    if (!metodo) {
-        console.error('No se ha seleccionado un método de pago.');
+    const metodo = metodoPago.value; // 'efectivo' o 'tarjeta'
+    const payment_method = obtenerMetodoPagoBD(); // Te devuelve "EFECTIVO", "TARJETA_CREDITO", etc.
+
+    if (!payment_method) {
+        console.error('No se ha seleccionado un método de pago válido completo.');
         return null;
     }
 
     const total = calcularTotal(carrito);
-    let payment_method = '';
     let amount_given = 0;
     let change_given = 0;
 
     if (metodo === 'efectivo') {
         amount_given = parseFloat(inputEfectivo.value) || 0;
+        
         if (amount_given < total) {
             console.error('Dinero insuficiente para cubrir el total.');
             return null;
         }
-        payment_method = 'Efectivo';
         change_given = amount_given - total;
     } else if (metodo === 'tarjeta') {
         if (!tipoTarjeta.value) {
             console.error('No se ha seleccionado un tipo de tarjeta.');
             return null;
         }
-        // Ajustar este texto si el backend espera valores específicos
-        // (p.ej. "Tarjeta de crédito" / "Tarjeta de débito").
-        payment_method = tipoTarjeta.value;
-        amount_given = total; // en tarjeta normalmente se cobra el total exacto
+        amount_given = total;
         change_given = 0;
     } else {
         console.error('Método de pago no reconocido:', metodo);
         return null;
     }
 
-    // const usuario = obtenerUsuario();
-    // if (!usuario || !usuario.id) {
-    //     console.error('No se encontró un usuario activo con id (cashierId).');
-    //     return null;
-    // }
+    // payment_method = normalizarPaymentMethod(metodo, tipoTarjeta.value);
 
-    // const shiftId = obtenerShiftId();
-    // if (!shiftId) {
-    //     console.error('No se encontró un shiftId activo. No se puede procesar la venta.');
-    //     return null;
-    // }
+    if (!payment_method) {
+        alert('No se pudo determinar el método de pago. Verifica la selección.');
+        return null;
+    }
 
-    const payload = {
-        // shiftId: shiftId, --------------------------------------------------------------------------------------------------------------
-        cashierId: "1672c576-1e90-43f5-84d8-8cf6486275c0"   ,
+    const token = localStorage.getItem('authToken');
+
+    if (!token) {
+        console.error('No se encontró el JWT en localStorage.');
+        alert('No hay una sesión válida. Inicia sesión nuevamente.');
+        return null;
+    }
+
+const usuario = obtenerUsuario();
+    // Obtener cashierId desde localStorage o desde el usuario activo
+    const cashierId = localStorage.getItem('cashierId') 
+    // || (usuario ? usuario.id : null);
+    // Obtener shiftId desde localStorage o función auxiliar
+    const shiftId = localStorage.getItem('shiftId') || obtenerShiftId();
+
+    if (!shiftId) {
+        console.error('No se encontró un shiftId activo. No se puede procesar la venta.');
+        alert('No se encontró un turno activo (shiftId). Inicia turno antes de vender.');
+        return null;
+    }
+
+    if (!cashierId) {
+        console.error('No se encontró un cashierId activo. No se puede procesar la venta.');
+        alert('No se encontró un cajero activo (cashierId).');
+        return null;
+    }
+
+const payload = {
+        shiftId: Number(shiftId), 
+        cashierId: cashierId,
         total: Number(total.toFixed(2)),
         payment_method: payment_method,
         amount_given: Number(amount_given.toFixed(2)),
         change_given: Number(change_given.toFixed(2)),
         transaction_reference: generarReferenciaTransaccion(),
         products: carrito.map(producto => ({
-            // producto.id debe existir en tus datos de producto y corresponder
-            // al id numérico que el backend espera como productId.
-            productId: producto.id ?? producto.productId,
+            productId: Number(producto.id ?? producto.productId),
             unit_price: Number(producto.price) || 0,
             quantity: Number(producto.cantidad) || 1,
             subtotal: Number(((Number(producto.price) || 0) * (Number(producto.cantidad) || 1)).toFixed(2))
@@ -497,11 +481,15 @@ async function procesarVentaBackend() {
 
     console.log('Enviando venta al backend:', payload);
 
+
+    // ========================================================================================================================
     try {
+        const token = localStorage.getItem('authToken');
         const response = await fetch(BACKEND_VENTA_URL, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify(payload)
         });
@@ -526,6 +514,7 @@ async function procesarVentaBackend() {
         alert('Ocurrió un error al procesar la venta. Intenta de nuevo.');
         return null;
     }
+    // ========================================================================================================================
 }
 
 // Click en "Finalizar": pide confirmación y, si es afirmativa, procesa la venta.
@@ -542,4 +531,4 @@ if (btnFinalizar) {
         await procesarVentaBackend();
         validarBotonFinalizar(); // vuelve a evaluar el estado (carrito ya vacío)
     });
-}
+} 

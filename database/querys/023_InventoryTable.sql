@@ -1,0 +1,6 @@
+CREATE TABLE inventory (
+    inventoryid SERIAL PRIMARY KEY,
+    productid INT NOT NULL UNIQUE REFERENCES products(productid) ON DELETE RESTRICT,
+    stock INT NOT NULL DEFAULT 0 CHECK (stock >= 0),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
