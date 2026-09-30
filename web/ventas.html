@@ -95,11 +95,7 @@
         <!-- TURNO ABIERTO -->
         <!-- ========================= -->
 
-        <section
-            id="seccion-turno"
-            class="tarjeta oculto"
-        >
-
+        <section id="seccion-turno" class="tarjeta oculto">
             <div class="tarjeta-header">
                 <div>
                     <h2>Turno actual</h2>
@@ -107,12 +103,10 @@
                         Turno activo
                     </p>
                 </div>
-
                 <div class="estado abierto">
                     ● Turno abierto
                 </div>
             </div>
-
 
             <!-- INFORMACIÓN DEL TURNO -->
             <div class="resumen-grid">
@@ -139,15 +133,37 @@
 
             </div>
 
+            <div id="seccion-ventas-turno" class="ventas-container">
+                <h3>Ventas del Turno Activo</h3>
+                
+                <div class="resumen-ventas-cards">
+                    <div class="card-metrica">
+                        <span>Total Ventas:</span>
+                        <strong id="total-ventas-count">0</strong>
+                    </div>
+                    <div class="card-metrica">
+                        <span>Monto Acumulado:</span>
+                        <strong id="total-ventas-monto">$0.00</strong>
+                    </div>
+                </div>
 
-            <!-- AVISO -->
-            <div class="aviso">
-                <strong>Turno abierto</strong>
-                <p>
-                    Las ventas realizadas desde el sistema deberán asociarse a este turno.
-                </p>
+                <table class="tabla-ventas">
+                    <thead>
+                        <tr>
+                            <th>Venta</th>
+                            <th>Hora</th>
+                            <th>Método Pago</th>
+                            <th>Items</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-ventas-body">
+                        <tr>
+                            <td colspan="5" class="texto-vacio">No hay ventas registradas en este turno.</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
-
 
             <!-- ========================= -->
             <!-- CIERRE -->
