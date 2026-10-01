@@ -243,6 +243,13 @@ transform: translateY(-1px);
 .mp-header a[aria-current="page"] {
 background: rgba(255, 255, 255, 0.28);
 }
+.mp-header .user-badge {
+  color: var(--color-white);
+  font-size: 0.9rem;
+  font-weight: 600;
+  opacity: 1;
+}
+
 
 /* Espaciador para compensar el header fijo */
 .mp-content-offset {
