@@ -26,6 +26,7 @@ const estadoTurno = document.getElementById("estado-turno");
 const mensaje = document.getElementById("mensaje");
 const cashierSelect = document.getElementById("cashier-select");
 const openingAmount = document.getElementById("opening-amount");
+
 const actualCash = document.getElementById("actual-cash");
 const closeNotes = document.getElementById("close-notes");
 
@@ -35,6 +36,115 @@ let salesPollingInterval = null;
 
 function obtenerToken() {
     return localStorage.getItem("authToken");
+}
+
+// Validacion de fondo
+
+const MONTO_MIN = 0.99;
+const MONTO_MAX = 20000;
+const MONTO_MAX_CARACTERES = 7;
+
+// Filtra lo que el usuario escribe: solo dígitos, un punto, máx. 2 decimales, máx. 5 caracteres
+function filtrarMonto(input) {
+    let valor = input.value;
+
+    // Permitir coma como punto decimal
+    valor = valor.replace(",", ".");
+
+    // Quitar todo excepto dígitos y puntos
+    valor = valor.replace(/[^\d.]/g, "");
+
+    // Permitir solo un punto
+    const partes = valor.split(".");
+    if (partes.length > 2) {
+        valor = partes[0] + "." + partes.slice(1).join("");
+    }
+
+    // Limitar a 2 decimales
+    if (valor.includes(".")) {
+        const [entero, decimales] = valor.split(".");
+        valor = entero + "." + decimales.slice(0, 2);
+    }
+
+    // Limitar a 5 caracteres en total
+    valor = valor.slice(0, MONTO_MAX_CARACTERES);
+
+    input.value = valor;
+}
+
+if (openingAmount) {
+    openingAmount.addEventListener("input", () => filtrarMonto(openingAmount));
+
+    // Controla también el pegado de texto
+    openingAmount.addEventListener("paste", () => {
+        setTimeout(() => filtrarMonto(openingAmount), 0);
+    });
+}
+
+if (actualCash) {
+    actualCash.addEventListener("input", () => filtrarMonto(actualCash));
+
+    // Controla también el pegado de texto
+    actualCash.addEventListener("paste", () => {
+        setTimeout(() => filtrarMonto(actualCash), 0);
+    });
+}
+
+// Validación final (se usa al hacer clic en "Abrir día de venta")
+function validarFondoInicial(texto) {
+    const valor = texto.trim();
+
+    if (valor === "") {
+        return "Ingresa un fondo inicial.";
+    }
+
+    if (!/^\d+(\.\d{1,2})?$/.test(valor)) {
+        return "Formato inválido. Usa solo números y máximo 2 decimales.";
+    }
+
+    if (valor.length > MONTO_MAX_CARACTERES) {
+        return `El fondo inicial no puede tener más de ${MONTO_MAX_CARACTERES} caracteres.`;
+    }
+
+    const numero = Number(valor);
+
+    if (numero <= MONTO_MIN) {
+        return `El fondo inicial debe ser mayor a $${MONTO_MIN}.`;
+    }
+
+    if (numero > MONTO_MAX) {
+        return `El fondo inicial no puede ser mayor a $${MONTO_MAX.toLocaleString("es-MX")}.`;
+    }
+
+    return null; // Sin errores
+}
+
+function validarDineroContado(texto) {
+    const valor = texto.trim();
+
+    if (valor === "") {
+        return "Ingresa el dinero contado en caja.";
+    }
+
+    if (!/^\d+(\.\d{1,2})?$/.test(valor)) {
+        return "Formato inválido. Usa solo números y máximo 2 decimales.";
+    }
+
+    if (valor.length > MONTO_MAX_CARACTERES) {
+        return `El monto no puede tener más de ${MONTO_MAX_CARACTERES} caracteres.`;
+    }
+
+    const numero = Number(valor);
+
+    if (numero < 0) {
+        return "El dinero contado no puede ser negativo.";
+    }
+
+    if (numero > MONTO_MAX) {
+        return `El dinero contado no puede ser mayor a $${MONTO_MAX.toLocaleString("es-MX")}.`;
+    }
+
+    return null; // Sin errores
 }
 
 //Ventas del turno
@@ -201,8 +311,10 @@ async function abrirTurno() {
         return;
     }
 
-    if (isNaN(amount) || amount < 0 || openingAmount.value.trim() === "") {
-        mostrarMensaje("Ingresa un fondo inicial válido.","error");
+    const errorMonto = validarFondoInicial(openingAmount.value);
+    if (errorMonto) {
+        mostrarMensaje(errorMonto, "error");
+        openingAmount.focus();
         return;
     }
 
@@ -377,20 +489,15 @@ async function cerrarTurno() {
     // Dinero contado
     // --------------------------------------
 
-    const countedCash =
-        Number(actualCash.value);
-
-
-    if (isNaN(countedCash) || countedCash < 0 || actualCash.value.trim() === "") {
-
-        mostrarMensaje(
-            "Ingresa el dinero contado en caja.",
-            "error"
-        );
-
+const errorMonto = validarDineroContado(actualCash.value);
+    
+    if (errorMonto) {
+        mostrarMensaje(errorMonto, "error");
+        actualCash.focus();
         return;
     }
 
+    const countedCash = Number(actualCash.value);
 
     const notes =
         closeNotes.value.trim();

@@ -19,7 +19,7 @@ const TIPOS = [
 
 // ---------- Reglas de validación ----------
 const MAX_LONGITUD = 20;
-const PRECIO_MIN = 54;      
+const PRECIO_MIN = 1;      
 const PRECIO_MAX = 500;    
 const MAX_LONGITUD_PRECIO = 6; // "499.99"
 
