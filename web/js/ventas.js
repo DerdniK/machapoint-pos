@@ -234,17 +234,21 @@ function detenerPollingVentas() {
 //Se obtiene el usuario actual del localStorage y se devuelve un objeto con id y username. Si no hay usuario o hay un error al parsear, se devuelve null.
 function obtenerUsuarioActual() {
     const usuario = localStorage.getItem("user");
-    if(usuario) {
-        try {
-            const userObj = JSON.parse(usuario);
-            return {
-                id: userObj.id || null,
-                username: userObj.username || null
-            }
-        } catch (error) {
-            console.error("Error al leer usuario:", error);
-            return null;
-        }
+    if (!usuario) return null;
+
+    try {
+        const userObj = JSON.parse(usuario);
+        return {
+            id: userObj.id || null,
+            username:
+                userObj.username ||
+                userObj.nombre ||
+                userObj.email ||
+                "Cajero"
+        };
+    } catch (error) {
+        console.error("Error al leer usuario:", error);
+        return null;
     }
 }
 
@@ -572,7 +576,7 @@ const errorMonto = validarDineroContado(actualCash.value);
         // ----------------------------------
         // Petición
         // ----------------------------------
-
+        const cashierName = localStorage.getItem("cashierUsername");
         const response =
             await fetch(
                 `${API_SHIFT_URL}/api/shift/close`,
@@ -617,6 +621,7 @@ const errorMonto = validarDineroContado(actualCash.value);
         // ----------------------------------
 
         await obtenerCorteZ(
+            cashierName,
             Number(shiftId)
         );
 
@@ -646,7 +651,7 @@ const errorMonto = validarDineroContado(actualCash.value);
 }
 
 async function obtenerCorteZ(
-    shiftId
+    cashierName, shiftId
 ) {
 
     try {
@@ -714,7 +719,7 @@ async function obtenerCorteZ(
             return;
         }
 
-        mostrarCorte(corte);
+        mostrarCorte(corte,cashierName);
         finalizarTurnoLocal();
 
 
@@ -741,7 +746,7 @@ async function obtenerCorteZ(
 }
 
 
-function mostrarCorte(corte) {
+function mostrarCorte(corte, cashierName) {
 
     seccionTurno.classList.add("oculto");
     seccionApertura.classList.add("oculto");
@@ -750,9 +755,9 @@ function mostrarCorte(corte) {
     // Información
 
     document.getElementById(
-        "corte-cajero"
+        "corte-cajero" 
     ).textContent =
-        corte.cashierUsername || "-";
+       cashierName || corte.cashierUsername || "-"
 
 
     document.getElementById(
@@ -901,13 +906,14 @@ function finalizarTurnoLocal() {
 function restaurarTurno() {
 
     const shiftId = localStorage.getItem("shiftId");
-    const cashierName = localStorage.getItem("cashierUsername") || "Cajero";
-    const amount = localStorage.getItem("openingAmount");
+        const cashierName = localStorage.getItem("cashierUsername");
+        const nombreCajero = (cashierName && cashierName !== "null") ? cashierName : "Cajero";    
+        const amount = localStorage.getItem("openingAmount");
 
     if (shiftId && amount !== null) {
         mostrarTurnoAbierto(
             shiftId,
-            cashierName,
+            nombreCajero,
             Number(amount)
         );
     }else{
