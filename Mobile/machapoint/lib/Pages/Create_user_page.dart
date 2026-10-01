@@ -39,7 +39,10 @@ class _CreateUserPageState extends State<CreateUserPage> {
 
     if (password.length < 7) {
       if (mounted) {
-        _showSnackBar('La contraseña debe tener al menos 7 caracteres', Colors.orange);
+        _showSnackBar(
+          'La contraseña debe tener al menos 7 caracteres',
+          Colors.orange,
+        );
       }
       return;
     }
@@ -73,7 +76,10 @@ class _CreateUserPageState extends State<CreateUserPage> {
             rawMsg.contains('duplicate')) {
           _showSnackBar('El nombre de usuario ya esta ocupado', Colors.orange);
         } else {
-          _showSnackBar('Error: ${e.toString().replaceAll('Exception: ', '')}', Colors.redAccent);
+          _showSnackBar(
+            'Error: ${e.toString().replaceAll('Exception: ', '')}',
+            Colors.redAccent,
+          );
         }
       }
     } finally {
@@ -111,13 +117,19 @@ class _CreateUserPageState extends State<CreateUserPage> {
             rawMsg.contains('ya existe') ||
             rawMsg.contains('ocupado') ||
             rawMsg.contains('duplicate')) {
-          _showSnackBar('El nuevo nombre de usuario ya esta ocupado', Colors.orange);
+          _showSnackBar(
+            'El nuevo nombre de usuario ya esta ocupado',
+            Colors.orange,
+          );
         } else if (rawMsg.contains('not found') ||
             rawMsg.contains('usuario no encontrado') ||
             rawMsg.contains('404')) {
           _showSnackBar('Usuario no encontrado', Colors.orange);
         } else {
-          _showSnackBar('Error: ${e.toString().replaceAll('Exception: ', '')}', Colors.redAccent);
+          _showSnackBar(
+            'Error: ${e.toString().replaceAll('Exception: ', '')}',
+            Colors.redAccent,
+          );
         }
       }
     } finally {
@@ -132,9 +144,7 @@ class _CreateUserPageState extends State<CreateUserPage> {
 
     setState(() => _isLoading = true);
     try {
-      final success = await UserService.deleteUser(
-        userId: userId,
-      );
+      final success = await UserService.deleteUser(userId: userId);
 
       if (mounted) {
         if (success) {
@@ -152,7 +162,10 @@ class _CreateUserPageState extends State<CreateUserPage> {
             rawMsg.contains('404')) {
           _showSnackBar('Usuario no encontrado', Colors.orange);
         } else {
-          _showSnackBar('Error: ${e.toString().replaceAll('Exception: ', '')}', Colors.redAccent);
+          _showSnackBar(
+            'Error: ${e.toString().replaceAll('Exception: ', '')}',
+            Colors.redAccent,
+          );
         }
       }
     } finally {
@@ -161,9 +174,9 @@ class _CreateUserPageState extends State<CreateUserPage> {
   }
 
   void _showSnackBar(String message, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: color),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message), backgroundColor: color));
   }
 
   @override
@@ -189,29 +202,37 @@ class _CreateUserPageState extends State<CreateUserPage> {
         padding: const EdgeInsets.all(24.0),
         child: Column(
           children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.black26),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: _selectedAction,
-                  isExpanded: true,
-                  items: const [
-                    DropdownMenuItem(value: 'create', child: Text('Crear Usuario')),
-                    DropdownMenuItem(value: 'update', child: Text('Actualizar Usuario')),
-                    DropdownMenuItem(value: 'delete', child: Text('Eliminar Usuario')),
-                  ],
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedAction = value!;
-                    });
-                  },
+            DropdownButtonFormField<String>(
+              initialValue: _selectedAction,
+              decoration: InputDecoration(
+                labelText: 'Acción de Usuarios',
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Colors.black26),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Colors.black26),
                 ),
               ),
+              items: const [
+                DropdownMenuItem(value: 'create', child: Text('Crear Usuario')),
+                DropdownMenuItem(
+                  value: 'update',
+                  child: Text('Actualizar Usuario'),
+                ),
+                DropdownMenuItem(
+                  value: 'delete',
+                  child: Text('Eliminar Usuario'),
+                ),
+              ],
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() => _selectedAction = value);
+                }
+              },
             ),
             const SizedBox(height: 24),
             if (_selectedAction == 'create') ...[
@@ -267,16 +288,25 @@ class _CreateUserPageState extends State<CreateUserPage> {
                       },
                     ),
                     const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _roleIdController,
-                      decoration: _inputDec('Rol ID'),
-                      keyboardType: TextInputType.number,
-                      validator: (value) {
-                        final roleId = int.tryParse(value ?? '');
-                        if (roleId == null || roleId < 1 || roleId > 2) {
-                          return 'El rol debe ser 1 o 2';
+                    DropdownButtonFormField<int>(
+                      initialValue: int.tryParse(_roleIdController.text) ?? 1,
+                      decoration: _inputDec('Rol'),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 1,
+                          child: Text('Rol 1 (Administrador)'),
+                        ),
+                        DropdownMenuItem(
+                          value: 2,
+                          child: Text('Rol 2 (Cajero)'),
+                        ),
+                      ],
+                      validator: (value) =>
+                          value == null ? 'Seleccione un rol' : null,
+                      onChanged: (value) {
+                        if (value != null) {
+                          _roleIdController.text = value.toString();
                         }
-                        return null;
                       },
                     ),
                   ],
@@ -289,12 +319,20 @@ class _CreateUserPageState extends State<CreateUserPage> {
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: orangeColor,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   onPressed: _isLoading ? null : _submitCreate,
                   child: _isLoading
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text('Crear Usuario', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                      : const Text(
+                          'Crear Usuario',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                 ),
               ),
             ] else if (_selectedAction == 'update') ...[
@@ -333,12 +371,20 @@ class _CreateUserPageState extends State<CreateUserPage> {
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: orangeColor,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   onPressed: _isLoading ? null : _submitUpdate,
                   child: _isLoading
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text('Actualizar Usuario', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                      : const Text(
+                          'Actualizar Usuario',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                 ),
               ),
             ] else if (_selectedAction == 'delete') ...[
@@ -362,12 +408,20 @@ class _CreateUserPageState extends State<CreateUserPage> {
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.redAccent,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   onPressed: _isLoading ? null : _submitDelete,
                   child: _isLoading
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text('Eliminar Usuario', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      : const Text(
+                          'Eliminar Usuario',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                 ),
               ),
             ],
@@ -378,9 +432,9 @@ class _CreateUserPageState extends State<CreateUserPage> {
   }
 
   InputDecoration _inputDec(String label) => InputDecoration(
-        labelText: label,
-        filled: true,
-        fillColor: Colors.white,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-      );
+    labelText: label,
+    filled: true,
+    fillColor: Colors.white,
+    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+  );
 }
