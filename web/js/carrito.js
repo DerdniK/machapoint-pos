@@ -115,7 +115,7 @@ function cargarCarrito() {
         <div class="info-articulo">
             <h3>${producto.name}</h3>
             <p>SKU: ${producto.sku}</p>
-            <p>Tipo: ${producto.typeid}</p>
+            <p>Tipo: ${producto.typeName ?? 'Sin tipo'}</p>
             <p>Precio: $${producto.price}</p>
         </div>
 
@@ -388,7 +388,7 @@ function resetFormularioPago() {
     validarBotonFinalizar();
 }
 
-// Arma el payload exacto que exige el backend y envía la venta.
+// Arma el payload
 async function procesarVentaBackend() {
     const carrito = renderizarCarrito();
 
@@ -472,7 +472,7 @@ const payload = {
         change_given: Number(change_given.toFixed(2)),
         transaction_reference: generarReferenciaTransaccion(),
         products: carrito.map(producto => ({
-            productId: Number(producto.id ?? producto.productId),
+            productId: Number(producto.productId),
             unit_price: Number(producto.price) || 0,
             quantity: Number(producto.cantidad) || 1,
             subtotal: Number(((Number(producto.price) || 0) * (Number(producto.cantidad) || 1)).toFixed(2))
