@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import '../providers/shift_provider.dart';
+import '../services/sale.dart';
 import 'package:MachaPoint/providers/auth_provider.dart';
 
 class ShiftManagementPage extends StatefulWidget {
@@ -102,7 +103,9 @@ class _ShiftManagementPageState extends State<ShiftManagementPage> {
     } else {
       final strValue = value.toString().trim();
       if (strValue.isEmpty) return 'N/A';
-      parsed = DateTime.tryParse(strValue.endsWith('Z') ? strValue : '${strValue}Z');
+      parsed = DateTime.tryParse(
+        strValue.endsWith('Z') ? strValue : '${strValue}Z',
+      );
     }
     if (parsed == null) return 'N/A';
     final localDate = parsed.toLocal();
@@ -118,7 +121,8 @@ class _ShiftManagementPageState extends State<ShiftManagementPage> {
 
   double _extractInitialCash() {
     if (_zCutData != null) {
-      final rawValue = _zCutData!['initial_cash'] ??
+      final rawValue =
+          _zCutData!['initial_cash'] ??
           _zCutData!['initialCash'] ??
           _zCutData!['opening_cash'] ??
           _zCutData!['openingCash'] ??
@@ -152,8 +156,10 @@ class _ShiftManagementPageState extends State<ShiftManagementPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF3E7DF),
       appBar: AppBar(
-        title: const Text('Gestión de Turno',
-            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Gestión de Turno',
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+        ),
         backgroundColor: orangeColor,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
@@ -176,9 +182,13 @@ class _ShiftManagementPageState extends State<ShiftManagementPage> {
               const SizedBox(height: 16),
               TextField(
                 controller: _initialCashController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'^\d*[\.,]?\d{0,2}')),
+                  FilteringTextInputFormatter.allow(
+                    RegExp(r'^\d*[\.,]?\d{0,2}'),
+                  ),
                 ],
                 decoration: const InputDecoration(
                   labelText: 'Fondo Inicial en Caja',
@@ -206,16 +216,24 @@ class _ShiftManagementPageState extends State<ShiftManagementPage> {
 
                         final normalizedCash = rawCash.replaceAll(',', '.');
                         final cash = double.tryParse(normalizedCash);
-                        if (cash == null || cash <= 0 || cash > 99999) {
+                        if (cash == null || cash < 1 || cash > 99999) {
                           _showMessage('Ingresa un monto válido.');
                           return;
                         }
 
-                        final cashierId = authProvider.cashierId ?? authProvider.userUuid ?? '';
-                        debugPrint('>>> Abriendo turno con cashierId: $cashierId (authProvider.userUuid: ${authProvider.userUuid})');
+                        final cashierId =
+                            authProvider.cashierId ??
+                            authProvider.userUuid ??
+                            '';
+                        debugPrint(
+                          '>>> Abriendo turno con cashierId: $cashierId (authProvider.userUuid: ${authProvider.userUuid})',
+                        );
 
                         if (cashierId.isEmpty) {
-                          _showMessage('No se pudo identificar al cajero autenticado', isError: true);
+                          _showMessage(
+                            'No se pudo identificar al cajero autenticado',
+                            isError: true,
+                          );
                           return;
                         }
 
@@ -240,15 +258,19 @@ class _ShiftManagementPageState extends State<ShiftManagementPage> {
                           );
                         } else {
                           _showMessage(
-                            shiftProvider.errorMessage ?? 'No se pudo abrir el turno',
+                            shiftProvider.errorMessage ??
+                                'No se pudo abrir el turno',
                             isError: true,
                           );
                         }
                       },
                 child: shiftProvider.isLoading
                     ? const CircularProgressIndicator()
-                    : const Text('ABRIR TURNO', style: TextStyle(fontWeight: FontWeight.bold)),
-              )
+                    : const Text(
+                        'ABRIR TURNO',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+              ),
             ] else ...[
               Card(
                 child: Padding(
@@ -258,7 +280,10 @@ class _ShiftManagementPageState extends State<ShiftManagementPage> {
                     children: [
                       Text(
                         'Turno Activo ID: #${shiftProvider.activeShiftId}',
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -276,12 +301,21 @@ class _ShiftManagementPageState extends State<ShiftManagementPage> {
                   ),
                 ),
               ),
+              const SizedBox(height: 12),
+              _ActiveShiftSalesSection(
+                key: ValueKey(shiftProvider.activeShiftId),
+                shiftId: shiftProvider.activeShiftId!,
+              ),
               const SizedBox(height: 20),
               TextField(
                 controller: _actualCashController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'^\d*[\.,]?\d{0,2}')),
+                  FilteringTextInputFormatter.allow(
+                    RegExp(r'^\d*[\.,]?\d{0,2}'),
+                  ),
                 ],
                 decoration: const InputDecoration(
                   labelText: 'Fondo final en Caja al Cerrar',
@@ -296,9 +330,7 @@ class _ShiftManagementPageState extends State<ShiftManagementPage> {
                 controller: _notesController,
                 maxLines: 3,
                 maxLength: 280,
-                inputFormatters: [
-                  LengthLimitingTextInputFormatter(280)
-                ],
+                inputFormatters: [LengthLimitingTextInputFormatter(280)],
                 decoration: const InputDecoration(
                   labelText: 'Notas del Cierre / Observaciones',
                   border: OutlineInputBorder(),
@@ -317,9 +349,15 @@ class _ShiftManagementPageState extends State<ShiftManagementPage> {
                     ? null
                     : () async {
                         final rawCash = _actualCashController.text.trim();
-                        final cash = double.tryParse(rawCash.replaceAll(',', '.'));
+                        final cash = double.tryParse(
+                          rawCash.replaceAll(',', '.'),
+                        );
                         if (cash == null || cash < 0) {
                           _showMessage('Ingresa un monto final válido.');
+                          return;
+                        }
+                        if (cash > 20000) {
+                          _showMessage('El monto máximo son \$20,000.00.');
                           return;
                         }
 
@@ -327,7 +365,10 @@ class _ShiftManagementPageState extends State<ShiftManagementPage> {
 
                         final res = await shiftProvider.closeShift(
                           token: authProvider.token ?? '',
-                          cashierId: authProvider.cashierId ?? authProvider.userUuid ?? '',
+                          cashierId:
+                              authProvider.cashierId ??
+                              authProvider.userUuid ??
+                              '',
                           actualCash: cash,
                           notes: _notesController.text,
                         );
@@ -346,14 +387,23 @@ class _ShiftManagementPageState extends State<ShiftManagementPage> {
                             ),
                           );
 
-                          await _fetchZCut(closedShiftId, authProvider.token ?? '');
+                          await _fetchZCut(
+                            closedShiftId,
+                            authProvider.token ?? '',
+                          );
                         } else {
-                          _showMessage(res['message'] ?? 'Error al cerrar', isError: true);
+                          _showMessage(
+                            res['message'] ?? 'Error al cerrar',
+                            isError: true,
+                          );
                         }
                       },
                 child: shiftProvider.isLoading
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('CERRAR TURNO Y GENERAR CORTE', style: TextStyle(fontWeight: FontWeight.bold)),
+                    : const Text(
+                        'CERRAR TURNO Y GENERAR CORTE',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
               ),
             ],
             if (_loadingCut)
@@ -365,7 +415,10 @@ class _ShiftManagementPageState extends State<ShiftManagementPage> {
               ),
             if (_zCutData != null) ...[
               const SizedBox(height: 24),
-              const Text('Resumen Corte Z', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Text(
+                'Resumen Corte Z',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 10),
               Card(
                 child: Padding(
@@ -373,14 +426,23 @@ class _ShiftManagementPageState extends State<ShiftManagementPage> {
                   child: Builder(
                     builder: (context) {
                       final double initialCash = _extractInitialCash();
-                      final double totalSales = double.tryParse(
-                            (_zCutData!['totalSales'] ?? _zCutData!['total_sales'] ?? shiftProvider.totalSales).toString(),
-                          ) ?? 0.0;
+                      final double totalSales =
+                          double.tryParse(
+                            (_zCutData!['totalSales'] ??
+                                    _zCutData!['total_sales'] ??
+                                    shiftProvider.totalSales)
+                                .toString(),
+                          ) ??
+                          0.0;
 
                       final double expectedCash = initialCash + totalSales;
-                      final double actualCash = double.tryParse(
-                            (_zCutData!['actualCash'] ?? _zCutData!['actual_cash']).toString(),
-                          ) ?? 0.0;
+                      final double actualCash =
+                          double.tryParse(
+                            (_zCutData!['actualCash'] ??
+                                    _zCutData!['actual_cash'])
+                                .toString(),
+                          ) ??
+                          0.0;
 
                       final double difference = actualCash - expectedCash;
                       String statusText;
@@ -395,13 +457,13 @@ class _ShiftManagementPageState extends State<ShiftManagementPage> {
                         statusText = 'EXACTO';
                         statusColor = Colors.blue;
                       }
-
-                      // Formato con signo de la Diferencia (ej: -$50.00, +$20.00, $0.00)
                       String formattedDifference;
                       if (difference < -0.01) {
-                        formattedDifference = '-\$${difference.abs().toStringAsFixed(2)}';
+                        formattedDifference =
+                            '-\$${difference.abs().toStringAsFixed(2)}';
                       } else if (difference > 0.01) {
-                        formattedDifference = '+\$${difference.toStringAsFixed(2)}';
+                        formattedDifference =
+                            '+\$${difference.toStringAsFixed(2)}';
                       } else {
                         formattedDifference = '\$0.00';
                       }
@@ -422,16 +484,29 @@ class _ShiftManagementPageState extends State<ShiftManagementPage> {
                           ),
                           _buildCutRow(
                             'Fecha Inicio:',
-                            _formatDate(_zCutData!['openedAt'] ?? _zCutData!['opened_at']),
+                            _formatDate(
+                              _zCutData!['openedAt'] ?? _zCutData!['opened_at'],
+                            ),
                           ),
                           _buildCutRow(
                             'Fecha Final:',
-                            _formatDate(_zCutData!['closedAt'] ?? _zCutData!['closed_at']),
+                            _formatDate(
+                              _zCutData!['closedAt'] ?? _zCutData!['closed_at'],
+                            ),
                           ),
                           const Divider(height: 20),
-                          _buildCutRow('Monto inicial:', _formatMoney(initialCash)),
-                          _buildCutRow('Ventas del Turno:', _formatMoney(totalSales)),
-                          _buildCutRow('Monto esperado:', _formatMoney(expectedCash)),
+                          _buildCutRow(
+                            'Monto inicial:',
+                            _formatMoney(initialCash),
+                          ),
+                          _buildCutRow(
+                            'Ventas del Turno:',
+                            _formatMoney(totalSales),
+                          ),
+                          _buildCutRow(
+                            'Monto esperado:',
+                            _formatMoney(expectedCash),
+                          ),
                           _buildCutRow('Monto real:', _formatMoney(actualCash)),
                           _buildCutRow(
                             'Diferencia:',
@@ -448,8 +523,8 @@ class _ShiftManagementPageState extends State<ShiftManagementPage> {
                     },
                   ),
                 ),
-              )
-            ]
+              ),
+            ],
           ],
         ),
       ),
@@ -471,6 +546,158 @@ class _ShiftManagementPageState extends State<ShiftManagementPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ActiveShiftSalesSection extends StatefulWidget {
+  final int shiftId;
+
+  const _ActiveShiftSalesSection({super.key, required this.shiftId});
+
+  @override
+  State<_ActiveShiftSalesSection> createState() =>
+      _ActiveShiftSalesSectionState();
+}
+
+class _ActiveShiftSalesSectionState extends State<_ActiveShiftSalesSection> {
+  late Future<List<Map<String, dynamic>>> _salesFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _salesFuture = SaleService.getSales(shiftId: widget.shiftId);
+  }
+
+  void _refreshSales() {
+    setState(() {
+      _salesFuture = SaleService.getSales(shiftId: widget.shiftId);
+    });
+  }
+
+  dynamic _firstValue(Map<String, dynamic> source, List<String> keys) {
+    for (final key in keys) {
+      final value = source[key];
+      if (value != null && value.toString().isNotEmpty) return value;
+    }
+    return null;
+  }
+
+  String _formatTime(dynamic value) {
+    if (value == null) return 'Hora no disponible';
+    final parsed = DateTime.tryParse(value.toString());
+    if (parsed == null) return value.toString();
+    final local = parsed.toLocal();
+    return '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+  }
+
+  String _formatMoney(dynamic value) {
+    final amount = value is num
+        ? value.toDouble()
+        : double.tryParse('$value') ?? 0;
+    return '\$${amount.toStringAsFixed(2)}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Ventas del Turno Activo',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Actualizar ventas',
+                  onPressed: _refreshSales,
+                  icon: const Icon(Icons.refresh),
+                ),
+              ],
+            ),
+            FutureBuilder<List<Map<String, dynamic>>>(
+              future: _salesFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                if (snapshot.hasError) {
+                  return Column(
+                    children: [
+                      const Text('No se pudieron cargar las ventas del turno.'),
+                      TextButton.icon(
+                        onPressed: _refreshSales,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Reintentar'),
+                      ),
+                    ],
+                  );
+                }
+
+                final sales = snapshot.data ?? [];
+                if (sales.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    child: Text(
+                      'No hay ventas registradas en este turno.',
+                      style: TextStyle(color: Colors.black54),
+                    ),
+                  );
+                }
+
+                return ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: sales.length,
+                  separatorBuilder: (_, _) => const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final sale = sales[index];
+                    final saleId = _firstValue(sale, [
+                      'saleId',
+                      'sale_id',
+                      'id',
+                    ]);
+                    final createdAt = _firstValue(sale, [
+                      'createdAt',
+                      'created_at',
+                    ]);
+                    final paymentMethod = _firstValue(sale, [
+                      'paymentMethod',
+                      'payment_method',
+                    ]);
+                    final rawItems = sale['items'] ?? sale['products'];
+                    final itemCount = rawItems is List ? rawItems.length : 0;
+
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        'Venta #${saleId ?? 'N/D'}',
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: Text(
+                        '${_formatTime(createdAt)} · ${paymentMethod ?? 'Pago N/D'} · $itemCount artículos',
+                      ),
+                      trailing: Text(
+                        _formatMoney(sale['total']),
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
