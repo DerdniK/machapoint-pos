@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'auth.dart';
 
 class CartItem {
@@ -18,16 +19,56 @@ class CartItem {
   double get subtotal => unitPrice * quantity;
 
   Map<String, dynamic> toJson() => {
-        'productId': productId,
-        'unit_price': unitPrice,
-        'quantity': quantity,
-        'subtotal': subtotal,
-      };
+    'productId': productId,
+    'unit_price': unitPrice,
+    'quantity': quantity,
+    'subtotal': subtotal,
+  };
 }
 
 class SaleService {
   static const String _url =
       'https://6uxm3jz7xwth5cliak6zk6dudi0iseih.lambda-url.us-east-1.on.aws/api/sale';
+
+  static Future<List<Map<String, dynamic>>> getSales({int? shiftId}) async {
+    final token =
+        Supabase.instance.client.auth.currentSession?.accessToken ??
+        await AuthService.getToken();
+    if (token == null || token.isEmpty) {
+      throw Exception('No se encontró token de sesión.');
+    }
+    final uri = shiftId == null
+        ? Uri.parse(_url)
+        : Uri.parse(
+            '$_url/by-shift',
+          ).replace(queryParameters: {'shiftId': shiftId.toString()});
+    final response = await http.get(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+    if (response.statusCode == 401) {
+      await AuthService.logout();
+      throw Exception('Sesión expirada (401).');
+    }
+    if (response.statusCode != 200) {
+      throw Exception(
+        'Error del servidor (${response.statusCode}): ${response.body}',
+      );
+    }
+    final dynamic decoded = jsonDecode(response.body);
+    dynamic sales = decoded;
+    if (decoded is Map<String, dynamic>) {
+      sales = decoded['data'] ?? decoded['sales'] ?? decoded['sale'];
+    }
+    if (sales is! List) return [];
+    return sales
+        .whereType<Map>()
+        .map((sale) => Map<String, dynamic>.from(sale))
+        .toList();
+  }
 
   static Future<Map<String, dynamic>> processSale({
     required int shiftId,
@@ -79,17 +120,18 @@ class SaleService {
       } else {
         return {
           'success': false,
-            'message': responseData is Map
+          'message': responseData is Map
               ? responseData['message']?.toString() ??
-                responseData['error']?.toString() ??
-                'Error al procesar la venta (${response.statusCode})'
+                    responseData['error']?.toString() ??
+                    'Error al procesar la venta (${response.statusCode})'
               : 'Error al procesar la venta (${response.statusCode}): ${response.body}',
         };
       }
     } catch (e) {
       return {
         'success': false,
-        'message': 'Error de conexión: ${e.toString().replaceAll('Exception: ', '')}',
+        'message':
+            'Error de conexión: ${e.toString().replaceAll('Exception: ', '')}',
       };
     }
   }
