@@ -6,12 +6,15 @@ class AuthProvider extends ChangeNotifier {
   String? _cashierName;
   String? _token;
   String? _userUuid;
+  int? _roleId;
   bool _isLoading = true;
 
   String? get token => _token;
   String? get userUuid => _userUuid;
-  String? get cashierId => _userUuid; 
-  String? get userName => _cashierName; 
+  String? get cashierId => _userUuid;
+  String? get userName => _cashierName;
+  int? get roleId => _roleId;
+  bool get isAdmin => _roleId == 1;
   bool get isAuthenticated => _token != null && _token!.isNotEmpty;
   bool get isLoading => _isLoading;
 
@@ -22,12 +25,14 @@ class AuthProvider extends ChangeNotifier {
     try {
       _token = await AuthService.getToken();
       _userUuid = await AuthService.getUserId();
-      _cashierName = await AuthService.getUserName(); 
+      _cashierName = await AuthService.getUserName();
+      _roleId = await AuthService.getRoleId();
     } catch (e) {
       debugPrint('Error al inicializar sesión en AuthProvider: $e');
       _token = null;
       _userUuid = null;
       _cashierName = null;
+      _roleId = null;
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -43,6 +48,7 @@ class AuthProvider extends ChangeNotifier {
       _token = result['token'];
       _userUuid = result['userId'];
       _cashierName = result['userName'];
+      _roleId = int.tryParse(result['roleId'] ?? '');
       _isLoading = false;
       notifyListeners();
       return true;
@@ -58,6 +64,7 @@ class AuthProvider extends ChangeNotifier {
     _token = null;
     _userUuid = null;
     _cashierName = null;
+    _roleId = null;
     shiftProvider?.resetShift();
     notifyListeners();
   }
