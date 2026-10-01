@@ -167,49 +167,60 @@ function mostrarProductos(productos) {
 
 
 function agregarEventosBotones() {
-
     const botones = document.querySelectorAll('.boton-agregar');
-    
-    botones.forEach(boton => {
 
+    botones.forEach(boton => {
         boton.addEventListener('click', () => {
-            const productid = boton.dataset.id;
-            // console.log('Producto agregado:', productId);
-            const producto = productosActuales.find( 
-                p => String(p.productid) === String(productid)
+            const productId = boton.dataset.id;
+            console.log('Producto agregado:', productId);
+            const producto = productosActuales.find(
+                p => String(p.productid) === String(productId)
             );
-            if (!producto) { 
-                console.error("No se encontró el producto:", productid); return; 
-                } 
+            if (!producto) {
+                console.error("No se encontró el producto:", productId);
+                return;
+            }
             agregarAlCarrito(producto);
         });
     });
 }
 
+const MAX_CANTIDAD = 10; // misma regla que en carrito.js
+
 function agregarAlCarrito(producto) {
-    // Obtener el carrito actual desde localStorage
-    let carrito = JSON.parse(localStorage.getItem(CARRITO_KEY)) || [];
+    const carrito = JSON.parse(localStorage.getItem(CARRITO_KEY)) || [];
 
-    // agregar unicamente la infomación necesaria del producto al carrito
-    const productoCarrito = {
-        id: producto.type?.typeid,
-        name: producto.name,
-        sku: producto.sku,
-        price: producto.price,
-        typeid: producto.typeid,
-        quantity: 1 
-    };
+    // Buscar si el producto ya está en el carrito (por id del PRODUCTO)
+    const existente = carrito.find(
+        item => String(item.productId) === String(producto.productid)
+    );
 
-    carrito.push(productoCarrito);
-    // guardar de nuevo en localStorage
+    if (existente) {
+        if ((Number(existente.cantidad) || 0) >= MAX_CANTIDAD) {
+            mostrarMensajeGeneral(
+                `No puedes agregar más de ${MAX_CANTIDAD} unidades de "${producto.name}".`,
+                'error'
+            );
+            return;
+        }
+        existente.cantidad = (Number(existente.cantidad) || 0) + 1;
+    } else {
+        carrito.push({
+            productId: producto.productid,          // id del producto
+            typeid: producto.type?.typeid ?? null,  // id del tipo
+            typeName: producto.type?.typeName ?? 'Sin tipo',
+            name: producto.name,
+            sku: producto.sku,
+            price: producto.price,
+            cantidad: 1
+        });
+    }
+
     localStorage.setItem(CARRITO_KEY, JSON.stringify(carrito));
 
-    console.log("Producto agregado al carrito:", productoCarrito);
     console.log("Carrito actual:", carrito);
-
-    mensaje.textContent = `Producto "${producto.name}" agregado al carrito.`;
+    mostrarMensajeGeneral(`Producto "${producto.name}" agregado al carrito.`, 'exito');
 }
-
 // Ejecutar cuando cargue la página
 cargarProductos();
 
