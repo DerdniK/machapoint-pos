@@ -65,11 +65,14 @@
 
     /* ---------- Roles ---------- */
 
-    function extractRole(source) {
-        if (!source || typeof source !== 'object') return null;
-        // Busca las variaciones comunes del ID de rol en el objeto
-        return source.roleid || source.roleId || source.role || null;
-    }
+function extractRole(source) {
+    if (!source || typeof source !== 'object') return null;
+    const role = source.roleid || source.roleId || source.role || null;
+    // 'authenticated' y 'anon' son roles de Postgres/Supabase, no del POS
+    if (typeof role === 'string' &&
+        ['authenticated', 'anon', 'service_role'].includes(role.toLowerCase())) return null;
+    return role;
+}
 
     function getRoles() {
         const claims = decodeJwt(getToken());

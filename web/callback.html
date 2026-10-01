@@ -61,7 +61,8 @@
             localStorage.setItem("user", JSON.stringify({
                 id: session.user.id,
                 email: session.user.email,
-                nombre: session.user.user_metadata?.full_name || session.user.email
+                nombre: session.user.user_metadata?.full_name || session.user.email,
+                role: 1,
             }));
 
             document.getElementById("mensaje").textContent = "¡Sesión exitosa! Redirigiendo...";
