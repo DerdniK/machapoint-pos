@@ -1,15 +1,19 @@
+import 'dart:async';
 import 'package:MachaPoint/Pages/Cart.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/produtos.dart';
+import '../providers/auth_provider.dart';
 import '../providers/cart.dart';
+import '../providers/shift_provider.dart';
 import '../services/auth.dart';
 import '../services/product.dart';
 import 'Login_Page.dart';
-import 'create_user_page.dart'; 
-import 'Create_product.dart';
+import 'create_user_page.dart';
+import 'inventory_page.dart';
 import 'turns_man.dart';
+import 'sales_page.dart';
 
 class ProductPage extends StatefulWidget {
   const ProductPage({super.key});
@@ -20,12 +24,24 @@ class ProductPage extends StatefulWidget {
 
 class _ProductPageState extends State<ProductPage> {
   int _currentIndex = 0;
+  late Future<List<Product>> _allProductsFuture;
   late Future<List<Product>> _futureProducts;
+  final TextEditingController _searchController = TextEditingController();
+  Timer? _searchDebounce;
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
-    _futureProducts = _fetchProductsWithRetry();
+    _allProductsFuture = _fetchProductsWithRetry();
+    _futureProducts = _allProductsFuture;
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<List<Product>> _fetchProductsWithRetry() async {
@@ -33,30 +49,53 @@ class _ProductPageState extends State<ProductPage> {
     while (retries < 3) {
       final token = await AuthService.getToken();
       if (token != null && token.isNotEmpty) {
-        return await ProductService.getProducts();
+        return ProductService.getProducts();
       }
       await Future.delayed(const Duration(milliseconds: 300));
       retries++;
     }
-    return await ProductService.getProducts();
+    return ProductService.getProducts();
+  }
+
+  void _searchProducts(String query) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 350), () {
+      if (!mounted) return;
+      setState(() {
+        _searchQuery = query.trim();
+        _futureProducts = _allProductsFuture.then(
+          (products) =>
+              ProductService.filterProductsByQuery(products, _searchQuery),
+        );
+      });
+    });
   }
 
   void _refreshProducts() {
     setState(() {
-      _futureProducts = _fetchProductsWithRetry();
+      _allProductsFuture = _fetchProductsWithRetry();
+      _futureProducts = _allProductsFuture.then(
+        (products) =>
+            ProductService.filterProductsByQuery(products, _searchQuery),
+      );
     });
   }
 
   String _getAppBarTitle() {
+    if (!context.read<AuthProvider>().isAdmin) {
+      return _currentIndex == 0 ? 'Productos' : 'Gestión de Turno';
+    }
     switch (_currentIndex) {
       case 0:
         return 'MachaPoint POS';
       case 1:
-        return 'Crear Producto';
+        return 'Inventario';
       case 2:
         return 'Usuarios';
       case 3:
         return 'Gestión de Turno';
+      case 4:
+        return 'Ventas';
       default:
         return 'MachaPoint POS';
     }
@@ -65,19 +104,46 @@ class _ProductPageState extends State<ProductPage> {
   @override
   Widget build(BuildContext context) {
     const orangeColor = Color(0xFFF2B04E);
-    final List<Widget> pages = [
-      _buildProductGrid(),
-      CreateProductPage(
-        onProductCreated: () {
-          _refreshProducts();
-          setState(() {
-            _currentIndex = 0;
-          });
-        },
-      ),
-      const CreateUserPage(),
-      const ShiftManagementPage(),
-    ];
+    final isAdmin = context.watch<AuthProvider>().isAdmin;
+    final pages = isAdmin
+        ? <Widget>[
+            _buildProductGrid(),
+            const InventoryPage(),
+            const CreateUserPage(),
+            const ShiftManagementPage(),
+            const SalesPage(),
+          ]
+        : <Widget>[_buildProductGrid(), const ShiftManagementPage()];
+    final navigationItems = isAdmin
+        ? const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.inventory_2),
+              label: 'Productos',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.inventory_2_outlined),
+              activeIcon: Icon(Icons.inventory_2),
+              label: 'Inventario',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_add),
+              label: 'Usuarios',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.point_of_sale),
+              label: 'Turno',
+            ),
+          ]
+        : const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.inventory_2),
+              label: 'Productos',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.point_of_sale),
+              label: 'Turno',
+            ),
+          ];
 
     return Scaffold(
       backgroundColor: const Color(0xFFF3E7DF),
@@ -97,6 +163,23 @@ class _ProductPageState extends State<ProductPage> {
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.black),
             onPressed: () async {
+              final shiftProvider = context.read<ShiftProvider>();
+              if (shiftProvider.isLoading || shiftProvider.hasActiveShift) {
+                setState(() {
+                  _currentIndex = isAdmin ? 3 : 1;
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      shiftProvider.isLoading
+                          ? 'Espera a que termine la operación del turno.'
+                          : 'Cierra el turno antes de cerrar sesión.',
+                    ),
+                  ),
+                );
+                return;
+              }
+              context.read<CartProvider>().clearCart();
               await Supabase.instance.client.auth.signOut();
               await AuthService.logout();
 
@@ -113,10 +196,7 @@ class _ProductPageState extends State<ProductPage> {
       body: Column(
         children: [
           Expanded(
-            child: IndexedStack(
-              index: _currentIndex,
-              children: pages,
-            ),
+            child: IndexedStack(index: _currentIndex, children: pages),
           ),
           if (_currentIndex == 0) _buildCartBottomBar(),
         ],
@@ -127,195 +207,222 @@ class _ProductPageState extends State<ProductPage> {
           setState(() {
             _currentIndex = index;
           });
+          if (index == 0) _refreshProducts();
         },
         backgroundColor: orangeColor,
         selectedItemColor: Colors.black,
         unselectedItemColor: Colors.black54,
         type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.inventory_2),
-            label: 'Productos',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.add_box_outlined),
-            activeIcon: Icon(Icons.add_box),
-            label: 'Crear Producto',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_add),
-            label: 'Usuarios',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.point_of_sale),
-            label: 'Turno',
-          ),
-        ],
+        items: navigationItems,
       ),
     );
   }
 
   Widget _buildCartBottomBar() {
-  return Consumer<CartProvider>(
-    builder: (context, cart, child) {
-      if (cart.items.isEmpty) return const SizedBox.shrink();
+    return Consumer<CartProvider>(
+      builder: (context, cart, child) {
+        if (cart.items.isEmpty) return const SizedBox.shrink();
 
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.12),
-              blurRadius: 8,
-              offset: const Offset(0, -3),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${cart.itemCount} ${cart.itemCount == 1 ? "producto" : "productos"}',
-                  style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
-                ),
-                Text(
-                  '\$${cart.total.toStringAsFixed(2)}',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-              ],
-            ),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFF2B04E),
-                foregroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.12),
+                blurRadius: 8,
+                offset: const Offset(0, -3),
               ),
-              icon: const Icon(Icons.shopping_cart_checkout, color: Colors.black),
-              label: const Text(
-                'COBRAR',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const CheckoutPage(
-                    ),
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-      );
-    },
-  );
-}
-  Widget _buildProductGrid() {
-    return FutureBuilder<List<Product>>(
-      future: _futureProducts,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: CircularProgressIndicator(
-              color: Color(0xFFF2B04E),
-            ),
-          );
-        }
-
-        if (snapshot.hasError) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(
-                    Icons.wifi_off_rounded,
-                    size: 80,
-                    color: Colors.grey.shade600,
+                  Text(
+                    '${cart.itemCount} ${cart.itemCount == 1 ? "producto" : "productos"}',
+                    style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
                   ),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'Sin conexión a internet',
-                    style: TextStyle(
+                  Text(
+                    '\$${cart.total.toStringAsFixed(2)}',
+                    style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    'Comprueba tu conexión de red e inténtalo de nuevo.',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey.shade700,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 28),
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFF2B04E),
-                      foregroundColor: Colors.black,
-                      elevation: 2,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    onPressed: _refreshProducts,
-                    icon: const Icon(Icons.refresh, size: 20),
-                    label: const Text(
-                      'Reintentar',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                      ),
+                      color: Colors.black,
                     ),
                   ),
                 ],
               ),
-            ),
-          );
-        }
-
-        if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-          final products = snapshot.data!;
-
-          return GridView.builder(
-            padding: const EdgeInsets.all(12),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              childAspectRatio: 0.48, // Ajustado para dar espacio al botón
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 12,
-            ),
-            itemCount: products.length,
-            itemBuilder: (context, index) {
-              return ProductCard(product: products[index]);
-            },
-          );
-        }
-
-        return const Center(child: Text('No hay productos disponibles'));
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFF2B04E),
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                icon: const Icon(
+                  Icons.shopping_cart_checkout,
+                  color: Colors.black,
+                ),
+                label: const Text(
+                  'COBRAR',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const CheckoutPage(),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        );
       },
+    );
+  }
+
+  Widget _buildProductGrid() {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+          child: TextField(
+            controller: _searchController,
+            onChanged: _searchProducts,
+            decoration: InputDecoration(
+              hintText: 'Buscar por nombre o SKU',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: _searchController.text.isEmpty
+                  ? null
+                  : IconButton(
+                      tooltip: 'Limpiar búsqueda',
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        _searchController.clear();
+                        _searchProducts('');
+                      },
+                    ),
+              filled: true,
+              fillColor: Colors.white,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+        ),
+        Expanded(
+          child: FutureBuilder<List<Product>>(
+            future: _futureProducts,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: CircularProgressIndicator(color: Color(0xFFF2B04E)),
+                );
+              }
+
+              if (snapshot.hasError) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.wifi_off_rounded,
+                          size: 80,
+                          color: Colors.grey.shade600,
+                        ),
+                        const SizedBox(height: 24),
+                        const Text(
+                          'Sin conexión a internet',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          'Comprueba tu conexión de red e inténtalo de nuevo.',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey.shade700,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 28),
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFF2B04E),
+                            foregroundColor: Colors.black,
+                            elevation: 2,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 12,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          onPressed: _refreshProducts,
+                          icon: const Icon(Icons.refresh, size: 20),
+                          label: const Text(
+                            'Reintentar',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
+              if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                final products = snapshot.data!;
+
+                return GridView.builder(
+                  padding: const EdgeInsets.all(12),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    childAspectRatio:
+                        0.48, // Ajustado para dar espacio al botón
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 12,
+                  ),
+                  itemCount: products.length,
+                  itemBuilder: (context, index) {
+                    return ProductCard(product: products[index]);
+                  },
+                );
+              }
+
+              return Center(
+                child: Text(
+                  _searchQuery.isEmpty
+                      ? 'No hay productos disponibles'
+                      : 'No se encontraron productos',
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
@@ -331,9 +438,6 @@ class ProductCard extends StatelessWidget {
 
     return Consumer<CartProvider>(
       builder: (context, cart, child) {
-        final cartItemIndex = cart.items.indexWhere((item) => item.productId == product.productId);
-        final currentQuantity = cartItemIndex != -1 ? cart.items[cartItemIndex].quantity : 0;
-
         return Stack(
           children: [
             Container(
@@ -352,12 +456,12 @@ class ProductCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Título del producto
                   Center(
                     child: Text(
                       product.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -383,7 +487,10 @@ class ProductCard extends StatelessWidget {
                                 product.imageUrl,
                                 fit: BoxFit.contain,
                                 errorBuilder: (context, error, stackTrace) =>
-                                    const Icon(Icons.image_not_supported, color: Colors.grey),
+                                    const Icon(
+                                      Icons.image_not_supported,
+                                      color: Colors.grey,
+                                    ),
                               )
                             : const Icon(Icons.inventory_2, color: Colors.grey),
                       ),
@@ -472,7 +579,6 @@ class ProductCard extends StatelessWidget {
                 ],
               ),
             ),
-
           ],
         );
       },
