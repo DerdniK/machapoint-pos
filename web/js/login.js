@@ -1,6 +1,5 @@
 // Function URL de ServicioUsers
 const API_USERS_URL = 'https://tmvksz56enigo6ojk25lfvg6x40vigzo.lambda-url.us-east-1.on.aws/api/users';
-// const API_USERS_URL = 'http://localhost:8080/api/users';
 
 const formulario = document.getElementById('login');
 const mensaje = document.getElementById('mensaje');
@@ -13,93 +12,58 @@ function setLoading(isLoading) {
     loginButton.setAttribute('aria-busy', isLoading);
 }
 
-/* ==========================
-   PANTALLA DE CARGA
-========================== */
+// Pantalla de carga 
 window.addEventListener('load', () => {
     const loader = document.getElementById('loader');
-    if (loader) {
-        setTimeout(() => {
-            loader.classList.add('oculto');
-        }, 1500);
-    }
+    if (loader) setTimeout(() => loader.classList.add('oculto'), 1300);
 });
 
-/* ==========================
-   LOGIN
-========================== */
+// Mensajes del flujo de Google (callback.html redirige con ?error=...)
+const errorUrl = new URLSearchParams(window.location.search).get('error');
+if (errorUrl && mensaje) mensaje.textContent = 'No se pudo completar el inicio de sesión. Intenta de nuevo.';
+
+// El contrato con el backend debería ser fijo; se aceptan solo las variantes conocidas
+function extraerToken(d) {
+    return d.token || d.Token || d.accessToken || d.AccessToken || d.authData?.token || d.AuthData?.Token || d.data?.token || d.Data?.Token;
+}
+
 if (formulario) {
     formulario.addEventListener('submit', async (event) => {
         event.preventDefault();
+        if (loginButton && loginButton.disabled) return;
+
         const usuario = document.getElementById('username').value.trim();
-        const password = document.getElementById('password').value.trim();
+        const password = document.getElementById('password').value; // sin trim: puede tener espacios
 
         if (mensaje) mensaje.textContent = '';
         setLoading(true);
 
         try {
-            const respuesta = await fetch(`${API_USERS_URL}/auth/login`, {
+            const respuesta = await Api.request(`${API_USERS_URL}/auth/login`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    Username: usuario,
-                    Password: password
-                })
+                auth: false,
+                timeout: 20000,
+                body: JSON.stringify({ Username: usuario, Password: password })
             });
-
             const data = await respuesta.json().catch(() => ({}));
-            console.log('HTTP Status:', respuesta.status);
-            console.log('Respuesta cruda del backend:', data);
 
             if (!respuesta.ok) {
-                console.error('Error del servidor:', data);
-                const errorBackend =
-                    data.message ||
-                    data.Message ||
-                    data.error ||
-                    data.Error ||
-                    `Error HTTP ${respuesta.status}`;
-                throw new Error(errorBackend);
+                // Mensaje genérico: no revela si el usuario existe ni detalles internos
+                throw new Error(respuesta.status === 400 || respuesta.status === 401
+                    ? 'Usuario o contraseña incorrectos.'
+                    : await Api.errorDe(respuesta));
             }
 
-            // Búsqueda exhaustiva del JWT en todas las nomenclaturas habituales de C#/.NET
-            const token =
-                data.token ||
-                data.Token ||
-                data.jwt ||
-                data.JWT ||
-                data.accessToken ||
-                data.AccessToken ||
-                data.access_token ||
-                data.authData?.token ||
-                data.authData?.Token ||
-                data.AuthData?.Token ||
-                data.AuthData?.token ||
-                data.data?.token ||
-                data.data?.Token ||
-                data.Data?.Token;
+            const token = extraerToken(data);
+            if (!token) throw new Error('Respuesta inesperada del servidor. Contacta al administrador.');
 
-            if (!token) {
-                console.error('Estructura completa de data sin token:', JSON.stringify(data, null, 2));
-                throw new Error(`El backend devolvió 200 OK pero no se halló el token. Propiedades recibidas: ${Object.keys(data).join(', ')}`);
-            }
-
-            console.log('Token JWT capturado con éxito:', token);
-
-            // Guardar token bajo la misma key que usa Google OAuth
             localStorage.setItem('authToken', token);
             localStorage.setItem('user', JSON.stringify({
                 username: data.username || data.Username || usuario,
                 id: data.userId || data.Userid || data.UserId || data.userid || ''
             }));
-
-            // Redireccionar al catálogo
             window.location.href = 'catalogo.html';
-
         } catch (error) {
-            console.error('Error en login:', error);
             if (mensaje) mensaje.textContent = error.message;
             setLoading(false);
         }
