@@ -9,28 +9,6 @@ function obtenerToken() {
     return localStorage.getItem('authToken');
 }
 
-// Utilidades de mensajes al usuario
-function mostrarError(mensaje) {
-    if (statusMsg) {
-        statusMsg.textContent = "Error: " + mensaje;
-        statusMsg.style.color = "#d9534f";
-    }
-}
-
-function mostrarExito(mensaje) {
-    if (statusMsg) {
-        statusMsg.textContent = mensaje;
-        statusMsg.style.color = "#2e7d32";
-    }
-}
-
-function mostrarProcesando() {
-    if (statusMsg) {
-        statusMsg.textContent = "Procesando...";
-        statusMsg.style.color = "#333";
-    }
-}
-
 // Aqui SOLO se valida que los campos tengan un formato correcto
 // La existencia real la debe de crear el backend al hacer la llamada 
 
@@ -74,20 +52,6 @@ function esUUIDValido(valor) {
     return regexUUID.test(valor.trim());
 }
 
-// // 1. Health check
-// async function checkHealth() {
-//     const healthEl = document.getElementById('health-status');
-//     if (!healthEl) return;
-
-//     try {
-//         const res = await fetch(`${API_USERS_URL}/health`);
-//         healthEl.textContent = res.ok ? "Servicio Users: Operativo" : "Servicio Users: Con fallas";
-//     } catch {
-//         healthEl.textContent = "Servicio Users: Offline";
-//     }
-// }
-// checkHealth();
-
 // 2. Registro (POST /api/users/auth/register)
 const formRegister = document.getElementById('form-register');
 if (formRegister) {
@@ -127,8 +91,7 @@ if (formRegister) {
         // ejecutarPeticion() se encarga de traducir ese error.
         const payload = { username, password, firstname, lastname, roleid };
 
-        await ejecutarPeticion(`${API_USERS_URL}/auth/register`, 'POST', payload, 'register');
-        formRegister.reset();
+        if (await ejecutarPeticion(`${API_USERS_URL}/auth/register`, 'POST', payload, 'register')) formRegister.reset();
     });
 }
 
@@ -161,8 +124,7 @@ if (formUpdate) {
             Username: username
         };
 
-        await ejecutarPeticion(`${API_USERS_URL}/auth/update`, 'PATCH', payload, 'update');
-        formUpdate.reset();
+        if (await ejecutarPeticion(`${API_USERS_URL}/auth/update`, 'PATCH', payload, 'update')) formUpdate.reset();
     });
 }
 
@@ -184,57 +146,42 @@ if (formDelete) {
             return;
         }
 
-        // Mismo caso que en update: el backend no confirma
-        // existencia antes de eliminar.
+        if (!confirm('¿Eliminar este usuario? Esta acción no se puede deshacer.')) return;
         const payload = { Userid: userid };
 
-        await ejecutarPeticion(`${API_USERS_URL}/auth/delete`, 'DELETE', payload, 'delete');
-        formDelete.reset();
+        if (await ejecutarPeticion(`${API_USERS_URL}/auth/delete`, 'DELETE', payload, 'delete')) formDelete.reset();
     });
 }
 
-// Ejecutor genérico de peticiones con manejo de errores
+// Ejecutor genérico: devuelve true si la operación fue exitosa
+let peticionEnCurso = false;
 async function ejecutarPeticion(url, method, body, contexto) {
+    if (peticionEnCurso) return false; // evita envíos duplicados con red lenta
+    peticionEnCurso = true;
+    const botones = document.querySelectorAll('form button[type="submit"]');
+    botones.forEach(b => { b.disabled = true; });
     mostrarProcesando();
 
-    const currentToken = obtenerToken();
-    // const headers = {
-    //     'Content-Type': 'application/json'
-    // };
-
-    // if (currentToken) {
-    //     headers['Authorization'] = `Bearer ${currentToken}`;
-    // }
-
     try {
-        const res = await fetch(url, {
-            method: method,
-            // headers: headers,
-            body: JSON.stringify(body)
-        });
-
+        const res = await Api.request(url, { method, body: JSON.stringify(body), timeout: 20000 });
+        const rawText = await res.text();
         let data = {};
-        let rawText = '';
-        try {
-            rawText = await res.text();
-            data = rawText ? JSON.parse(rawText) : {};
-        } catch {
-            // Respuesta sin cuerpo JSON válido (texto plano, HTML de error, etc.)
-        }
+        try { data = rawText ? JSON.parse(rawText) : {}; } catch { /* respuesta no JSON */ }
 
         if (!res.ok) {
-            const mensajeBackend = data.message || data.Message || data.error || rawText;
-            const errorMsg = interpretarError(res.status, mensajeBackend, contexto);
-            throw new Error(errorMsg);
+            const crudo = data.message || data.Message || data.error || '';
+            throw new Error(res.status >= 500 && !/duplicate|unique|foreign/i.test(crudo)
+                ? mensajePorCodigo(res.status)
+                : interpretarError(res.status, crudo, contexto));
         }
-
         mostrarExito(data.message || data.Message || `Operación ${method} realizada con éxito.`);
+        return true;
     } catch (err) {
-        if (err instanceof TypeError) {
-            mostrarError("No se pudo conectar con el servicio. Verifica tu conexión o intenta más tarde.");
-        } else {
-            mostrarError(err.message);
-        }
+        mostrarError(err.message);
+        return false;
+    } finally {
+        peticionEnCurso = false;
+        botones.forEach(b => { b.disabled = false; });
     }
 }
 
