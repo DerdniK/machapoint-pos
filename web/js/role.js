@@ -42,8 +42,16 @@
         }
     }
 
+    let _jwtCache = { token: null, claims: null };
     function decodeJwt(token) {
         if (!token) return null;
+        if (_jwtCache.token === token) return _jwtCache.claims;
+        const claims = decodeJwtRaw(token);
+        _jwtCache = { token, claims };
+        return claims;
+    }
+
+    function decodeJwtRaw(token) {
         try {
             const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
             const json = decodeURIComponent(
