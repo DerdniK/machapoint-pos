@@ -120,3 +120,8 @@ cdk.out/
 # Archivos o datos locales de DynamoDB (DynamoDB Local)
 shared-local-instance.db
 *.db
+
+# ==========================================
+# Database Backups
+# ==========================================
+database/backups/
