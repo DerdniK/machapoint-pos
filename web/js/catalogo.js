@@ -1,17 +1,17 @@
+'use strict';
+const API_URL = 'https://4upkj2tafvod2ubwcsbnagviyu0feljy.lambda-url.us-east-1.on.aws';
+const CARRITO_KEY = 'carrito';
+const CACHE_KEY = 'catalogoCache';
+const CACHE_MS = 60 * 1000;
+const MAX_CANTIDAD = 10; // misma regla que en carrito.js
+const IMG_FALLBACK = '/img/product.jpg';
 
-const API_URL ='https://4upkj2tafvod2ubwcsbnagviyu0feljy.lambda-url.us-east-1.on.aws';
 const productosContainer = document.getElementById('productos');
 const mensaje = document.getElementById('mensaje');
-
 const buscador = document.getElementById('buscador');
-let terminoBusqueda = '';
-// Nota: Actualmente se guarda el carrito en localStorage, pero se recomienda cambiarlo a backend para persistencia y seguridad
-// Guardamos temporalmente los productos recibidos de la API 
-let productosActuales = []; 
-// Nombre que utilizaremos en localStorage 
-const CARRITO_KEY = 'carrito';
 
-// Utilidades de mensajes
+let productosActuales = [];
+let terminoBusqueda = '';
 
 function mostrarMensajeGeneral(texto, tipo = 'info') {
     if (!mensaje) return;
@@ -19,22 +19,15 @@ function mostrarMensajeGeneral(texto, tipo = 'info') {
     mensaje.style.color = tipo === 'error' ? '#d9534f' : (tipo === 'exito' ? '#2e7d32' : '#333');
 }
 
-// buscador 
-
-
 function normalizar(texto) {
     return String(texto ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 }
 
 function aplicarFiltro() {
     const termino = normalizar(terminoBusqueda);
-    const filtrados = termino
-        ? productosActuales.filter(p =>
-            normalizar(p.name).includes(termino) || normalizar(p.sku).includes(termino))
-        : productosActuales;
-
+    const filtrados = termino ? productosActuales.filter(p => p._q.includes(termino)) : productosActuales;
     if (termino && filtrados.length === 0) {
-        productosContainer.innerHTML = '';
+        productosContainer.replaceChildren();
         mostrarMensajeGeneral(`No se encontraron productos para "${terminoBusqueda.trim()}".`);
         return;
     }
@@ -42,172 +35,124 @@ function aplicarFiltro() {
 }
 
 if (buscador) {
-    buscador.addEventListener('input', () => {
+    buscador.addEventListener('input', Api.debounce(() => {
         terminoBusqueda = buscador.value;
         aplicarFiltro();
-    });
+    }, 200));
     buscador.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-            buscador.value = '';
-            terminoBusqueda = '';
-            aplicarFiltro();
-        }
+        if (e.key === 'Escape') { buscador.value = ''; terminoBusqueda = ''; aplicarFiltro(); }
     });
 }
 
+function leerCache(aunVencida = false) {
+    try {
+        const c = JSON.parse(sessionStorage.getItem(CACHE_KEY) || 'null');
+        if (c && Array.isArray(c.lista) && (aunVencida || Date.now() - c.t < CACHE_MS)) return c.lista;
+    } catch { /* cache corrupta: se ignora */ }
+    return null;
+}
 
-// Productos (GET)
+function usarLista(lista) {
+    productosActuales = lista.map(p => ({ ...p, _q: normalizar(`${p.name} ${p.sku}`) }));
+    aplicarFiltro();
+}
+
 async function cargarProductos() {
-    const token = localStorage.getItem('authToken');
-
-    console.log("Token actual en localStorage:", token);
-
-    if (!token) {
-        mensaje.textContent = "Error: No hay token guardado en localStorage.";
-        // window.location.href = 'index.html'; // COMENTA ESTO TEMPORALMENTE
-        return;
-    }
+    const fresca = leerCache();
+    if (fresca) { usarLista(fresca); return; }
 
     try {
-        mensaje.textContent = 'Cargando productos...';
-        const response = await fetch(API_URL + "/api/products/product/get", {
-        // const response = await fetch(API_URL + "/api/products/product/get", {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
+        mostrarMensajeGeneral('Cargando productos...');
+        const res = await Api.request(`${API_URL}/api/products/product/get`, { method: 'GET', retries: 2 });
+        if (!res.ok) throw new Error(await Api.errorDe(res));
 
-        console.log("Status del backend:", response.status);
-
-        if (response.status === 401) {
-            mensaje.textContent = "Error 401: El backend rechazó el token (Unauthorized).";
-            return;
-        }
-
-        if (response.status === 403) {
-            mensaje.textContent = "Error 403: Token válido pero sin permisos requeridos (Forbidden).";
-            return;
-        }
-
-        if (!response.ok) {
-            const data = await response.json().catch(() => ({}));
-            const detalle = data.message || data.Message || data.error || `HTTP ${response.status}`;
-            mostrarMensajeGeneral("No se pudieron cargar los productos: " + detalle, 'error');
-            return;
-        }
-
-        const data = await response.json();
-        console.log("Productos recibidos:", data);
-
-        // Limpiar el mensaje de carga
-        mensaje.textContent = '';
-
-        // El backend devuelve la lista dentro de data.product
+        const data = await res.json();
         const lista = data.product || data.products || (Array.isArray(data) ? data : []);
-        
-        productosActuales = lista; // Guardar los productos cargados
-        console.log("Se guardo con exito la siguiente lista:", productosActuales);
-
-        // mostrarProductos(lista);    
-        aplicarFiltro();   // respeta el texto del buscador al recargar la lista
-
+        try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ t: Date.now(), lista })); } catch { /* sin espacio */ }
+        mensaje.textContent = '';
+        usarLista(lista);
     } catch (err) {
-        console.error("Error en fetch:", err);
-        mensaje.textContent = "Error al conectar: " + err.message;
+        const vieja = leerCache(true);
+        if (vieja) {
+            usarLista(vieja);
+            mostrarMensajeGeneral('Sin conexión estable: mostrando el último catálogo guardado.', 'error');
+        } else {
+            mostrarMensajeGeneral('No se pudieron cargar los productos: ' + err.message, 'error');
+        }
     }
 }
 
+function crearTarjeta(p) {
+    const article = document.createElement('article');
+    article.className = 'producto';
+
+    const img = document.createElement('img');
+    img.className = 'producto-imagen';
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    img.alt = p.name ?? '';
+    img.src = Api.urlSegura(p.imageURL) || IMG_FALLBACK;
+    img.addEventListener('error', () => { img.src = IMG_FALLBACK; }, { once: true });
+
+    const info = document.createElement('div');
+    info.className = 'producto-info';
+    const h3 = document.createElement('h3'); h3.textContent = p.name;
+    const precio = document.createElement('p'); precio.className = 'producto-precio';
+    precio.textContent = `$${Number(p.price).toFixed(2)}`;
+    const sku = document.createElement('p'); sku.textContent = `SKU: ${p.sku}`;
+    const tipo = document.createElement('p'); tipo.textContent = `Tipo: ${p.type?.typeName ?? 'Sin tipo'}`;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'boton-agregar';
+    btn.dataset.id = p.productid;
+    btn.textContent = 'Agregar al carrito';
+
+    info.append(h3, precio, sku, tipo, btn);
+    article.append(img, info);
+    return article;
+}
 
 function mostrarProductos(productos) {
-
-    productosContainer.innerHTML = '';
     mensaje.textContent = '';
-
     if (!productos || productos.length === 0) {
-
+        productosContainer.replaceChildren();
         mensaje.textContent = 'No hay productos disponibles.';
         return;
     }
-
-    productos.forEach(producto => {
-        console.log('producto individual:', producto);
-
-        const article = document.createElement('article');
-
-        article.classList.add('producto');
-
-        article.innerHTML = `
-            <img 
-                src="${producto.imageURL || '/img/product.jpg'}" 
-                alt="${producto.name}"
-                class="producto-imagen"
-                onerror="this.src='/img/product.jpg'"
-            >
-
-            <div class="producto-info">
-                <h3>${producto.name}</h3>
-                <p class="producto-precio"> $${Number(producto.price).toFixed(2)} </p>
-                <p> SKU: ${producto.sku} </p>
-                <p> Tipo: ${producto.type?.typeName ?? 'Sin tipo'} </p>
-
-                <button class="boton-agregar" data-id="${producto.productid}" > 
-                    Agregar al carrito 
-                </button>
-
-            </div>
-        `;
-
-        productosContainer.appendChild(article);
-    });
-
-    agregarEventosBotones();
+    const frag = document.createDocumentFragment();
+    productos.forEach(p => frag.appendChild(crearTarjeta(p)));
+    productosContainer.replaceChildren(frag);
 }
 
+// Un solo listener delegado
+productosContainer.addEventListener('click', (e) => {
+    const boton = e.target.closest('.boton-agregar');
+    if (!boton) return;
+    const producto = productosActuales.find(p => String(p.productid) === String(boton.dataset.id));
+    if (producto) agregarAlCarrito(producto);
+});
 
-function agregarEventosBotones() {
-    const botones = document.querySelectorAll('.boton-agregar');
-
-    botones.forEach(boton => {
-        boton.addEventListener('click', () => {
-            const productId = boton.dataset.id;
-            console.log('Producto agregado:', productId);
-            const producto = productosActuales.find(
-                p => String(p.productid) === String(productId)
-            );
-            if (!producto) {
-                console.error("No se encontró el producto:", productId);
-                return;
-            }
-            agregarAlCarrito(producto);
-        });
-    });
+function leerCarrito() {
+    try {
+        const d = JSON.parse(localStorage.getItem(CARRITO_KEY) || '[]');
+        return Array.isArray(d) ? d : [];
+    } catch { return []; }
 }
-
-const MAX_CANTIDAD = 10; // misma regla que en carrito.js
 
 function agregarAlCarrito(producto) {
-    const carrito = JSON.parse(localStorage.getItem(CARRITO_KEY)) || [];
-
-    // Buscar si el producto ya está en el carrito (por id del PRODUCTO)
-    const existente = carrito.find(
-        item => String(item.productId) === String(producto.productid)
-    );
+    const carrito = leerCarrito();
+    const existente = carrito.find(i => String(i.productId) === String(producto.productid));
 
     if (existente) {
         if ((Number(existente.cantidad) || 0) >= MAX_CANTIDAD) {
-            mostrarMensajeGeneral(
-                `No puedes agregar más de ${MAX_CANTIDAD} unidades de "${producto.name}".`,
-                'error'
-            );
+            mostrarMensajeGeneral(`No puedes agregar más de ${MAX_CANTIDAD} unidades de "${producto.name}".`, 'error');
             return;
         }
         existente.cantidad = (Number(existente.cantidad) || 0) + 1;
     } else {
         carrito.push({
-            productId: producto.productid,          // id del producto
-            typeid: producto.type?.typeid ?? null,  // id del tipo
+            productId: producto.productid,
+            typeid: producto.type?.typeid ?? null,
             typeName: producto.type?.typeName ?? 'Sin tipo',
             name: producto.name,
             sku: producto.sku,
@@ -215,12 +160,8 @@ function agregarAlCarrito(producto) {
             cantidad: 1
         });
     }
-
     localStorage.setItem(CARRITO_KEY, JSON.stringify(carrito));
-
-    console.log("Carrito actual:", carrito);
     mostrarMensajeGeneral(`Producto "${producto.name}" agregado al carrito.`, 'exito');
 }
-// Ejecutar cuando cargue la página
-cargarProductos();
 
+cargarProductos();
