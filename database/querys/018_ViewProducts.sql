@@ -6,7 +6,8 @@ select
   p.price,
   p.imageurl,
   p.typeid,
-  t.typename
+  t.typename,
+  i.stock
 from products p
-left join product_types t on p.typeid = t.typeid;
-  
+left join product_types t on p.typeid = t.typeid
+join inventory i on p.productid = i.productid;
