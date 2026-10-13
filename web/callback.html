@@ -63,6 +63,7 @@
                 email: session.user.email,
                 username: session.user.user_metadata?.full_name || session.user.email,
                 nombre: session.user.user_metadata?.full_name || session.user.email,
+                // El rol se le asigna al todos los usuarios google
                 role: 1
             }));
 

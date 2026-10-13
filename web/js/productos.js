@@ -18,8 +18,9 @@ const TIPOS = [
 ];
 
 // ---------- Reglas de validación ----------
-const MAX_LONGITUD = 20;
-const PRECIO_MIN = 1;      
+const MAX_LONGITUD = 20;      // SKU
+const MAX_NOMBRE = 60;
+const PRECIO_MIN = 0.01;      
 const PRECIO_MAX = 500;    
 const MAX_LONGITUD_PRECIO = 6; // "499.99"
 
@@ -66,7 +67,7 @@ function esAdmin() {
     return !!(window.Auth && Auth.isAdmin());
 }
 
-// Minúsculas y sin acentos, para que "camion" encuentre "Camión"
+// Minúsculas y sin acentos
 function normalizarTexto(texto) {
     return String(texto ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 }
@@ -76,25 +77,12 @@ function nombreTipo(id) {
     return tipo ? tipo.nombre : (id ? `Tipo ${id}` : 'Sin tipo');
 }
 
-async function authFetch(url, options = {}) {
-    const token = localStorage.getItem('authToken');
-    const res = await fetch(url, {
-        ...options,
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-            ...(options.headers || {})
-        }
-    });
-    if (res.status === 401 && window.Auth) {
-        Auth.forceLogout('Tu sesión expiró. Inicia sesión de nuevo.');
-    }
-    return res;
+function authFetch(url, options = {}) {
+    return Api.request(url, options);
 }
 
-async function errorDelServidor(res) {
-    const data = await res.json().catch(() => ({}));
-    return data.message || data.Message || data.error || `Error HTTP ${res.status}`;
+function errorDelServidor(res) {
+    return Api.errorDe(res);
 }
 
 // El GET devuelve { productid, type: { typeid, typeName }, ... }
@@ -107,7 +95,8 @@ function normalizarProducto(p) {
         typeId,
         typeName: p.type?.typeName ?? nombreTipo(typeId),
         price: Number(p.price),
-        imageURL: p.imageURL ?? ''
+        imageURL: p.imageURL ?? '',
+        _q: normalizarTexto(`${p.name ?? ''} ${p.sku ?? ''}`)
     };
 }
 
@@ -115,7 +104,7 @@ function normalizarProducto(p) {
 // Impide escribir o pegar caracteres no permitidos y respeta la longitud máxima.
 
 function sanitizarNombre(valor) {
-    return valor.replace(NOMBRE_INVALIDOS, '').slice(0, MAX_LONGITUD);
+    return valor.replace(NOMBRE_INVALIDOS, '').slice(0, MAX_NOMBRE);
 }
 
 function sanitizarSku(valor) {
@@ -154,7 +143,7 @@ function aplicarBloqueos() {
     [['prod-name', sanitizarNombre], ['ed-name', sanitizarNombre],
      ['prod-sku', sanitizarSku], ['ed-sku', sanitizarSku]].forEach(([id, fn]) => {
         const input = document.getElementById(id);
-        if (input) input.maxLength = MAX_LONGITUD;
+        if (input) input.maxLength = id.includes('name') ? MAX_NOMBRE : MAX_LONGITUD;
         bloquearInput(input, fn);
     });
 
@@ -183,17 +172,14 @@ function validarCampos({ name, sku, price, typeId, img }) {
     // ==========================
 
     if (!name) {
-        console.error('Validación: El nombre del producto es obligatorio.');
         return { error: 'El nombre del producto es obligatorio.' };
     }
 
-    if (name.length > MAX_LONGITUD) {
-        console.error(`Validación: El nombre no puede tener más de ${MAX_LONGITUD} caracteres. Tiene ${name.length}.`);
-        return { error: `El nombre no puede tener más de ${MAX_LONGITUD} caracteres (tiene ${name.length}).` };
+    if (name.length > MAX_NOMBRE) {
+        return { error: `El nombre no puede tener más de ${MAX_NOMBRE} caracteres (tiene ${name.length}).` };
     }
 
     if (!NOMBRE_VALIDO.test(name)) {
-        console.error(`Validación: El nombre "${name}" contiene caracteres no válidos.`);
         return { error: "El nombre solo puede contener letras, números, espacios y . , ' & ( ) - _" };
     }
 
@@ -202,17 +188,14 @@ function validarCampos({ name, sku, price, typeId, img }) {
     // ==========================
 
     if (!sku) {
-        console.error('Validación: El SKU es obligatorio.');
         return { error: 'El SKU es obligatorio.' };
     }
 
     if (sku.length > MAX_LONGITUD) {
-        console.error(`Validación: El SKU no puede tener más de ${MAX_LONGITUD} caracteres. Tiene ${sku.length}.`);
         return { error: `El SKU no puede tener más de ${MAX_LONGITUD} caracteres (tiene ${sku.length}).` };
     }
 
     if (!SKU_VALIDO.test(sku)) {
-        console.error(`Validación: El SKU "${sku}" contiene caracteres no válidos.`);
         return { error: 'El SKU solo puede contener letras (sin acentos), números, guion (-), guion bajo (_) y punto (.), sin espacios.' };
     }
 
@@ -221,29 +204,24 @@ function validarCampos({ name, sku, price, typeId, img }) {
     // ==========================
 
     if (!price) {
-        console.error('Validación: El precio es obligatorio.');
         return { error: 'El precio es obligatorio.' };
     }
 
     if (!PRECIO_VALIDO.test(price)) {
-        console.error(`Validación: El precio "${price}" no es válido. Debe ser un número positivo con máximo 2 decimales.`);
         return { error: 'El precio debe ser un número positivo y tener máximo 2 decimales.' };
     }
 
     const precio = Number(price);
 
     if (!Number.isFinite(precio)) {
-        console.error('Validación: El precio no es un número válido.');
         return { error: 'El precio debe ser un número válido.' };
     }
 
 if (precio < PRECIO_MIN) { // Cambio de = a <
-        console.error(`Validación: El precio debe ser mayor o igual a ${PRECIO_MIN}. Valor recibido: ${precio}`);
-        return { error: `El precio debe ser mayor o igual a $${PRECIO_MIN}.` };
+        return { error: `El precio debe ser mayor o igual a $${PRECIO_MIN.toFixed(2)}.` };
     }
 
     if (precio > PRECIO_MAX) { // Cambio de = a >
-        console.error(`Validación: El precio debe ser menor o igual a ${PRECIO_MAX}. Valor recibido: ${precio}`);
         return { error: `El precio debe ser menor o igual a $${PRECIO_MAX}.` };
     }
 
@@ -254,7 +232,6 @@ if (precio < PRECIO_MIN) { // Cambio de = a <
     const tipo = parseInt(typeId, 10);
 
     if (Number.isNaN(tipo) || tipo <= 0) {
-        console.error(`Validación: Tipo de producto inválido. Valor recibido: ${typeId}`);
         return { error: 'Selecciona un tipo de producto.' };
     }
 
@@ -263,19 +240,12 @@ if (precio < PRECIO_MIN) { // Cambio de = a <
     // ==========================
 
     if (!img) {
-        console.error('Validación: La URL de imagen es obligatoria.');
         return { error: 'La URL de imagen es obligatoria.' };
     }
 
-    try {
-        const url = new URL(img);
-
-        if (!['http:', 'https:'].includes(url.protocol)) {
-            throw new Error('protocolo');
-        }
-    } catch {
-        console.error(`Validación: La URL de imagen no es válida. Valor recibido: ${img}`);
-        return { error: 'La URL de imagen no es válida (debe incluir http:// o https://).' };
+    const imgSegura = Api.urlSegura(img);
+    if (!imgSegura) {
+        return { error: 'La URL de imagen no es válida (debe empezar con https://).' };
     }
 
     return {
@@ -284,7 +254,7 @@ if (precio < PRECIO_MIN) { // Cambio de = a <
             sku,
             price: precio,
             typeId: tipo,
-            img
+            img: imgSegura
         }
     };
 }
@@ -332,9 +302,10 @@ function crearFila(p) {
 
     const tdImg = document.createElement('td');
     const img = document.createElement('img');
-    img.src = p.imageURL || IMG_FALLBACK;
+    img.src = Api.urlSegura(p.imageURL) || IMG_FALLBACK;
     img.alt = p.name;
     img.className = 'pp-miniatura';
+    img.loading = 'lazy';
     img.addEventListener('error', () => { img.src = IMG_FALLBACK; }, { once: true });
     tdImg.appendChild(img);
 
@@ -355,7 +326,7 @@ function crearFila(p) {
 function renderTabla() {
     const termino = normalizarTexto(buscador.value);
     const lista = termino
-        ? productos.filter(p => normalizarTexto(p.name).includes(termino) || normalizarTexto(p.sku).includes(termino))
+        ? productos.filter(p => p._q.includes(termino))
         : productos;
 
     tbody.replaceChildren();
@@ -371,7 +342,7 @@ function renderTabla() {
     lista.forEach(p => tbody.appendChild(crearFila(p)));
 }
 
-buscador.addEventListener('input', renderTabla);
+buscador.addEventListener('input', Api.debounce(renderTabla, 200));
 buscador.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         buscador.value = '';
@@ -386,7 +357,6 @@ formCrear.addEventListener('submit', async (e) => {
 
     if (!esAdmin()) {
         setMsg(msgCreacion, 'No tienes permisos para crear productos.', 'error');
-        await new Promise(resolve => setTimeout(resolve, 3000));
         return;
     }
 
@@ -457,7 +427,6 @@ formEditar.addEventListener('submit', async (e) => {
 
     if (!esAdmin()) {
         setMsg(msgEdicion, 'No tienes permisos para editar productos.', 'error');
-        await new Promise(resolve => setTimeout(resolve, 3000));
         return;
     }
     if (!productoEnEdicion) return;

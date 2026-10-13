@@ -1,946 +1,399 @@
 // ==========================================
-// MACHAPOINT POS
-// Gestión de turnos y cortes
+// MACHAPOINT POS - Gestión de turnos y cortes
 // ==========================================
+'use strict';
 
-// ==========================================
-// URLs DE LOS SERVICIOS
-// ==========================================
-
-const API_SHIFT_URL =
-    "https://hdkp6ejncitdyw5yfwyxc4sj4i0srjxb.lambda-url.us-east-1.on.aws";
-
-const API_CUT_URL =
-    "https://2v34s2xxn4rxq6utaxaaoawpb40soivi.lambda-url.us-east-1.on.aws";
-
+const API_SHIFT_URL = "https://hdkp6ejncitdyw5yfwyxc4sj4i0srjxb.lambda-url.us-east-1.on.aws";
+const API_CUT_URL = "https://2v34s2xxn4rxq6utaxaaoawpb40soivi.lambda-url.us-east-1.on.aws";
 const API_SALES_BY_SHIFT_URL = "https://6uxm3jz7xwth5cliak6zk6dudi0iseih.lambda-url.us-east-1.on.aws/api/sale/by-shift";
-// ==========================================
-// ELEMENTOS DEL DOM
-// ==========================================
 
-const seccionApertura = document.getElementById("seccion-apertura");
-const seccionTurno = document.getElementById("seccion-turno");
-const seccionCorte = document.getElementById("seccion-corte");
-const estadoTurno = document.getElementById("estado-turno");
+const $ = id => document.getElementById(id);
+const seccionApertura = $("seccion-apertura");
+const seccionTurno = $("seccion-turno");
+const seccionCorte = $("seccion-corte");
+const estadoTurno = $("estado-turno");
+const mensaje = $("mensaje");
+const openingAmount = $("opening-amount");
+const actualCash = $("actual-cash");
+const closeNotes = $("close-notes");
+const btnAbrir = $("btn-abrir-turno");
+const btnCerrar = $("btn-cerrar-turno");
 
-const mensaje = document.getElementById("mensaje");
-const cashierSelect = document.getElementById("cashier-select");
-const openingAmount = document.getElementById("opening-amount");
+const SHIFT_KEYS = ["shiftId", "cashierId", "cashierUsername", "openingAmount"];
+const POLL_BASE_MS = 10000;
+const POLL_MAX_MS = 60000;
 
-const actualCash = document.getElementById("actual-cash");
-const closeNotes = document.getElementById("close-notes");
-
-const btnAbrir = document.getElementById("btn-abrir-turno");
-const btnCerrar = document.getElementById("btn-cerrar-turno");
-let salesPollingInterval = null;
-
-function obtenerToken() {
-    return localStorage.getItem("authToken");
-}
-
-// Validacion de fondo
-
+// ---------- Validación de montos ----------
 const MONTO_MIN = 0.99;
 const MONTO_MAX = 20000;
-const MONTO_MAX_CARACTERES = 7;
+const MONTO_MAX_CARACTERES = 8; // permite 20000.00
 
-// Filtra lo que el usuario escribe: solo dígitos, un punto, máx. 2 decimales, máx. 5 caracteres
 function filtrarMonto(input) {
-    let valor = input.value;
-
-    // Permitir coma como punto decimal
-    valor = valor.replace(",", ".");
-
-    // Quitar todo excepto dígitos y puntos
-    valor = valor.replace(/[^\d.]/g, "");
-
-    // Permitir solo un punto
-    const partes = valor.split(".");
-    if (partes.length > 2) {
-        valor = partes[0] + "." + partes.slice(1).join("");
+    let v = input.value.replace(",", ".").replace(/[^\d.]/g, "");
+    const partes = v.split(".");
+    if (partes.length > 2) v = partes[0] + "." + partes.slice(1).join("");
+    if (v.includes(".")) {
+        const [e, d] = v.split(".");
+        v = e + "." + d.slice(0, 2);
     }
-
-    // Limitar a 2 decimales
-    if (valor.includes(".")) {
-        const [entero, decimales] = valor.split(".");
-        valor = entero + "." + decimales.slice(0, 2);
-    }
-
-    // Limitar a 5 caracteres en total
-    valor = valor.slice(0, MONTO_MAX_CARACTERES);
-
-    input.value = valor;
+    input.value = v.slice(0, MONTO_MAX_CARACTERES);
 }
 
-if (openingAmount) {
-    openingAmount.addEventListener("input", () => filtrarMonto(openingAmount));
+[openingAmount, actualCash].forEach(input => {
+    if (!input) return;
+    input.maxLength = MONTO_MAX_CARACTERES;
+    input.addEventListener("input", () => filtrarMonto(input));
+    input.addEventListener("paste", () => setTimeout(() => filtrarMonto(input), 0));
+});
 
-    // Controla también el pegado de texto
-    openingAmount.addEventListener("paste", () => {
-        setTimeout(() => filtrarMonto(openingAmount), 0);
-    });
+function validarMonto(texto, { etiqueta, minimoExclusivo }) {
+    const v = texto.trim();
+    if (v === "") return `Ingresa ${etiqueta}.`;
+    if (!/^\d+(\.\d{1,2})?$/.test(v)) return "Formato inválido. Usa solo números y máximo 2 decimales.";
+    if (v.length > MONTO_MAX_CARACTERES) return `El monto no puede tener más de ${MONTO_MAX_CARACTERES} caracteres.`;
+    const n = Number(v);
+    if (minimoExclusivo && n <= MONTO_MIN) return `El monto debe ser mayor a $${MONTO_MIN}.`;
+    if (n > MONTO_MAX) return `El monto no puede ser mayor a $${MONTO_MAX.toLocaleString("es-MX")}.`;
+    return null;
 }
+const validarFondoInicial = t => validarMonto(t, { etiqueta: "un fondo inicial", minimoExclusivo: true });
+const validarDineroContado = t => validarMonto(t, { etiqueta: "el dinero contado en caja", minimoExclusivo: false });
 
-if (actualCash) {
-    actualCash.addEventListener("input", () => filtrarMonto(actualCash));
-
-    // Controla también el pegado de texto
-    actualCash.addEventListener("paste", () => {
-        setTimeout(() => filtrarMonto(actualCash), 0);
-    });
-}
-
-// Validación final (se usa al hacer clic en "Abrir día de venta")
-function validarFondoInicial(texto) {
-    const valor = texto.trim();
-
-    if (valor === "") {
-        return "Ingresa un fondo inicial.";
-    }
-
-    if (!/^\d+(\.\d{1,2})?$/.test(valor)) {
-        return "Formato inválido. Usa solo números y máximo 2 decimales.";
-    }
-
-    if (valor.length > MONTO_MAX_CARACTERES) {
-        return `El fondo inicial no puede tener más de ${MONTO_MAX_CARACTERES} caracteres.`;
-    }
-
-    const numero = Number(valor);
-
-    if (numero <= MONTO_MIN) {
-        return `El fondo inicial debe ser mayor a $${MONTO_MIN}.`;
-    }
-
-    if (numero > MONTO_MAX) {
-        return `El fondo inicial no puede ser mayor a $${MONTO_MAX.toLocaleString("es-MX")}.`;
-    }
-
-    return null; // Sin errores
-}
-
-function validarDineroContado(texto) {
-    const valor = texto.trim();
-
-    if (valor === "") {
-        return "Ingresa el dinero contado en caja.";
-    }
-
-    if (!/^\d+(\.\d{1,2})?$/.test(valor)) {
-        return "Formato inválido. Usa solo números y máximo 2 decimales.";
-    }
-
-    if (valor.length > MONTO_MAX_CARACTERES) {
-        return `El monto no puede tener más de ${MONTO_MAX_CARACTERES} caracteres.`;
-    }
-
-    const numero = Number(valor);
-
-    if (numero < 0) {
-        return "El dinero contado no puede ser negativo.";
-    }
-
-    if (numero > MONTO_MAX) {
-        return `El dinero contado no puede ser mayor a $${MONTO_MAX.toLocaleString("es-MX")}.`;
-    }
-
-    return null; // Sin errores
-}
-
-//Ventas del turno
-async function cargarVentasTurno(shiftId) {
-    if (!shiftId) return;
-
+// ---------- Utilidades ----------
+function obtenerUsuarioActual() {
     try {
-        const token = obtenerToken();
-        const headers = {"Content-Type":"application/json"};
-        if (token) headers["Authorization"] = `Bearer ${token}`;
+        const u = JSON.parse(localStorage.getItem("user") || "null");
+        if (!u) return null;
+        return { id: u.id || null, username: u.username || u.nombre || u.email || "Cajero" };
+    } catch { return null; }
+}
 
-        const response = await fetch(`${API_SALES_BY_SHIFT_URL}?shiftId=${shiftId}`, {
-            method: "GET",
-            headers: headers
-        });
+function mostrarMensaje(texto, tipo = "info") {
+    if (!mensaje) return;
+    mensaje.textContent = texto;
+    mensaje.className = `mensaje ${tipo}`;
+}
+function ocultarMensaje() {
+    if (!mensaje) return;
+    mensaje.className = "mensaje oculto";
+    mensaje.textContent = "";
+}
+function formatoDinero(valor) {
+    return (Number(valor) || 0).toLocaleString("es-MX", { style: "currency", currency: "MXN" });
+}
+function formatoFecha(fecha) {
+    if (!fecha) return "-";
+    const d = new Date(fecha);
+    return isNaN(d.getTime()) ? String(fecha) : d.toLocaleString("es-MX");
+}
+const setText = (id, txt) => { const e = $(id); if (e) e.textContent = txt; };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-        if (!response.ok) return;
-        const data = await response.json();
+function finalizarTurnoLocal() {
+    detenerPollingVentas();
+    SHIFT_KEYS.forEach(k => localStorage.removeItem(k));
+}
 
-        if (data.success && Array.isArray(data.data)) {
-            renderizarTablaVentas(data.data);
-        }
-    }catch (error) {
-        console.error("Error al cargar ventas del turno:", error);
+// ---------- Ventas del turno (polling encadenado, con pausa y backoff) ----------
+let pollTimer = null;
+let pollShiftId = null;
+let pollFallos = 0;
+let pollEnCurso = false;
+
+async function cargarVentasTurno(shiftId) {
+    try {
+        const res = await Api.request(`${API_SALES_BY_SHIFT_URL}?shiftId=${encodeURIComponent(shiftId)}`,
+            { method: "GET", timeout: 10000 });
+        if (!res.ok) return false;
+        const data = await res.json();
+        if (data.success && Array.isArray(data.data)) renderizarTablaVentas(data.data);
+        return true;
+    } catch {
+        return false; // red lenta: se reintenta con backoff
     }
 }
 
-function renderizarTablaVentas(ventas,totalSales) {
-    const tbody = document.getElementById("tabla-ventas-body");
+function filaVacia(tbody) {
+    const tr = document.createElement("tr");
+    const td = document.createElement("td");
+    td.colSpan = 5;
+    td.className = "texto-vacio";
+    td.textContent = "No hay ventas registradas en este turno.";
+    tr.appendChild(td);
+    tbody.replaceChildren(tr);
+}
 
+function renderizarTablaVentas(ventas) {
+    const tbody = $("tabla-ventas-body");
     if (!tbody) return;
+    if (ventas.length === 0) { filaVacia(tbody); return; }
 
-    tbody.innerHTML = "";
-
-    if (ventas.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="texto-vacio">No hay ventas registradas en este turno.</td></tr>`;
-        return;
-    }
-
+    const frag = document.createDocumentFragment();
     ventas.forEach(sale => {
-        //Formato de hora
-        const hora = sale.createdAt 
-            ? new Date(sale.createdAt).toLocaleTimeString("es-MX", { hour: '2-digit', minute: '2-digit' }) 
+        const hora = sale.createdAt
+            ? new Date(sale.createdAt).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })
             : "-";
-
-        // Obtener resumen de items en texto
-        const itemsSummary = Array.isArray(sale.items) && sale.items.length > 0
-            ? sale.items.map(item => {
-        const nombreProducto = item.product_name || item.productName || item.name || 'Producto';
-        const cantidad = item.quantity || 1;
-        return `${cantidad}x ${nombreProducto}`;
-    }).join(", ")
-    : "Sin detalle de ítems";
+        const items = Array.isArray(sale.items) && sale.items.length > 0
+            ? sale.items.map(i => `${i.quantity || 1}x ${i.product_name || i.productName || i.name || "Producto"}`).join(", ")
+            : "Sin detalle de ítems";
 
         const tr = document.createElement("tr");
-        tr.innerHTML = `
-            <td><strong>#${sale.saleId}</strong></td>
-            <td>${hora}</td>
-            <td>${sale.paymentMethod || 'Efectivo'}</td>
-            <td><small>${itemsSummary}</small></td>
-            <td><strong>${formatoDinero(sale.total)}</strong></td>
-        `;
-        tbody.appendChild(tr);
+        const celdas = [
+            [`#${sale.saleId}`, "strong"],
+            [hora],
+            [sale.paymentMethod || "-"],
+            [items, "small"],
+            [formatoDinero(sale.total), "strong"]
+        ];
+        celdas.forEach(([txt, envoltorio]) => {
+            const td = document.createElement("td");
+            if (envoltorio) {
+                const w = document.createElement(envoltorio);
+                w.textContent = txt;
+                td.appendChild(w);
+            } else td.textContent = txt;
+            tr.appendChild(td);
+        });
+        frag.appendChild(tr);
     });
+    tbody.replaceChildren(frag);
+}
+
+function programarPolling(ms) {
+    clearTimeout(pollTimer);
+    if (pollShiftId) pollTimer = setTimeout(cicloPolling, ms);
+}
+
+async function cicloPolling() {
+    if (!pollShiftId || pollEnCurso) return;
+    if (document.hidden) return; // se reanuda en visibilitychange
+    pollEnCurso = true;
+    const ok = await cargarVentasTurno(pollShiftId);
+    pollEnCurso = false;
+    pollFallos = ok ? 0 : pollFallos + 1;
+    programarPolling(Math.min(POLL_BASE_MS * 2 ** pollFallos, POLL_MAX_MS));
 }
 
 function iniciarPollingVentas(shiftId) {
-    // Detener cualquier polling anterior para no duplicar intervalos
     detenerPollingVentas();
-
-    // Carga inicial
-    cargarVentasTurno(shiftId);
-
-    // Consultar cada 10 segundos
-    salesPollingInterval = setInterval(() => {
-        cargarVentasTurno(shiftId);
-    }, 10000); 
+    pollShiftId = shiftId;
+    cicloPolling();
 }
 
 function detenerPollingVentas() {
-    if (salesPollingInterval) {
-        clearInterval(salesPollingInterval);
-        salesPollingInterval = null;
-    }
+    clearTimeout(pollTimer);
+    pollTimer = null;
+    pollShiftId = null;
+    pollFallos = 0;
 }
 
-//Se obtiene el usuario actual del localStorage y se devuelve un objeto con id y username. Si no hay usuario o hay un error al parsear, se devuelve null.
-function obtenerUsuarioActual() {
-    const usuario = localStorage.getItem("user");
-    if (!usuario) return null;
+document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && pollShiftId) { clearTimeout(pollTimer); cicloPolling(); }
+});
 
-    try {
-        const userObj = JSON.parse(usuario);
-        return {
-            id: userObj.id || null,
-            username:
-                userObj.username ||
-                userObj.nombre ||
-                userObj.email ||
-                "Cajero"
-        };
-    } catch (error) {
-        console.error("Error al leer usuario:", error);
-        return null;
-    }
-}
-
-
-function mostrarMensaje(texto, tipo = "info") {
-
-    if (!mensaje) return;
-
-    mensaje.textContent = texto;
-
-    mensaje.className = `mensaje ${tipo}`;
-
-}
-
-
-function ocultarMensaje() {
-
-    if (!mensaje) return;
-
-    mensaje.className = "mensaje oculto";
-
-    mensaje.textContent = "";
-
-}
-
-
-
-function formatoDinero(valor) {
-
-    const numero =
-        Number(valor) || 0;
-
-    return numero.toLocaleString("es-MX", {
-        style: "currency",
-        currency: "MXN"
-    });
-
-}
-
-
-function formatoFecha(fecha) {
-
-    if (!fecha) return "-";
-
-    const date = new Date(fecha);
-
-    if (isNaN(date.getTime())) {
-        return fecha;
-    }
-
-    return date.toLocaleString("es-MX");
-
-}
-
-
+// ---------- Abrir turno ----------
 async function abrirTurno() {
     ocultarMensaje();
-
-    const usuarioActual = obtenerUsuarioActual();
-    const amount = Number(openingAmount.value);
-
-    if (!usuarioActual || !usuarioActual.id) {
-        mostrarMensaje("No se detectó la sesión del cajero. Por favor inicia sesión nuevamente.","error");
+    const usuario = obtenerUsuarioActual();
+    if (!usuario || !usuario.id) {
+        mostrarMensaje("No se detectó la sesión del cajero. Por favor inicia sesión nuevamente.", "error");
         return;
     }
-
     const errorMonto = validarFondoInicial(openingAmount.value);
-    if (errorMonto) {
-        mostrarMensaje(errorMonto, "error");
-        openingAmount.focus();
-        return;
-    }
+    if (errorMonto) { mostrarMensaje(errorMonto, "error"); openingAmount.focus(); return; }
+    const amount = Number(openingAmount.value);
 
     btnAbrir.disabled = true;
     btnAbrir.textContent = "Abriendo turno...";
-
     try {
-
-        const token = obtenerToken();
-        const body = {cashierid: usuarioActual.id, openingamount: amount};
-        const headers = {"Content-Type":"application/json"};
-
-        if (token) {
-            headers["Authorization"] = `Bearer ${token}`;
-        }
-
-        const response = await fetch(`${API_SHIFT_URL}/api/shift/open`,
-                {
-                    method: "POST",
-                    headers: headers,
-                    body: JSON.stringify(body)
-                }
-            );
-
-        const data = await response.json().catch(() => ({}));
-
-        if (!response.ok) {
-            const error = data.message || data.Message || data.error || `HTTP ${response.status}`;
-            throw new Error(error);
-        }
+        const res = await Api.request(`${API_SHIFT_URL}/api/shift/open`, {
+            method: "POST",
+            body: JSON.stringify({ cashierid: usuario.id, openingamount: amount }),
+            timeout: 20000
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(await Api.errorDe(res));
 
         const shiftId = data.shiftId || data.shiftid || data.id;
-
-
         if (!shiftId) {
-            mostrarMensaje("El turno se abrió, pero el backend no devolvió shiftId. Solicita que /api/shift/open incluya el identificador del turno.","error");
-            console.warn("Respuesta de /api/shift/open:",data);
+            mostrarMensaje("El turno se abrió, pero el servidor no devolvió el identificador del turno.", "error");
             return;
         }
+        localStorage.setItem("shiftId", shiftId);
+        localStorage.setItem("cashierId", usuario.id);
+        localStorage.setItem("cashierUsername", usuario.username);
+        localStorage.setItem("openingAmount", amount);
 
-        // GUARDAR TURNO
-
-        localStorage.setItem(
-            "shiftId",
-            shiftId
-        );
-
-        localStorage.setItem(
-            "cashierId",
-            usuarioActual.id
-        );
-
-        localStorage.setItem(
-            "cashierUsername",
-            usuarioActual.username
-        );
-
-        localStorage.setItem(
-            "openingAmount",
-            amount
-        );
-
-
-        // Actualizar interfaz
-
-        mostrarTurnoAbierto(shiftId,usuarioActual.username,amount);
-
-
-        mostrarMensaje(
-            data.message ||
-            "Turno iniciado correctamente.",
-            "exito"
-        );
-
-
+        mostrarTurnoAbierto(shiftId, usuario.username, amount);
+        mostrarMensaje(data.message || "Turno iniciado correctamente.", "exito");
     } catch (error) {
-
-        console.error(
-            "Error al abrir turno:",
-            error
-        );
-
-        mostrarMensaje(
-            "Error al abrir turno: " +
-            error.message,
-            "error"
-        );
-
+        mostrarMensaje("Error al abrir turno: " + error.message, "error");
     } finally {
-
         btnAbrir.disabled = false;
-
-        btnAbrir.textContent =
-            "Abrir día de venta";
-
+        btnAbrir.textContent = "Abrir día de venta";
     }
-
 }
 
-
-
-function mostrarTurnoAbierto(
-    shiftId,
-    cashierUsername,
-    amount
-) {
-
+function mostrarTurnoAbierto(shiftId, cashierUsername, amount) {
     seccionApertura.classList.add("oculto");
-
     seccionTurno.classList.remove("oculto");
-
     seccionCorte.classList.add("oculto");
 
+    estadoTurno.textContent = "● Turno abierto";
+    estadoTurno.className = "estado abierto";
 
-    // Estado superior
-
-    estadoTurno.textContent =
-        "● Turno abierto";
-
-    estadoTurno.className =
-        "estado abierto";
-
-
-    // Información
-
-    document.getElementById("resumen-cajero").textContent =cashierUsername;
-
-
-    document.getElementById(
-        "resumen-shift"
-    ).textContent =
-        `#${shiftId}`;
-
-
-    document.getElementById(
-        "resumen-apertura"
-    ).textContent =
-        formatoDinero(amount);
-
-
-    document.getElementById(
-        "turno-info"
-    ).textContent =
-        `Turno #${shiftId}`;
-
-
-    // Limpiar cierre
+    setText("resumen-cajero", cashierUsername);
+    setText("resumen-shift", `#${shiftId}`);
+    setText("resumen-apertura", formatoDinero(amount));
+    setText("turno-info", `Turno #${shiftId}`);
 
     actualCash.value = "";
-
     closeNotes.value = "";
-
     iniciarPollingVentas(shiftId);
 }
 
+// ---------- Cerrar turno ----------
+function volverAApertura() {
+    finalizarTurnoLocal();
+    seccionTurno.classList.add("oculto");
+    seccionApertura.classList.remove("oculto");
+    estadoTurno.textContent = "● Sin turno activo";
+    estadoTurno.className = "estado sin-turno";
+}
 
 async function cerrarTurno() {
     ocultarMensaje();
-
     const shiftId = localStorage.getItem("shiftId");
     const cashierId = localStorage.getItem("cashierId");
 
     if (!shiftId) {
-        mostrarMensaje("No existe un turno activo.","error");
-        finalizarTurnoLocal();
-        seccionTurno.classList.add("oculto");
-        seccionApertura.classList.remove("oculto");
+        mostrarMensaje("No existe un turno activo.", "error");
+        volverAApertura();
         return;
     }
-
-    // --------------------------------------
-    // Dinero contado
-    // --------------------------------------
-
-const errorMonto = validarDineroContado(actualCash.value);
-    
-    if (errorMonto) {
-        mostrarMensaje(errorMonto, "error");
-        actualCash.focus();
-        return;
-    }
+    const errorMonto = validarDineroContado(actualCash.value);
+    if (errorMonto) { mostrarMensaje(errorMonto, "error"); actualCash.focus(); return; }
 
     const countedCash = Number(actualCash.value);
-
-    const notes =
-        closeNotes.value.trim();
-
-
-    // --------------------------------------
-    // Confirmación
-    // --------------------------------------
-
-    if (!confirm("¿Estás seguro de cerrar el turno?\n\nUna vez cerrado no se registrarán más ventas en este turno.")) {
-        return;
-    }
-
-
-    // --------------------------------------
-    // Botón
-    // --------------------------------------
+    const notes = closeNotes.value.trim();
+    if (!confirm("¿Estás seguro de cerrar el turno?\n\nUna vez cerrado no se registrarán más ventas en este turno.")) return;
 
     btnCerrar.disabled = true;
-
-    btnCerrar.textContent =
-        "Cerrando turno...";
-
+    btnCerrar.textContent = "Cerrando turno...";
+    const cashierName = localStorage.getItem("cashierUsername");
 
     try {
+        const res = await Api.request(`${API_SHIFT_URL}/api/shift/close`, {
+            method: "POST",
+            body: JSON.stringify({ shiftid: Number(shiftId), cashierid: cashierId, actualcash: countedCash, notes }),
+            timeout: 20000
+        });
+        const data = await res.json().catch(() => ({}));
 
-        const token =
-            obtenerToken();
-
-
-        // ----------------------------------
-        // Body
-        // ----------------------------------
-
-        const body = {
-
-            shiftid:
-                Number(shiftId),
-
-            cashierid:
-                cashierId,
-
-            actualcash:
-                countedCash,
-
-            notes:
-                notes
-
-        };
-
-
-        // ----------------------------------
-        // Headers
-        // ----------------------------------
-
-        const headers = {
-
-            "Content-Type":
-                "application/json"
-
-        };
-
-
-        if (token) {
-
-            headers["Authorization"] =
-                `Bearer ${token}`;
-
-        }
-
-
-        // ----------------------------------
-        // Petición
-        // ----------------------------------
-        const cashierName = localStorage.getItem("cashierUsername");
-        const response =
-            await fetch(
-                `${API_SHIFT_URL}/api/shift/close`,
-                {
-                    method: "POST",
-                    headers: headers,
-                    body: JSON.stringify(body)
-                }
-            );
-
-
-        const data =
-            await response.json()
-                .catch(() => ({}));
-
-
-        if (!response.ok) {
-            const error = data.message || data.Message || data.error || `HTTP ${response.status}`;
-
-            if (error.includes("no existe") || error.includes("cerrado")){
-                finalizarTurnoLocal();
-                seccionTurno.classList.add("oculto");
-                seccionApertura.classList.remove("oculto");
-                estadoTurno.textContent = "● Sin turno activo";
-                estadoTurno.className = "estado sin-turno";
-
-                throw new Error("El turno anterior fue cerrado anteriormente. Se ha restablecido la pantalla para que puedas abrir un nuevo turno.");
+        if (!res.ok) {
+            const crudo = String(data.message || data.Message || data.error || "").toLowerCase();
+            // Probable cierre previo (p. ej. la respuesta se perdió por red lenta): intentamos recuperar el corte
+            if (res.status === 409 || crudo.includes("no existe") || crudo.includes("cerrado")) {
+                mostrarMensaje("El turno ya estaba cerrado. Recuperando el corte...", "info");
+                await obtenerCorteZ(cashierName, Number(shiftId));
+                return;
             }
-            throw new Error(error);
+            throw new Error(await Api.errorDe(res));
         }
 
-
-        mostrarMensaje(
-            data.message ||
-            "Turno cerrado correctamente.",
-            "exito"
-        );
-
-
-        // ----------------------------------
-        // Consultar corte Z
-        // ----------------------------------
-
-        await obtenerCorteZ(
-            cashierName,
-            Number(shiftId)
-        );
-
-
+        mostrarMensaje(data.message || "Turno cerrado correctamente.", "exito");
+        await obtenerCorteZ(cashierName, Number(shiftId));
     } catch (error) {
-
-        console.error(
-            "Error al cerrar turno:",
-            error
-        );
-
-        mostrarMensaje(
-            "Error al cerrar turno: " +
-            error.message,
-            "error"
-        );
-
+        mostrarMensaje("Error al cerrar turno: " + error.message, "error");
     } finally {
-
         btnCerrar.disabled = false;
-
-        btnCerrar.textContent =
-            "Cerrar turno";
-
+        btnCerrar.textContent = "Cerrar turno";
     }
-
 }
 
-async function obtenerCorteZ(
-    cashierName, shiftId
-) {
-
-    try {
-
-        const token =
-            obtenerToken();
-
-
-        const headers = {
-            "Content-Type":
-                "application/json"
-        };
-
-
-        if (token) {
-
-            headers["Authorization"] =
-                `Bearer ${token}`;
-
-        }
-
-
-        const response =
-            await fetch(
-                `${API_CUT_URL}/api/cut/zcuts?shiftId=${shiftId}`,
-                {
-                    method: "GET",
-                    headers: headers
-                }
-            );
-
-
-        const data =
-            await response.json()
-                .catch(() => ({}));
-
-
-        if (!response.ok) {
-
-            const error =
-                data.message ||
-                data.Message ||
-                data.error ||
-                `HTTP ${response.status}`;
-
-            throw new Error(error);
-
-        }
-
-
-        console.log(
-            "Respuesta corte Z:",
-            data
-        );
-
-
-        // Obtener corte
-
-        let corte = (Array.isArray(data.cuts) && data.cuts.length > 0) ? data.cuts[0] : null;;
-
-
-        if (!corte) {
-            mostrarMensaje("El turno fue cerrado, pero todavía no se encontró el corte Z.", "info");
-            finalizarTurnoLocal();
-            return;
-        }
-
-        mostrarCorte(corte,cashierName);
-        finalizarTurnoLocal();
-
-
-    } catch (error) {
-
-        console.error(
-            "Error al obtener corte Z:",
-            error
-        );
-
-        mostrarMensaje(
-            "Turno cerrado, pero no fue posible obtener el corte Z: " +
-            error.message,
-            "error"
-        );
-
-        // El turno ya fue cerrado en backend.
-        // Limpiamos los datos locales.
-
-        finalizarTurnoLocal();
-
-    }
-
+// ---------- Corte Z (con reintentos: puede tardar en estar disponible) ----------
+async function consultarCorte(shiftId) {
+    const res = await Api.request(`${API_CUT_URL}/api/cut/zcuts?shiftId=${encodeURIComponent(shiftId)}`,
+        { method: "GET", timeout: 10000 });
+    if (!res.ok) throw new Error(await Api.errorDe(res));
+    const data = await res.json().catch(() => ({}));
+    return Array.isArray(data.cuts) && data.cuts.length > 0 ? data.cuts[0] : null;
 }
 
+async function obtenerCorteZ(cashierName, shiftId) {
+    const esperas = [0, 1500, 3000, 5000];
+    let ultimoError = null;
+    for (const espera of esperas) {
+        if (espera) await sleep(espera);
+        try {
+            const corte = await consultarCorte(shiftId);
+            if (corte) {
+                mostrarCorte(corte, cashierName);
+                finalizarTurnoLocal();
+                return;
+            }
+        } catch (e) { ultimoError = e; }
+    }
+    // El turno ya está cerrado en el servidor: se limpia lo local y se avisa
+    mostrarMensaje(ultimoError
+        ? "Turno cerrado, pero no fue posible obtener el corte Z: " + ultimoError.message
+        : "El turno fue cerrado, pero todavía no se encontró el corte Z.", ultimoError ? "error" : "info");
+    finalizarTurnoLocal();
+}
 
 function mostrarCorte(corte, cashierName) {
-
     seccionTurno.classList.add("oculto");
     seccionApertura.classList.add("oculto");
     seccionCorte.classList.remove("oculto");
 
-    // Información
+    setText("corte-cajero", cashierName || corte.cashierUsername || "-");
+    setText("corte-shift", corte.shiftId != null ? `#${corte.shiftId}` : "-");
+    setText("corte-apertura", formatoFecha(corte.openedAt));
+    setText("corte-cierre", formatoFecha(corte.closedAt));
+    setText("corte-opening", formatoDinero(corte.openingCash));
+    setText("corte-sales", formatoDinero(corte.totalSales));
+    setText("corte-count", corte.totalSalesCount ?? 0);
+    setText("corte-expected", formatoDinero(corte.expectedCash));
+    setText("corte-actual", formatoDinero(corte.actualCash));
+    setText("corte-difference", formatoDinero(corte.cashDifference));
 
-    document.getElementById(
-        "corte-cajero" 
-    ).textContent =
-       cashierName || corte.cashierUsername || "-"
+    const status = $("corte-status");
+    const audit = corte.auditStatus || "SIN ESTADO";
+    status.textContent = audit;
+    status.className = "resultado-corte";
+    const u = audit.toUpperCase();
+    status.classList.add(u.includes("FALTANTE") ? "faltante" : u.includes("SOBRANTE") ? "sobrante" : "correcto");
 
-
-    document.getElementById(
-        "corte-shift"
-    ).textContent =
-        corte.shiftId != null
-            ? `#${corte.shiftId}`
-            : "-";
-
-
-    document.getElementById(
-        "corte-apertura"
-    ).textContent =
-        formatoFecha(corte.openedAt);
-
-
-    document.getElementById(
-        "corte-cierre"
-    ).textContent =
-        formatoFecha(corte.closedAt);
-
-
-    document.getElementById(
-        "corte-opening"
-    ).textContent =
-        formatoDinero(corte.openingCash);
-
-
-    document.getElementById(
-        "corte-sales"
-    ).textContent =
-        formatoDinero(corte.totalSales);
-
-
-    document.getElementById(
-        "corte-count"
-    ).textContent =
-        corte.totalSalesCount ?? 0;
-
-
-    document.getElementById(
-        "corte-expected"
-    ).textContent =
-        formatoDinero(corte.expectedCash);
-
-
-    document.getElementById(
-        "corte-actual"
-    ).textContent =
-        formatoDinero(corte.actualCash);
-
-
-    document.getElementById(
-        "corte-difference"
-    ).textContent =
-        formatoDinero(corte.cashDifference);
-
-    // Estado
-
-    const status =
-        document.getElementById(
-            "corte-status"
-        );
-
-
-    const auditStatus =
-        corte.auditStatus ||
-        "SIN ESTADO";
-
-
-    status.textContent =
-        auditStatus;
-
-
-    status.className =
-        "resultado-corte";
-
-
-    if (
-        auditStatus
-            .toUpperCase()
-            .includes("FALTANTE")
-    ) {
-
-        status.classList.add(
-            "faltante"
-        );
-
-    } else if (
-        auditStatus
-            .toUpperCase()
-            .includes("SOBRANTE")
-    ) {
-
-        status.classList.add(
-            "sobrante"
-        );
-
-    } else {
-
-        status.classList.add(
-            "correcto"
-        );
-
-    }
-
-    //notas 
-    document.getElementById(
-        "corte-notes"
-    ).textContent =
-        corte.notes ||
-        "Sin observaciones";
-
-    // Estados
-    estadoTurno.textContent =
-        "● Turno cerrado";
-
-    estadoTurno.className =
-        "estado cerrado";
-
+    setText("corte-notes", corte.notes || "Sin observaciones");
+    estadoTurno.textContent = "● Turno cerrado";
+    estadoTurno.className = "estado cerrado";
 }
 
-
-// LIMPIAR TURNO LOCAL
-
-function finalizarTurnoLocal() {
-    detenerPollingVentas();
-    localStorage.removeItem(
-        "shiftId"
-    );
-
-    localStorage.removeItem(
-        "cashierId"
-    );
-
-    localStorage.removeItem(
-        "cashierUsername"
-    );
-
-    localStorage.removeItem(
-        "openingAmount"
-    );
-
-}
-
+// ---------- Restaurar turno ----------
 function restaurarTurno() {
-
     const shiftId = localStorage.getItem("shiftId");
-        const cashierName = localStorage.getItem("cashierUsername");
-        const nombreCajero = (cashierName && cashierName !== "null") ? cashierName : "Cajero";    
-        const amount = localStorage.getItem("openingAmount");
+    const amount = localStorage.getItem("openingAmount");
+    const guardado = localStorage.getItem("cashierId");
+    const usuario = obtenerUsuarioActual();
 
     if (shiftId && amount !== null) {
-        mostrarTurnoAbierto(
-            shiftId,
-            nombreCajero,
-            Number(amount)
-        );
-    }else{
+        // El turno guardado debe pertenecer al usuario con sesión iniciada
+        if (usuario && usuario.id && guardado && String(guardado) !== String(usuario.id)) {
+            finalizarTurnoLocal();
+            seccionApertura.classList.remove("oculto");
+            seccionTurno.classList.add("oculto");
+            mostrarMensaje("Había un turno local de otro cajero. Ese turno debe cerrarlo su titular al iniciar sesión.", "error");
+            return;
+        }
+        const nombre = localStorage.getItem("cashierUsername");
+        mostrarTurnoAbierto(shiftId, nombre && nombre !== "null" ? nombre : "Cajero", Number(amount));
+    } else {
         seccionApertura.classList.remove("oculto");
         seccionTurno.classList.add("oculto");
     }
 }
 
-// EVENTOS
-
-if (btnAbrir) {
-
-    btnAbrir.addEventListener(
-        "click",
-        abrirTurno
-    );
-
-}
-
-
-if (btnCerrar) {
-
-    btnCerrar.addEventListener(
-        "click",
-        cerrarTurno
-    );
-
-}
+if (btnAbrir) btnAbrir.addEventListener("click", abrirTurno);
+if (btnCerrar) btnCerrar.addEventListener("click", cerrarTurno);
 
 restaurarTurno();
