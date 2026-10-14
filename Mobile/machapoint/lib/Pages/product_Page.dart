@@ -118,7 +118,7 @@ class _ProductPageState extends State<ProductPage> {
         ? const [
             BottomNavigationBarItem(
               icon: Icon(Icons.inventory_2),
-              label: 'Productos',
+              label: 'Catalogo',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.inventory_2_outlined),
@@ -137,7 +137,7 @@ class _ProductPageState extends State<ProductPage> {
         : const [
             BottomNavigationBarItem(
               icon: Icon(Icons.inventory_2),
-              label: 'Productos',
+              label: 'Catalogo',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.point_of_sale),
