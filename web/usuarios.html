@@ -1,106 +1,139 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="es">
     <link rel="icon" type="image/png" href="img/logoo.png">
-
-<link rel="stylesheet" href="styles/auth.css">
-<script src="js/role.js" data-require="admin"></script>
-
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MachaPoint </title>
-    <link rel="stylesheet" href="styles/usuarios.css">
+    <title>MachaPoint - Usuarios</title>
+    <link rel="stylesheet" href="styles/productos.css">
+    <link rel="stylesheet" href="styles/role.css">
+    <!-- Solo administradores -->
+    <script src="js/role.js" data-require="admin"></script>
 </head>
+
 <body>
-    
-        <header class="mp-header">
-            <h1>MachaPoint</h1>
-            <nav id="mp-nav">
-                <ul>
-                    <li><a href="catalogo.html">Catálogo</a></li>
-                    <li><a href="ventas.html">Ventas</a></li>
-                    <li><a href="carrito.html">Carrito</a></li>
-                    <li><a href="productos.html" data-role="admin">Productos</a></li>
-                    <li><a href="usuarios.html" class="activo" aria-current="page">Usuarios</a></li>
-                </ul>
-            </nav>
-        </header>
 
+    <header class="mp-header">
+        <h1>MachaPoint</h1>
+        <nav id="mp-nav">
+            <ul>
+                <li><a href="catalogo.html">Catálogo</a></li>
+                <li><a href="ventas.html">Ventas</a></li>
+                <li><a href="carrito.html">Carrito</a></li>
+                <li><a href="productos.html" data-role="admin">Productos</a></li>
+                <li><a href="usuarios.html" class="activo" aria-current="page">Usuarios</a></li>
+            </ul>
+        </nav>
+    </header>
 
-<main class="container">
-        <!-- Registrar Usuario -->
-        <section class="card">
-            <h3>Registrar Nuevo Usuario</h3>
-            <form id="form-register">
-                <div class="form-group">
-                    <label for="reg-username">Username</label>
-                    <input type="text" id="reg-username" placeholder="Ej: Conan" required>
+    <main class="pp-container">
+
+        <!-- AGREGAR USUARIO -->
+        <section class="mp-card">
+            <h2 class="mp-card__title">Agregar usuario</h2>
+
+            <form id="form-crear-usuario" class="pp-form" novalidate>
+                <div class="mp-field">
+                    <label for="reg-username">Username (4 a 20 caracteres)</label>
+                    <input type="text" id="reg-username" placeholder="Ej: Conan_01" maxlength="20" autocomplete="off" required>
                 </div>
-                
-                <div class="form-group">
-                    <label for="reg-password">Password</label>
-                    <input type="password" id="reg-password" placeholder="Mínimo 8 caracteres" required>
+
+                <div class="mp-field">
+                    <label for="reg-password">Contraseña (mínimo 8 caracteres)</label>
+                    <input type="password" id="reg-password" placeholder="Mínimo 8 caracteres" maxlength="64" autocomplete="new-password" required>
                 </div>
-                
-                <div class="form-group">
+
+                <div class="mp-field">
                     <label for="reg-firstname">Nombre</label>
-                    <input type="text" id="reg-firstname" placeholder="Ej: Big" required>
+                    <input type="text" id="reg-firstname" placeholder="Ej: Big" maxlength="30" autocomplete="off" required>
                 </div>
-                
-                <div class="form-group">
+
+                <div class="mp-field">
                     <label for="reg-lastname">Apellido</label>
-                    <input type="text" id="reg-lastname" placeholder="Ej: Pérez" required>
+                    <input type="text" id="reg-lastname" placeholder="Ej: Pérez" maxlength="30" autocomplete="off" required>
                 </div>
-                
-                <div class="form-group">
+
+                <div class="mp-field">
                     <label for="reg-roleid">Rol</label>
                     <select id="reg-roleid" required>
                         <option value="" disabled selected>Selecciona un rol</option>
-                        <option value="1">Rol 1 (Administrador)</option>
-                        <option value="2">Rol 2 (Usuario Estándar)</option>
+                        <option value="1">1 - Administrador</option>
+                        <option value="2">2 - Trabajador</option>
                     </select>
                 </div>
-                
-                <button type="submit">Registrar</button>
+
+                <div class="pp-actions">
+                    <button type="submit" class="mp-btn mp-btn--primary" id="btn-crear">Guardar usuario</button>
+                </div>
             </form>
+
+            <p id="mensaje-creacion" class="mp-inline-msg" role="status"></p>
         </section>
 
-        <!-- Modificar Usuario -->
-        <section class="card">
-            <h3>Modificar Username</h3>
-            <form id="form-update">
-                <div class="form-group">
-                    <label for="upd-userid">Userid (UUID)</label>
-                    <input type="text" id="upd-userid" placeholder="Ej: 123e4567-e89b-12d3-a456-426614174000" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="upd-username">Nuevo Username</label>
-                    <input type="text" id="upd-username" placeholder="Ej: Conan_nuevo" required>
-                </div>
-                
-                <button type="submit">Actualizar</button>
-            </form>
+
+        <!-- LISTA / EDITAR USUARIOS -->
+        <section class="mp-card">
+            <h2 class="mp-card__title">Editar usuarios</h2>
+
+            <div class="pp-buscador">
+                <input type="search" id="buscador" placeholder="Buscar por username, nombre o apellido..."
+                       autocomplete="off" aria-label="Buscar usuarios">
+            </div>
+
+            <p id="mensaje" class="mp-inline-msg" role="status"></p>
+
+            <div class="pp-tabla-wrap">
+                <table class="pp-tabla">
+                    <thead>
+                        <tr>
+                            <th scope="col">Username</th>
+                            <th scope="col">Nombre</th>
+                            <th scope="col">Apellido</th>
+                            <th scope="col">Rol</th>
+                            <th scope="col">Creado</th>
+                            <th scope="col"><span class="sr-only">Acciones</span></th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-usuarios">
+                        <!-- Las filas se generan mediante JavaScript -->
+                    </tbody>
+                </table>
+            </div>
         </section>
 
-        <!-- Eliminar Usuario -->
-        <section class="card">
-            <h3>Eliminar Usuario</h3>
-            <form id="form-delete">
-                <div class="form-group">
-                    <label for="del-userid">Userid (UUID)</label>
-                    <input type="text" id="del-userid" placeholder="Ej: 123e4567-e89b-12d3-a456-426614174000" required>
-                </div>
-                
-                <button type="submit" class="btn-danger">Eliminar</button>
-            </form>
-        </section>
-
-        <p id="user-status-msg"></p>
     </main>
+
+
+    <!-- DIÁLOGO DE EDICIÓN -->
+    <dialog id="dialogo-editar" class="pp-dialog" aria-labelledby="titulo-edicion">
+        <form id="form-editar" class="pp-form" novalidate>
+            <h2 id="titulo-edicion" class="mp-card__title pp-full">Editar usuario</h2>
+
+            <div class="mp-field">
+                <label for="ed-username">Username (4 a 20 caracteres)</label>
+                <input type="text" id="ed-username" maxlength="20" autocomplete="off" required>
+            </div>
+
+            <div class="mp-field">
+                <label for="ed-roleid">Rol</label>
+                <select id="ed-roleid" required>
+                    <option value="1">1 - Administrador</option>
+                    <option value="2">2 - Trabajador</option>
+                </select>
+            </div>
+
+            <p id="mensaje-edicion" class="mp-inline-msg pp-full" role="status"></p>
+
+            <div class="pp-actions">
+                <button type="button" class="mp-btn pp-btn-secondary" id="btn-cancelar-edicion">Cancelar</button>
+                <button type="submit" class="mp-btn mp-btn--primary" id="btn-guardar-edicion">Guardar cambios</button>
+            </div>
+        </form>
+    </dialog>
 
     <script src="js/api.js"></script>
     <script src="js/usuarios.js"></script>
 </body>
+
 </html>
