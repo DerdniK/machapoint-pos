@@ -4,6 +4,11 @@
 'use strict';
 
 const API_SALES_RANGE_URL = 'https://6uxm3jz7xwth5cliak6zk6dudi0iseih.lambda-url.us-east-1.on.aws/api/sale/by-date-range';
+const API_USERS_URL = 'https://tmvksz56enigo6ojk25lfvg6x40vigzo.lambda-url.us-east-1.on.aws/api/users';
+
+// Se llama con ?userid=<uuid> cuando se quiere un solo usuario (p_userid opcional).
+const URL_LISTAR = `${API_USERS_URL}/auth/view`;
+
 const PAGE_SIZE = 100;
 
 const $ = id => document.getElementById(id);
@@ -85,6 +90,54 @@ function mostrarErrorFechas(texto) {
 }
 
 // ---------- Formato ----------
+
+/**
+ * Obtiene los usuarios desde la vista de autenticación.
+ * Relaciona el UUID del usuario con su firstName.
+ */
+async function obtenerUsuarios() {
+    const res = await Api.request(URL_LISTAR, {
+        method: 'GET',
+        retries: 2,
+        timeout: 20000
+    });
+
+    if (!res.ok) {
+        throw new Error(await Api.errorDe(res));
+    }
+
+    const data = await res.json();
+
+    const lista = Array.isArray(data)
+        ? data
+        : (data.data || data.users || data.usuarios || []);
+
+    const usuarios = new Map();
+
+    lista.forEach(usuario => {
+        const id = String(
+            usuario.userId ??
+            usuario.userid ??
+            usuario.id ??
+            usuario.user_id ??
+            ''
+        ).toLowerCase();
+
+        const firstName =
+            usuario.firstName ??
+            usuario.firstname ??
+            usuario.first_name ??
+            '';
+
+        if (id && firstName) {
+            usuarios.set(id, firstName);
+        }
+    });
+
+    return usuarios;
+}
+
+
 const dinero = n => (Number(n) || 0).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' });
 
 function formatoFechaHora(f) {
@@ -94,16 +147,26 @@ function formatoFechaHora(f) {
 }
 
 // El endpoint devuelve las columnas de sp_sales_by_date_range (saleid, shiftid, cashierid, total, created_at)
-function normalizarVenta(s) {
+
+function normalizarVenta(s, usuarios) {
+    const cashierId = String(
+        s.cashierId ?? s.cashierid ?? ''
+    );
+
     return {
         id: s.saleId ?? s.saleid ?? s.id,
         shiftId: s.shiftId ?? s.shiftid ?? '-',
-        cashierId: String(s.cashierId ?? s.cashierid ?? ''),
-        cashier: s.cashierUsername ?? s.cashierName ?? null,
+        cashierId,
+        cashier:
+            s.cashierUsername ??
+            s.cashierName ??
+            usuarios.get(cashierId.toLowerCase()) ??
+            null,
         total: Number(s.total) || 0,
         createdAt: s.createdAt ?? s.created_at ?? s.createAt ?? null
     };
 }
+
 
 // Día (YYYY-MM-DD) al que pertenece la venta, en el mismo criterio con que se muestra la hora
 function diaDeVenta(v) {
@@ -157,8 +220,11 @@ function crearFila(v) {
     const tdVenta = td(`#${v.id}`);
     tdVenta.style.fontWeight = '600';
 
-    const tdCajero = td(v.cashier || (v.cashierId ? v.cashierId.slice(0, 8) : '-'));
-    if (!v.cashier && v.cashierId) tdCajero.title = v.cashierId;
+    const tdCajero = td(v.cashier || '-');
+
+    if (!v.cashier && v.cashierId) {
+        tdCajero.title = 'No se encontró el nombre del usuario';
+    }
 
     tr.append(tdVenta, td(formatoFechaHora(v.createdAt)), td(`#${v.shiftId}`), tdCajero,
               td(dinero(v.total), 'num'));
@@ -214,9 +280,18 @@ async function consultar() {
         const lista = Array.isArray(data) ? data : (data.data || data.sales || data.ventas || []);
         if (!Array.isArray(lista)) throw new Error('El servidor devolvió un formato inesperado.');
 
-        ventas = lista.map(normalizarVenta)
-            .filter(v => { const d = diaDeVenta(v); return !d || (d >= inicio && d <= fin); })
-            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        const usuarios = await obtenerUsuarios();
+
+        if (id !== peticionId) return;
+        ventas = lista.map(s => normalizarVenta(s, usuarios))
+            .filter(v => {
+                const d = diaDeVenta(v);
+                return !d || (d >= inicio && d <= fin);
+            })
+            .sort((a, b) =>
+                new Date(b.createdAt) - new Date(a.createdAt)
+            );
 
         if (ventas.length === 0) {
             setEstado('vacio', 'No hay ventas registradas en el rango seleccionado.');
