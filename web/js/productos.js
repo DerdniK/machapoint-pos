@@ -1,7 +1,4 @@
-// ==========================================
-// MACHAPOINT POS
 // Administración de productos (alta y edición)
-// ==========================================
 
 const API_URL = 'https://4upkj2tafvod2ubwcsbnagviyu0feljy.lambda-url.us-east-1.on.aws';
 

@@ -1,8 +1,6 @@
 /* =========================================================
    MachaPoint POS — Usuarios
    Carga: 00-tokens.css → 01-base.css → 02-components.css → usuarios.css
-   (Antes este archivo tenía dos bloques de variables y un
-   bloque de comentario duplicado; ambos se eliminaron.)
    ========================================================= */
 @import url('global.css');
 
