@@ -2,15 +2,12 @@ class ProductType {
   final int typeId;
   final String typeName;
 
-  ProductType({
-    required this.typeId,
-    required this.typeName,
-  });
+  ProductType({required this.typeId, required this.typeName});
   static const Map<int, String> _typeMap = {
-    1: 'posters',
-    2: 'pines',
-    3: 'stickers',
-    4: 'postales',
+    1: 'Posters',
+    2: 'Pines',
+    3: 'Stickers',
+    4: 'Postales',
   };
   String get typeNameResolved {
     if (_typeMap.containsKey(typeId)) {
@@ -35,7 +32,8 @@ class ProductType {
   static dynamic _typeIdValue(Map<String, dynamic> json) {
     for (final entry in json.entries) {
       final normalizedKey = entry.key.toLowerCase().replaceAll('_', '');
-      if (normalizedKey.endsWith('typeid') || normalizedKey.endsWith('tipoid')) {
+      if (normalizedKey.endsWith('typeid') ||
+          normalizedKey.endsWith('tipoid')) {
         return entry.value;
       }
     }
@@ -50,10 +48,7 @@ class ProductType {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'typeId': typeId,
-      'typeName': typeName,
-    };
+    return {'typeId': typeId, 'typeName': typeName};
   }
 }
 
@@ -64,6 +59,7 @@ class Product {
   final ProductType? type;
   final double price;
   final String imageUrl;
+  final int? stock;
 
   Product({
     required this.productId,
@@ -72,30 +68,63 @@ class Product {
     this.type,
     required this.price,
     required this.imageUrl,
+    this.stock,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
+    final normalized = {
+      for (final entry in json.entries)
+        entry.key.toLowerCase().replaceAll('_', ''): entry.value,
+    };
     final dynamic rawType = json['type'] ?? json['Type'];
     final Map<String, dynamic>? typeJson = rawType is Map
         ? Map<String, dynamic>.from(rawType)
         : null;
+    final normalizedType = typeJson == null
+        ? <String, dynamic>{}
+        : {
+            for (final entry in typeJson.entries)
+              entry.key.toLowerCase().replaceAll('_', ''): entry.value,
+          };
     final int extractedTypeId = ProductType._parseId(
-      typeJson?['typeid'] ?? typeJson?['typeId'] ?? typeJson?['TypeId'],
+      normalizedType['typeid'] ??
+          normalizedType['id'] ??
+          normalized['typeid'] ??
+          normalized['tipoid'],
     );
 
     return Product(
-      productId: ProductType._parseId(json['productid'] ?? json['productId']),
+      productId: ProductType._parseId(
+        normalized['productid'] ?? normalized['id'],
+      ),
       name: (json['name'] ?? json['Name'])?.toString() ?? '',
       sku: (json['sku'] ?? json['SKU'])?.toString() ?? '',
       type: ProductType(
         typeId: extractedTypeId,
-        typeName: (typeJson?['typeName'] ?? typeJson?['typename'])?.toString() ?? '',
+        typeName:
+            (normalizedType['typename'] ??
+                    normalizedType['name'] ??
+                    normalized['typename'] ??
+                    normalized['type'])
+                ?.toString() ??
+            '',
       ),
       price: ((json['price'] ?? json['Price']) as num?)?.toDouble() ?? 0.0,
-      imageUrl: (json['imageURL'] ?? json['ImageURL'] ?? json['imageUrl'])
+      imageUrl:
+          (json['imageURL'] ?? json['ImageURL'] ?? json['imageUrl'])
               ?.toString() ??
           '',
+      stock: _parseStock(
+        normalized['stock'] ??
+            normalized['quantity'] ??
+            normalized['inventorystock'],
+      ),
     );
+  }
+
+  static int? _parseStock(dynamic value) {
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '');
   }
 
   Map<String, dynamic> toJson() {

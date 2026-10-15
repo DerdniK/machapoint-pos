@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:MachaPoint/providers/auth_provider.dart';
 import '../services/auth.dart';
-import 'product_Page.dart'; // Asegúrate de que el nombre del archivo coincida con el de tu proyecto
+import 'bienvenuda.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -21,6 +21,12 @@ class _LoginPageState extends State<LoginPage> {
   bool _isLoading = false;
   bool _isGoogleLoading = false;
 
+  void _openWelcomeScreen() {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (context) => const BienvenudaPage()),
+    );
+  }
+
   void _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -36,17 +42,7 @@ class _LoginPageState extends State<LoginPage> {
     setState(() => _isLoading = false);
 
     if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Sesión iniciada con éxito'),
-          backgroundColor: Colors.green,
-        ),
-      );
-
-      // Redirección a la pantalla de Productos
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const ProductPage()),
-      );
+      _openWelcomeScreen();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -70,10 +66,7 @@ class _LoginPageState extends State<LoginPage> {
 
         setState(() => _isGoogleLoading = false);
 
-        // Redirección a la pantalla de Productos tras login con Google
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const ProductPage()),
-        );
+        _openWelcomeScreen();
       } else {
         setState(() => _isGoogleLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(

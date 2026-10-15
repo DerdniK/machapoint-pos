@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/user.dart';
 import '../services/user_service.dart';
+import 'update_user.dart';
 
 class CreateUserPage extends StatefulWidget {
   const CreateUserPage({super.key});
@@ -11,8 +12,6 @@ class CreateUserPage extends StatefulWidget {
 
 class _CreateUserPageState extends State<CreateUserPage> {
   final _createFormKey = GlobalKey<FormState>();
-  final _updateFormKey = GlobalKey<FormState>();
-  final _deleteFormKey = GlobalKey<FormState>();
 
   String _selectedAction = 'create';
   final _usernameCreateController = TextEditingController();
@@ -20,11 +19,10 @@ class _CreateUserPageState extends State<CreateUserPage> {
   final _firstnameController = TextEditingController();
   final _lastnameController = TextEditingController();
   final _roleIdController = TextEditingController(text: '1');
-  final _userIdUpdateController = TextEditingController();
-  final _usernameUpdateController = TextEditingController();
-  final _userIdDeleteController = TextEditingController();
+  final _userSearchController = TextEditingController();
 
   bool _isLoading = false;
+  Future<List<UserRecord>>? _usersFuture;
 
   Future<void> _submitCreate() async {
     if (!_createFormKey.currentState!.validate()) return;
@@ -87,90 +85,34 @@ class _CreateUserPageState extends State<CreateUserPage> {
     }
   }
 
-  Future<void> _submitUpdate() async {
-    if (!_updateFormKey.currentState!.validate()) return;
-
-    final userId = _userIdUpdateController.text.trim();
-    final username = _usernameUpdateController.text.trim();
-
-    setState(() => _isLoading = true);
-    try {
-      final success = await UserService.updateUser(
-        userId: userId,
-        username: username,
-      );
-
-      if (mounted) {
-        if (success) {
-          _showSnackBar('¡Usuario actualizado exitosamente!', Colors.green);
-          _userIdUpdateController.clear();
-          _usernameUpdateController.clear();
-        } else {
-          _showSnackBar('Usuario no encontrado', Colors.orange);
-        }
-      }
-    } catch (e) {
-      final rawMsg = e.toString().replaceAll('Exception: ', '').toLowerCase();
-      if (mounted) {
-        if (rawMsg.contains('409') ||
-            rawMsg.contains('already exist') ||
-            rawMsg.contains('ya existe') ||
-            rawMsg.contains('ocupado') ||
-            rawMsg.contains('duplicate')) {
-          _showSnackBar(
-            'El nuevo nombre de usuario ya esta ocupado',
-            Colors.orange,
-          );
-        } else if (rawMsg.contains('not found') ||
-            rawMsg.contains('usuario no encontrado') ||
-            rawMsg.contains('404')) {
-          _showSnackBar('Usuario no encontrado', Colors.orange);
-        } else {
-          _showSnackBar(
-            'Error: ${e.toString().replaceAll('Exception: ', '')}',
-            Colors.redAccent,
-          );
-        }
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
+  void _loadUsers() {
+    setState(() {
+      _usersFuture = UserService.getUsers();
+    });
   }
 
-  Future<void> _submitDelete() async {
-    if (!_deleteFormKey.currentState!.validate()) return;
+  List<UserRecord> _filterUsers(List<UserRecord> users, String query) {
+    final normalizedQuery = query.trim().toLowerCase();
+    if (normalizedQuery.isEmpty) return users;
 
-    final userId = _userIdDeleteController.text.trim();
+    return users.where((user) {
+      final searchableText = [
+        user.firstname,
+        user.lastname,
+        user.username,
+        user.userId,
+        user.roleName,
+        user.roleId?.toString() ?? '',
+      ].join(' ').toLowerCase();
+      return searchableText.contains(normalizedQuery);
+    }).toList();
+  }
 
-    setState(() => _isLoading = true);
-    try {
-      final success = await UserService.deleteUser(userId: userId);
-
-      if (mounted) {
-        if (success) {
-          _showSnackBar('Usuario eliminado exitosamente', Colors.redAccent);
-          _userIdDeleteController.clear();
-        } else {
-          _showSnackBar('Usuario no encontrado', Colors.orange);
-        }
-      }
-    } catch (e) {
-      final rawMsg = e.toString().replaceAll('Exception: ', '').toLowerCase();
-      if (mounted) {
-        if (rawMsg.contains('not found') ||
-            rawMsg.contains('usuario no encontrado') ||
-            rawMsg.contains('404')) {
-          _showSnackBar('Usuario no encontrado', Colors.orange);
-        } else {
-          _showSnackBar(
-            'Error: ${e.toString().replaceAll('Exception: ', '')}',
-            Colors.redAccent,
-          );
-        }
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
+  Future<void> _openUserUpdate(UserRecord user) async {
+    final updated = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => UpdateUserPage(user: user)),
+    );
+    if (updated == true && mounted) _loadUsers();
   }
 
   void _showSnackBar(String message, Color color) {
@@ -186,9 +128,7 @@ class _CreateUserPageState extends State<CreateUserPage> {
     _firstnameController.dispose();
     _lastnameController.dispose();
     _roleIdController.dispose();
-    _userIdUpdateController.dispose();
-    _usernameUpdateController.dispose();
-    _userIdDeleteController.dispose();
+    _userSearchController.dispose();
     super.dispose();
   }
 
@@ -219,18 +159,12 @@ class _CreateUserPageState extends State<CreateUserPage> {
               ),
               items: const [
                 DropdownMenuItem(value: 'create', child: Text('Crear Usuario')),
-                DropdownMenuItem(
-                  value: 'update',
-                  child: Text('Actualizar Usuario'),
-                ),
-                DropdownMenuItem(
-                  value: 'delete',
-                  child: Text('Eliminar Usuario'),
-                ),
+                DropdownMenuItem(value: 'view', child: Text('Ver/Editar Usuarios')),
               ],
               onChanged: (value) {
                 if (value != null) {
                   setState(() => _selectedAction = value);
+                  if (value == 'view') _loadUsers();
                 }
               },
             ),
@@ -242,10 +176,14 @@ class _CreateUserPageState extends State<CreateUserPage> {
                   children: [
                     TextFormField(
                       controller: _usernameCreateController,
+                      maxLength: 20,
                       decoration: _inputDec('Nombre de usuario'),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
                           return 'Ingrese el nombre de usuario';
+                        }
+                        if (value.trim().length > 20) {
+                          return 'Máximo 20 caracteres';
                         }
                         return null;
                       },
@@ -268,10 +206,14 @@ class _CreateUserPageState extends State<CreateUserPage> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _firstnameController,
+                      maxLength: 20,
                       decoration: _inputDec('Nombre(s)'),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
                           return 'Ingrese el nombre';
+                        }
+                        if (value.trim().length > 20) {
+                          return 'Máximo 20 caracteres';
                         }
                         return null;
                       },
@@ -279,10 +221,14 @@ class _CreateUserPageState extends State<CreateUserPage> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _lastnameController,
+                      maxLength: 20,
                       decoration: _inputDec('Apellido(s)'),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
                           return 'Ingrese el apellido';
+                        }
+                        if (value.trim().length > 20) {
+                          return 'Máximo 20 caracteres';
                         }
                         return null;
                       },
@@ -335,95 +281,116 @@ class _CreateUserPageState extends State<CreateUserPage> {
                         ),
                 ),
               ),
-            ] else if (_selectedAction == 'update') ...[
-              Form(
-                key: _updateFormKey,
-                child: Column(
-                  children: [
-                    TextFormField(
-                      controller: _userIdUpdateController,
-                      decoration: _inputDec('User ID (UUID)'),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Ingrese el ID del usuario';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _usernameUpdateController,
-                      decoration: _inputDec('Nuevo Nombre de usuario'),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Ingrese el nuevo nombre de usuario';
-                        }
-                        return null;
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: orangeColor,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  onPressed: _isLoading ? null : _submitUpdate,
-                  child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
-                          'Actualizar Usuario',
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                ),
-              ),
-            ] else if (_selectedAction == 'delete') ...[
-              Form(
-                key: _deleteFormKey,
-                child: TextFormField(
-                  controller: _userIdDeleteController,
-                  decoration: _inputDec('User ID (UUID)'),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Ingrese el ID del usuario';
+            ] else if (_selectedAction == 'view') ...[
+              if (_usersFuture == null)
+                ElevatedButton.icon(
+                  onPressed: _loadUsers,
+                  icon: const Icon(Icons.people),
+                  label: const Text('Cargar usuarios'),
+                )
+              else
+                FutureBuilder<List<UserRecord>>(
+                  future: _usersFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Padding(
+                        padding: EdgeInsets.all(24),
+                        child: Center(child: CircularProgressIndicator()),
+                      );
                     }
-                    return null;
+                    if (snapshot.hasError) {
+                      return Column(
+                        children: [
+                          Text(
+                            'No se pudieron cargar los usuarios, comprueba tu conexion.',
+                          ),
+                          TextButton.icon(
+                            onPressed: _loadUsers,
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Reintentar'),
+                          ),
+                        ],
+                      );
+                    }
+                    final users = snapshot.data ?? [];
+                    if (users.isEmpty) {
+                      return const Padding(
+                        padding: EdgeInsets.all(20),
+                        child: Text('No hay usuarios para mostrar'),
+                      );
+                    }
+                    final filteredUsers = _filterUsers(
+                      users,
+                      _userSearchController.text,
+                    );
+                    return ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: filteredUsers.isEmpty
+                          ? 2
+                          : filteredUsers.length + 1,
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 8),
+                      itemBuilder: (context, index) {
+                        if (index == 0) {
+                          return TextField(
+                            controller: _userSearchController,
+                            onChanged: (_) => setState(() {}),
+                            decoration: InputDecoration(
+                              labelText: 'Buscar usuario',
+                              hintText: 'Nombre, username o ID',
+                              prefixIcon: const Icon(Icons.search),
+                              suffixIcon: _userSearchController.text.isEmpty
+                                  ? null
+                                  : IconButton(
+                                      tooltip: 'Limpiar búsqueda',
+                                      onPressed: () {
+                                        _userSearchController.clear();
+                                        setState(() {});
+                                      },
+                                      icon: const Icon(Icons.clear),
+                                    ),
+                              filled: true,
+                              fillColor: Colors.white,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          );
+                        }
+                        if (filteredUsers.isEmpty) {
+                          return const Padding(
+                            padding: EdgeInsets.all(12),
+                            child: Text('No se encontraron usuarios'),
+                          );
+                        }
+                        final user = filteredUsers[index - 1];
+                        return Card(
+                          child: ListTile(
+                            title: Text(
+                              '${user.firstname} ${user.lastname}'
+                                      .trim()
+                                      .isEmpty
+                                  ? user.username
+                                  : '${user.firstname} ${user.lastname}',
+                            ),
+                            subtitle: Text(
+                              '@${user.username}\n'
+                              '${user.roleName.isNotEmpty ? user.roleName : 'Rol ${user.roleId ?? 'N/D'}'}'
+                              ' · ID: ${user.userId}',
+                            ),
+                            isThreeLine: true,
+                            trailing: IconButton(
+                              tooltip: 'Editar usuario',
+                              icon: const Icon(Icons.edit),
+                              onPressed: () => _openUserUpdate(user),
+                            ),
+                          ),
+                        );
+                      },
+                    );
                   },
                 ),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.redAccent,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  onPressed: _isLoading ? null : _submitDelete,
-                  child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
-                          'Eliminar Usuario',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                ),
-              ),
             ],
           ],
         ),

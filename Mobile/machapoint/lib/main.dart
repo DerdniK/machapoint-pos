@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:MachaPoint/providers/auth_provider.dart'; 
+import 'package:MachaPoint/providers/auth_provider.dart';  
 import 'package:MachaPoint/providers/cart.dart';
 import 'package:MachaPoint/providers/shift_provider.dart';
 import 'package:flutter/material.dart';

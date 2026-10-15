@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:MachaPoint/providers/auth_provider.dart'; 
 import 'package:http/http.dart' as http;
+import '../services/sale.dart';
 
 class ShiftProvider with ChangeNotifier {
   int? _activeShiftId;
@@ -96,18 +96,30 @@ class ShiftProvider with ChangeNotifier {
       if (response.statusCode == 200) {
         final data = _decodeObject(response.body);
         if (data != null) {
-          final id = data['shiftid'] ?? data['shift_id'] ?? data['id'] ?? data['shiftId'];
+          final id =
+              data['shiftid'] ??
+              data['shift_id'] ??
+              data['id'] ??
+              data['shiftId'];
           final parsedId = _parseShiftId(id);
 
           if (parsedId != null) {
             _activeShiftId = parsedId;
             _initialCash = (data['openingamount'] as num?)?.toDouble() ?? 0.0;
-            _expectedCash = (data['expectedcash'] as num?)?.toDouble() ?? _initialCash;
+            _expectedCash =
+                (data['expectedcash'] as num?)?.toDouble() ?? _initialCash;
             _openedAt = _parseDate(
-              data['openedAt'] ?? data['opened_at'] ?? data['startDate'] ?? data['startedAt'] ?? data['createdAt'],
+              data['openedAt'] ??
+                  data['opened_at'] ??
+                  data['startDate'] ??
+                  data['startedAt'] ??
+                  data['createdAt'],
             );
             _closedAt = _parseDate(
-              data['closedAt'] ?? data['closed_at'] ?? data['endDate'] ?? data['endedAt'],
+              data['closedAt'] ??
+                  data['closed_at'] ??
+                  data['endDate'] ??
+                  data['endedAt'],
             );
             notifyListeners();
             return true;
@@ -123,6 +135,7 @@ class ShiftProvider with ChangeNotifier {
       _isLoading = false;
       _errorMessage = 'Error al verificar turno activo: $e';
       resetShift();
+      notifyListeners();
       return false;
     }
   }
@@ -142,10 +155,7 @@ class ShiftProvider with ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
 
-    final payload = {
-      'cashierid': cashierId,
-      'openingamount': initialCash,
-    };
+    final payload = {'cashierid': cashierId, 'openingamount': initialCash};
 
     try {
       debugPrint('>>> Abriendo turno con cashierId: $cashierId');
@@ -163,16 +173,22 @@ class ShiftProvider with ChangeNotifier {
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = _decodeObject(response.body);
         if (data == null) {
-          _errorMessage = 'La API abrió el turno, pero no devolvió un JSON válido.';
+          _errorMessage =
+              'La API abrió el turno, pero no devolvió un JSON válido.';
           notifyListeners();
           return false;
         }
 
-        final rawId = data['shiftid'] ?? data['shift_id'] ?? data['id'] ?? data['shiftId'];
+        final rawId =
+            data['shiftid'] ??
+            data['shift_id'] ??
+            data['id'] ??
+            data['shiftId'];
         _activeShiftId = _parseShiftId(rawId);
 
         if (_activeShiftId == null) {
-          _errorMessage = 'El turno respondió correctamente, pero el backend no devolvió un shiftId numérico.';
+          _errorMessage =
+              'El turno respondió correctamente, pero el backend no devolvió un shiftId numérico.';
           notifyListeners();
           return false;
         }
@@ -215,15 +231,34 @@ class ShiftProvider with ChangeNotifier {
   void _applySummary(Map<String, dynamic> source) {
     final cut = Map<String, dynamic>.from(source);
     _totalSales = _asDouble(
-      cut['totalSales'] ?? cut['total_sales'] ?? cut['total'] ?? cut['salesTotal'] ?? cut['totalAmount'],
+      cut['totalSales'] ??
+          cut['total_sales'] ??
+          cut['total'] ??
+          cut['salesTotal'] ??
+          cut['totalAmount'],
     );
     _totalSalesCount = _asInt(
-      cut['totalSalesCount'] ?? cut['total_sales_count'] ?? cut['salesCount'] ?? cut['count'],
+      cut['totalSalesCount'] ??
+          cut['total_sales_count'] ??
+          cut['salesCount'] ??
+          cut['count'],
     );
     _expectedCash = _asDouble(
       cut['expectedCash'] ?? cut['expected_cash'] ?? cut['cashExpected'],
-      fallback: _initialCash + _totalSales,
+      fallback: _initialCash,
     );
+  }
+
+  void registerSuccessfulSale({
+    required double total,
+    required bool paidInCash,
+  }) {
+    _totalSales += total;
+    _totalSalesCount++;
+    if (paidInCash) {
+      _expectedCash += total;
+    }
+    notifyListeners();
   }
 
   Future<void> refreshSalesSummary(String token) async {
@@ -232,7 +267,9 @@ class ShiftProvider with ChangeNotifier {
 
     try {
       final response = await http.get(
-        Uri.parse('https://2v34s2xxn4rxq6utaxaaoawpb40soivi.lambda-url.us-east-1.on.aws/api/cut/zcuts?shiftId=$shiftId'),
+        Uri.parse(
+          'https://2v34s2xxn4rxq6utaxaaoawpb40soivi.lambda-url.us-east-1.on.aws/api/cut/zcuts?shiftId=$shiftId',
+        ),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -246,16 +283,24 @@ class ShiftProvider with ChangeNotifier {
       final cuts = decoded['cuts'];
       if (cuts is List && cuts.isNotEmpty && cuts.first is Map) {
         _applySummary(Map<String, dynamic>.from(cuts.first as Map));
+        final sales = await SaleService.getSales(shiftId: shiftId);
+        _expectedCash = _initialCash + SaleService.cashSalesTotal(sales);
         notifyListeners();
       }
-    } catch (_) {}
+    } catch (error) {
+      _expectedCash = _initialCash;
+      _errorMessage = 'No se pudo calcular el efectivo esperado: $error';
+      notifyListeners();
+    }
   }
 
   String _readError(String body, int statusCode) {
     try {
       final data = jsonDecode(body);
       if (data is Map<String, dynamic>) {
-        return data['message']?.toString() ?? data['error']?.toString() ?? 'Error ($statusCode)';
+        return data['message']?.toString() ??
+            data['error']?.toString() ??
+            'Error ($statusCode)';
       }
     } catch (_) {}
     return 'Error ($statusCode)';
@@ -277,7 +322,10 @@ class ShiftProvider with ChangeNotifier {
     required String notes,
   }) async {
     if (_activeShiftId == null) {
-      return {'success': false, 'message': 'No hay un turno activo para cerrar'};
+      return {
+        'success': false,
+        'message': 'No hay un turno activo para cerrar',
+      };
     }
 
     final payload = {
@@ -305,10 +353,7 @@ class ShiftProvider with ChangeNotifier {
       if (response.statusCode == 200 || response.statusCode == 201) {
         final currentShiftId = _activeShiftId;
         resetShift();
-        return {
-          'success': true,
-          'shiftId': currentShiftId,
-        };
+        return {'success': true, 'shiftId': currentShiftId};
       } else {
         notifyListeners();
         return {'success': false, 'message': 'Error al cerrar el turno'};

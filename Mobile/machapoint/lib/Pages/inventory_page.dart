@@ -22,14 +22,12 @@ class _InventoryPageState extends State<InventoryPage> {
   Timer? _searchDebounce;
   String _selectedMode = _createMode;
   String _searchQuery = '';
-  late Future<List<Product>> _allProductsFuture;
   late Future<List<Product>> _productsFuture;
 
   @override
   void initState() {
     super.initState();
-    _allProductsFuture = ProductService.getProducts();
-    _productsFuture = _allProductsFuture;
+    _productsFuture = ProductService.getProducts();
   }
 
   @override
@@ -41,11 +39,9 @@ class _InventoryPageState extends State<InventoryPage> {
 
   void _refreshProducts() {
     setState(() {
-      _allProductsFuture = ProductService.getProducts();
-      _productsFuture = _allProductsFuture.then(
-        (products) =>
-            ProductService.filterProductsByQuery(products, _searchQuery),
-      );
+      _productsFuture = _searchQuery.isEmpty
+          ? ProductService.getProducts()
+          : ProductService.searchProducts(_searchQuery);
     });
   }
 
@@ -55,10 +51,7 @@ class _InventoryPageState extends State<InventoryPage> {
       if (!mounted) return;
       setState(() {
         _searchQuery = query.trim();
-        _productsFuture = _allProductsFuture.then(
-          (products) =>
-              ProductService.filterProductsByQuery(products, _searchQuery),
-        );
+        _productsFuture = ProductService.searchProducts(_searchQuery);
       });
     });
   }
@@ -322,16 +315,11 @@ class _InventoryPageState extends State<InventoryPage> {
                   ),
                 );
               }
-              return GridView.builder(
-                padding: const EdgeInsets.all(12),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  childAspectRatio: 0.48,
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 12,
-                ),
+              return ListView.separated(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
                 itemCount: products.length,
-                itemBuilder: (context, index) => InventoryProductCard(
+                separatorBuilder: (context, index) => const SizedBox(height: 8),
+                itemBuilder: (context, index) => InventoryProductTile(
                   product: products[index],
                   onEdit: () => _editProduct(products[index]),
                 ),
@@ -344,11 +332,11 @@ class _InventoryPageState extends State<InventoryPage> {
   }
 }
 
-class InventoryProductCard extends StatelessWidget {
+class InventoryProductTile extends StatelessWidget {
   final Product product;
   final VoidCallback onEdit;
 
-  const InventoryProductCard({
+  const InventoryProductTile({
     super.key,
     required this.product,
     required this.onEdit,
@@ -358,74 +346,71 @@ class InventoryProductCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFF2B04E),
-        borderRadius: BorderRadius.circular(12),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE7C78E)),
       ),
-      padding: const EdgeInsets.all(8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            product.name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 6),
-          Expanded(
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: product.imageUrl.isEmpty
-                  ? const Icon(Icons.inventory_2, color: Colors.grey)
-                  : Image.network(
-                      product.imageUrl,
-                      fit: BoxFit.contain,
-                      errorBuilder: (_, _, _) => const Icon(
-                        Icons.image_not_supported,
-                        color: Colors.grey,
-                      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        leading: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            width: 64,
+            height: 64,
+            color: const Color(0xFFF3E7DF),
+            padding: const EdgeInsets.all(4),
+            child: product.imageUrl.isEmpty
+                ? const Icon(Icons.inventory_2, color: Colors.grey)
+                : Image.network(
+                    product.imageUrl,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, _, _) => const Icon(
+                      Icons.image_not_supported,
+                      color: Colors.grey,
                     ),
-            ),
+                  ),
           ),
-          const SizedBox(height: 6),
-          Text(
-            'SKU: ${product.sku}',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600),
-          ),
-          Text(
-            product.type?.typeNameResolved ?? 'Sin categoría',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 10),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Precio: \$${product.price.toStringAsFixed(2)}',
-            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 6),
-          SizedBox(
-            width: double.infinity,
-            height: 32,
-            child: ElevatedButton.icon(
-              onPressed: onEdit,
-              icon: const Icon(Icons.edit, size: 14),
-              label: const Text('Editar', style: TextStyle(fontSize: 11)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.zero,
+        ),
+        title: Text(
+          product.name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+        ),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'SKU: ${product.sku}\n'
+                '${product.type?.typeNameResolved ?? 'Sin categoría'}'
+                ' · \$${product.price.toStringAsFixed(2)}',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 12, height: 1.35),
               ),
-            ),
+              Text(
+                product.stock == 0
+                    ? 'No hay stock'
+                    : 'Disponible: ${product.stock ?? 'N/D'}',
+                style: TextStyle(
+                  color: product.stock == 0 ? Colors.red : Colors.black87,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
+        trailing: IconButton(
+          tooltip: 'Editar producto',
+          onPressed: onEdit,
+          icon: const Icon(Icons.edit_outlined),
+          color: Colors.black,
+          style: IconButton.styleFrom(backgroundColor: const Color(0xFFF2B04E)),
+        ),
       ),
     );
   }

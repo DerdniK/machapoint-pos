@@ -12,8 +12,8 @@ import '../services/product.dart';
 import 'Login_Page.dart';
 import 'create_user_page.dart';
 import 'inventory_page.dart';
+import 'shift_history_page.dart';
 import 'turns_man.dart';
-import 'sales_page.dart';
 
 class ProductPage extends StatefulWidget {
   const ProductPage({super.key});
@@ -24,7 +24,6 @@ class ProductPage extends StatefulWidget {
 
 class _ProductPageState extends State<ProductPage> {
   int _currentIndex = 0;
-  late Future<List<Product>> _allProductsFuture;
   late Future<List<Product>> _futureProducts;
   final TextEditingController _searchController = TextEditingController();
   Timer? _searchDebounce;
@@ -33,8 +32,7 @@ class _ProductPageState extends State<ProductPage> {
   @override
   void initState() {
     super.initState();
-    _allProductsFuture = _fetchProductsWithRetry();
-    _futureProducts = _allProductsFuture;
+    _futureProducts = _availableProducts(_fetchProductsWithRetry());
   }
 
   @override
@@ -57,15 +55,23 @@ class _ProductPageState extends State<ProductPage> {
     return ProductService.getProducts();
   }
 
+  Future<List<Product>> _availableProducts(
+    Future<List<Product>> productsFuture,
+  ) async {
+    final products = await productsFuture;
+    return products
+        .where((product) => product.stock != null && product.stock! > 0)
+        .toList();
+  }
+
   void _searchProducts(String query) {
     _searchDebounce?.cancel();
     _searchDebounce = Timer(const Duration(milliseconds: 350), () {
       if (!mounted) return;
       setState(() {
         _searchQuery = query.trim();
-        _futureProducts = _allProductsFuture.then(
-          (products) =>
-              ProductService.filterProductsByQuery(products, _searchQuery),
+        _futureProducts = _availableProducts(
+          ProductService.searchProducts(_searchQuery),
         );
       });
     });
@@ -73,17 +79,15 @@ class _ProductPageState extends State<ProductPage> {
 
   void _refreshProducts() {
     setState(() {
-      _allProductsFuture = _fetchProductsWithRetry();
-      _futureProducts = _allProductsFuture.then(
-        (products) =>
-            ProductService.filterProductsByQuery(products, _searchQuery),
-      );
+      _futureProducts = _searchQuery.isEmpty
+          ? _availableProducts(_fetchProductsWithRetry())
+          : _availableProducts(ProductService.searchProducts(_searchQuery));
     });
   }
 
   String _getAppBarTitle() {
     if (!context.read<AuthProvider>().isAdmin) {
-      return _currentIndex == 0 ? 'Productos' : 'Gestión de Turno';
+      return _currentIndex == 0 ? 'Productos' : 'Gestion de Turno';
     }
     switch (_currentIndex) {
       case 0:
@@ -93,9 +97,9 @@ class _ProductPageState extends State<ProductPage> {
       case 2:
         return 'Usuarios';
       case 3:
-        return 'Gestión de Turno';
+        return 'Gestion de Turno';
       case 4:
-        return 'Ventas';
+        return 'Historial de Ventas';
       default:
         return 'MachaPoint POS';
     }
@@ -111,14 +115,14 @@ class _ProductPageState extends State<ProductPage> {
             const InventoryPage(),
             const CreateUserPage(),
             const ShiftManagementPage(),
-            const SalesPage(),
+            const ShiftHistoryPage(),
           ]
         : <Widget>[_buildProductGrid(), const ShiftManagementPage()];
     final navigationItems = isAdmin
         ? const [
             BottomNavigationBarItem(
               icon: Icon(Icons.inventory_2),
-              label: 'Productos',
+              label: 'Catalogo',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.inventory_2_outlined),
@@ -133,11 +137,15 @@ class _ProductPageState extends State<ProductPage> {
               icon: Icon(Icons.point_of_sale),
               label: 'Turno',
             ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.history),
+              label: 'Historial',
+            ),
           ]
         : const [
             BottomNavigationBarItem(
               icon: Icon(Icons.inventory_2),
-              label: 'Productos',
+              label: 'Catalogo',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.point_of_sale),
@@ -529,6 +537,17 @@ class ProductCard extends StatelessWidget {
                       color: Colors.black,
                     ),
                   ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Disponible: ${product.stock ?? 'N/D'}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
                   const SizedBox(height: 6),
                   // Botón Agregar
                   SizedBox(
@@ -545,17 +564,28 @@ class ProductCard extends StatelessWidget {
                         ),
                       ),
                       onPressed: () {
-                        cart.addProduct(
+                        final added = cart.addProduct(
                           id: product.productId,
                           name: product.name,
+                          imageUrl: product.imageUrl,
+                          availableStock: product.stock,
                           price: product.price,
                         );
 
                         ScaffoldMessenger.of(context).clearSnackBars();
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('${product.name} agregado'),
-                            duration: const Duration(milliseconds: 600),
+                            content: Text(
+                              added
+                                  ? '${product.name} agregado'
+                                  : CartProvider.quantityLimitMessageForStock(
+                                      product.stock,
+                                    ),
+                            ),
+                            backgroundColor: added ? null : Colors.red,
+                            duration: Duration(
+                              milliseconds: added ? 600 : 2500,
+                            ),
                             behavior: SnackBarBehavior.floating,
                           ),
                         );
