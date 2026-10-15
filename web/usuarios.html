@@ -24,7 +24,6 @@
                 <li><a href="productos.html" data-role="admin">Productos</a></li>
                 <li><a href="usuarios.html" class="activo" aria-current="page">Usuarios</a></li>
                 <li><a href="historial.html">Historial</a></li>
-
             </ul>
         </nav>
     </header>
@@ -42,18 +41,18 @@
                 </div>
 
                 <div class="mp-field">
-                    <label for="reg-password">Contraseña (mínimo 8 caracteres)</label>
-                    <input type="password" id="reg-password" placeholder="Mínimo 8 caracteres" maxlength="64" autocomplete="new-password" required>
+                    <label for="reg-password">Contraseña (más de 8 caracteres)</label>
+                    <input type="password" id="reg-password" placeholder="Mínimo 9 caracteres" maxlength="64" autocomplete="new-password" required>
                 </div>
 
                 <div class="mp-field">
-                    <label for="reg-firstname">Nombre</label>
-                    <input type="text" id="reg-firstname" placeholder="Ej: Big" maxlength="30" autocomplete="off" required>
+                    <label for="reg-firstname">Nombre (máx. 10 caracteres)</label>
+                    <input type="text" id="reg-firstname" placeholder="Ej: Big" maxlength="10" autocomplete="off" required>
                 </div>
 
                 <div class="mp-field">
-                    <label for="reg-lastname">Apellido</label>
-                    <input type="text" id="reg-lastname" placeholder="Ej: Pérez" maxlength="30" autocomplete="off" required>
+                    <label for="reg-lastname">Apellido (máx. 10 caracteres)</label>
+                    <input type="text" id="reg-lastname" placeholder="Ej: Pérez" maxlength="10" autocomplete="off" required>
                 </div>
 
                 <div class="mp-field">
@@ -123,6 +122,26 @@
                     <option value="1">1 - Administrador</option>
                     <option value="2">2 - Trabajador</option>
                 </select>
+            </div>
+
+            <div class="mp-field">
+                <label for="ed-firstname">Nombre (máx. 10 caracteres)</label>
+                <input type="text" id="ed-firstname" maxlength="10" autocomplete="off" required>
+            </div>
+
+            <div class="mp-field">
+                <label for="ed-lastname">Apellido (máx. 10 caracteres)</label>
+                <input type="text" id="ed-lastname" maxlength="10" autocomplete="off" required>
+            </div>
+
+            <div class="mp-field">
+                <label for="ed-password">Nueva contraseña (más de 8 caracteres)</label>
+                <input type="password" id="ed-password" placeholder="Vacío = no cambiar" maxlength="64" autocomplete="new-password">
+            </div>
+
+            <div class="mp-field">
+                <label for="ed-password2">Confirmar contraseña</label>
+                <input type="password" id="ed-password2" placeholder="Repite la contraseña" maxlength="64" autocomplete="new-password">
             </div>
 
             <p id="mensaje-edicion" class="mp-inline-msg pp-full" role="status"></p>

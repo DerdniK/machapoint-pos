@@ -3,7 +3,6 @@
 
 const API_USERS_URL = 'https://tmvksz56enigo6ojk25lfvg6x40vigzo.lambda-url.us-east-1.on.aws/api/users';
 
-// AJUSTAR si el endpoint que expone sp_view_users tiene otra ruta.
 // Se llama con ?userid=<uuid> cuando se quiere un solo usuario (p_userid opcional).
 const URL_LISTAR = `${API_USERS_URL}/auth/view`;
 const URL_CREAR = `${API_USERS_URL}/auth/register`;
@@ -19,8 +18,8 @@ const ROLES = [
 const USERNAME_MIN = 4;
 const USERNAME_MAX = 20;
 const NOMBRE_MIN = 2;
-const NOMBRE_MAX = 30;
-const PASSWORD_MIN = 8;
+const NOMBRE_MAX = 10;      
+const PASSWORD_MIN = 9;     
 const PASSWORD_MAX = 64;
 
 const USERNAME_VALIDO = /^[A-Za-z0-9_]+$/;
@@ -55,6 +54,7 @@ function setMsg(el, texto, tipo = 'info') {
 }
 
 const esAdmin = () => !!(window.Auth && Auth.isAdmin());
+const limpiarEspacios = t => String(t ?? '').trim().replace(/ {2,}/g, ' ');
 
 function normalizarTexto(t) {
     return String(t ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
@@ -103,7 +103,9 @@ function interpretarError(status, crudo) {
         return t.includes('username') || !t ? 'El nombre de usuario ya está en uso.' : 'Ya existe un registro con esos datos.';
     }
     if (t.includes('foreign key')) return 'El rol enviado no existe.';
+    if (t.includes('value too long') || t.includes('too long')) return 'Alguno de los textos es demasiado largo.';
     if (t.includes('not found') || t.includes('no existe') || t.includes('no encontrado')) return 'No se encontró el usuario.';
+    if (status === 403) return 'No tienes permisos para realizar esta acción.';
     if (crudo && String(crudo).length < 200) return String(crudo);
     return Api.mensajePorCodigo(status);
 }
@@ -116,7 +118,7 @@ async function enviar(url, method, body) {
     try { data = raw ? JSON.parse(raw) : {}; } catch { /* respuesta no JSON */ }
     if (!res.ok || data.success === false) {
         const crudo = data.message || data.Message || data.error || '';
-        throw new Error(res.status >= 500 && !/duplicate|unique|foreign/i.test(crudo)
+        throw new Error(res.status >= 500 && !/duplicate|unique|foreign|too long/i.test(crudo)
             ? Api.mensajePorCodigo(res.status)
             : interpretarError(res.status, crudo));
     }
@@ -144,8 +146,23 @@ function bloquearInput(input, sanitizar) {
 
 function aplicarBloqueos() {
     ['reg-username', 'ed-username'].forEach(id => bloquearInput($(id), sanitizarUsername));
-    ['reg-firstname', 'reg-lastname'].forEach(id => bloquearInput($(id), sanitizarNombre));
+    ['reg-firstname', 'reg-lastname', 'ed-firstname', 'ed-lastname'].forEach(id => bloquearInput($(id), sanitizarNombre));
 }
+
+// Marca el campo con error y le da el foco; la marca se quita al escribir
+function marcarInvalido(form, id) {
+    form.querySelectorAll('[aria-invalid]').forEach(el => { el.removeAttribute('aria-invalid'); el.style.borderColor = ''; });
+    const campo = id && $(id);
+    if (!campo) return;
+    campo.setAttribute('aria-invalid', 'true');
+    campo.style.borderColor = '#d9534f';
+    campo.focus();
+}
+[formCrear, formEditar].forEach(f => {
+    const quitar = e => { e.target.removeAttribute('aria-invalid'); e.target.style.borderColor = ''; };
+    f.addEventListener('input', quitar);
+    f.addEventListener('change', quitar);
+});
 
 // ---------- Validación ----------
 function validarUsername(username) {
@@ -166,8 +183,9 @@ function validarNombrePropio(valor, etiqueta) {
 
 function validarPassword(pw) {
     if (!pw) return 'La contraseña es obligatoria.';
-    if (pw.length < PASSWORD_MIN) return `La contraseña debe tener al menos ${PASSWORD_MIN} caracteres.`;
+    if (pw.length < PASSWORD_MIN) return `La contraseña debe tener más de ${PASSWORD_MIN - 1} caracteres (mínimo ${PASSWORD_MIN}).`;
     if (pw.length > PASSWORD_MAX) return `La contraseña no puede tener más de ${PASSWORD_MAX} caracteres.`;
+    if (!pw.trim()) return 'La contraseña no puede ser solo espacios.';
     return null;
 }
 
@@ -177,23 +195,36 @@ function validarRol(valor) {
     return { valor: r };
 }
 
+// Cada validador devuelve { error, campo } o { valores }
 function validarAlta({ username, password, firstName, lastName, roleId }) {
-    username = username.trim(); firstName = firstName.trim().replace(/ {2,}/g, ' '); lastName = lastName.trim().replace(/ {2,}/g, ' ');
-    const err = validarUsername(username) || validarPassword(password)
-        || validarNombrePropio(firstName, 'nombre') || validarNombrePropio(lastName, 'apellido');
-    if (err) return { error: err };
+    username = username.trim(); firstName = limpiarEspacios(firstName); lastName = limpiarEspacios(lastName);
+    let e;
+    if ((e = validarUsername(username))) return { error: e, campo: 'reg-username' };
+    if ((e = validarPassword(password))) return { error: e, campo: 'reg-password' };
+    if ((e = validarNombrePropio(firstName, 'nombre'))) return { error: e, campo: 'reg-firstname' };
+    if ((e = validarNombrePropio(lastName, 'apellido'))) return { error: e, campo: 'reg-lastname' };
     const rol = validarRol(roleId);
-    if (rol.error) return rol;
+    if (rol.error) return { error: rol.error, campo: 'reg-roleid' };
     return { valores: { username, password, firstName, lastName, roleId: rol.valor } };
 }
 
-function validarEdicion({ username, roleId }) {
-    username = username.trim();
-    const err = validarUsername(username);
-    if (err) return { error: err };
+function validarEdicion({ username, roleId, firstName, lastName, password, confirm }, original) {
+    username = username.trim(); firstName = limpiarEspacios(firstName); lastName = limpiarEspacios(lastName);
+    let e;
+    if ((e = validarUsername(username))) return { error: e, campo: 'ed-username' };
     const rol = validarRol(roleId);
-    if (rol.error) return rol;
-    return { valores: { username, roleId: rol.valor } };
+    if (rol.error) return { error: rol.error, campo: 'ed-roleid' };
+
+    // Los nombres solo se validan si cambiaron (un usuario antiguo puede tener un nombre de más de 10)
+    if (firstName !== original.firstName && (e = validarNombrePropio(firstName, 'nombre'))) return { error: e, campo: 'ed-firstname' };
+    if (lastName !== original.lastName && (e = validarNombrePropio(lastName, 'apellido'))) return { error: e, campo: 'ed-lastname' };
+
+    // La contraseña es opcional: vacía = no se cambia
+    if (password || confirm) {
+        if ((e = validarPassword(password))) return { error: e, campo: 'ed-password' };
+        if (password !== confirm) return { error: 'Las contraseñas no coinciden.', campo: 'ed-password2' };
+    }
+    return { valores: { username, roleId: rol.valor, firstName, lastName, password } };
 }
 
 // ---------- Listado ----------
@@ -250,14 +281,7 @@ function crearFila(u) {
         editar.setAttribute('aria-label', `Editar ${u.username}`);
         editar.addEventListener('click', () => abrirEdicion(u));
 
-        const eliminar = document.createElement('button');
-        eliminar.type = 'button';
-        eliminar.className = 'mp-btn pp-btn-secondary pp-btn-sm';
-        eliminar.textContent = 'Eliminar';
-        eliminar.setAttribute('aria-label', `Eliminar ${u.username}`);
-        eliminar.addEventListener('click', () => eliminarUsuario(u));
-
-        // tdAcc.append(editar, ' ', eliminar);
+        // const eliminar = ... (botón de eliminar desactivado; ver eliminarUsuario más abajo)
         tdAcc.append(editar);
     }
 
@@ -301,7 +325,7 @@ formCrear.addEventListener('submit', async (e) => {
         lastName: $('reg-lastname').value,
         roleId: $('reg-roleid').value
     });
-    if (v.error) { setMsg(msgCreacion, v.error, 'error'); return; }
+    if (v.error) { setMsg(msgCreacion, v.error, 'error'); marcarInvalido(formCrear, v.campo); return; }
 
     const { username, password, firstName, lastName, roleId } = v.valores;
     btnCrear.disabled = true;
@@ -324,18 +348,26 @@ function abrirEdicion(u) {
     usuarioEnEdicion = u;
     $('ed-username').value = u.username;
     $('ed-roleid').value = String(u.roleId);
+    $('ed-firstname').value = u.firstName;
+    $('ed-lastname').value = u.lastName;
+    $('ed-password').value = '';   // la contraseña nunca se precarga
+    $('ed-password2').value = '';
+    marcarInvalido(formEditar, null);
     $('titulo-edicion').textContent = `Editar usuario: ${u.username}`;
     setMsg(msgEdicion, '');
     dialogo.showModal();
 }
 
 function cerrarEdicion() {
+    $('ed-password').value = '';
+    $('ed-password2').value = '';
     dialogo.close();
     usuarioEnEdicion = null;
 }
 
 btnCancelarEdicion.addEventListener('click', cerrarEdicion);
 dialogo.addEventListener('click', (e) => { if (e.target === dialogo) cerrarEdicion(); });
+dialogo.addEventListener('cancel', () => { $('ed-password').value = ''; $('ed-password2').value = ''; }); // tecla Esc
 
 formEditar.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -345,13 +377,24 @@ formEditar.addEventListener('submit', async (e) => {
     const original = usuarioEnEdicion;
     if (esMiCuenta(original)) { setMsg(msgEdicion, 'No puedes modificar tu propia cuenta.', 'error'); return; }
 
-    const v = validarEdicion({ username: $('ed-username').value, roleId: $('ed-roleid').value });
-    if (v.error) { setMsg(msgEdicion, v.error, 'error'); return; }
+    const v = validarEdicion({
+        username: $('ed-username').value,
+        roleId: $('ed-roleid').value,
+        firstName: $('ed-firstname').value,
+        lastName: $('ed-lastname').value,
+        password: $('ed-password').value,
+        confirm: $('ed-password2').value
+    }, original);
+    if (v.error) { setMsg(msgEdicion, v.error, 'error'); marcarInvalido(formEditar, v.campo); return; }
 
     // Solo se envía lo que cambió
+    const { username, roleId, firstName, lastName, password } = v.valores;
     const cambios = { Userid: original.id };
-    if (v.valores.username !== original.username) cambios.Username = v.valores.username;
-    if (v.valores.roleId !== original.roleId) cambios.Roleid = v.valores.roleId;
+    if (username !== original.username) cambios.Username = username;
+    if (roleId !== original.roleId) cambios.Roleid = roleId;
+    if (firstName !== original.firstName) cambios.Firstname = firstName;
+    if (lastName !== original.lastName) cambios.Lastname = lastName;
+    if (password) cambios.Password = password;
     if (Object.keys(cambios).length === 1) { setMsg(msgEdicion, 'No hay cambios que guardar.'); return; }
 
     btnGuardarEdicion.disabled = true;
@@ -363,12 +406,19 @@ formEditar.addEventListener('submit', async (e) => {
         setMsg(msgLista, data.message || data.Message || 'Usuario actualizado con éxito.', 'exito');
     } catch (err) {
         setMsg(msgEdicion, 'Error al guardar: ' + err.message, 'error');
+        if (/no se encontr/i.test(err.message)) { // el usuario ya no existe: se refresca la lista
+            cerrarEdicion();
+            await cargarUsuarios();
+            setMsg(msgLista, 'El usuario ya no existe. Se actualizó la lista.', 'error');
+        } else if (/username/i.test(err.message)) {
+            marcarInvalido(formEditar, 'ed-username');
+        }
     } finally {
         btnGuardarEdicion.disabled = false;
     }
 });
 
-// ---------- Eliminación ----------
+// ---------- Eliminación (sin botón en la tabla; se conserva por si se reactiva) ----------
 async function eliminarUsuario(u) {
     if (!esAdmin() || esMiCuenta(u)) return;
     if (!confirm(`¿Eliminar al usuario "${u.username}"? Esta acción no se puede deshacer.`)) return;
