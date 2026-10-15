@@ -9,9 +9,13 @@ using Npgsql;
 using ServicioUsers.Data;
 using ServicioUsers.Dtos.Auth;
 using ServicioUsers.Dtos.Auth.Delete;
+using ServicioUsers.Dtos.Auth.Google;
 using ServicioUsers.Dtos.Auth.Login;
+using ServicioUsers.Dtos.Auth.Read;
 using ServicioUsers.Dtos.Auth.Register;
 using ServicioUsers.Dtos.Auth.Update;
+using ServicioUsers.Models;
+using ServicioUsersById.Dtos.Auth.Read;
 
 namespace ServicioUsers.Services
 {
@@ -203,5 +207,44 @@ namespace ServicioUsers.Services
                 Roleid = request.Roleid
             };
         }
+
+        public async Task<IEnumerable<UserItemResponseDto>> GetUsersAsync(GetUsersByIdRequestDto request)
+        {
+            var sql = "SELECT * FROM public.sp_view_users(@p_userid)";
+
+            var parameter = new NpgsqlParameter("p_userid", NpgsqlTypes.NpgsqlDbType.Uuid)
+            {
+                Value = (object?)request?.UserId ?? DBNull.Value
+            };
+
+            // Usamos User directamente ya que tiene los mismos mapeos de columnas de la BD
+            var rawUsers = await _context.Database
+                .SqlQueryRaw<ViewUserModel>(sql, parameter)
+                .ToListAsync();
+
+            // Mapeamos a UserItemResponseDto para devolver únicamente los datos seguros
+            return rawUsers.Select(u => new UserItemResponseDto
+            {
+                UserId = u.UserId,
+                Username = u.Username,
+                FirstName = u.First_name,
+                LastName = u.Last_name,
+                RoleId = u.RoleID,
+                CreatedAt = u.CreatedAt
+            }).ToList();
+        }
+
+        // public async Task<GoogleAuthResponseDto> HandleNewUserAsync()
+        // {
+        //     var sql = "SELECT public.handle_new_user()";
+
+        //     await _context.Database.ExecuteSqlRawAsync(sql);
+
+        //     return new GoogleAuthResponseDto
+        //     {
+        //         Success = true,
+        //         Message = "Usuario de Google procesado exitosamente"
+        //     };
+        // }
     }
 }
