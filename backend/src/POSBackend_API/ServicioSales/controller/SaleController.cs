@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using ServicioSales.Dtos;
+using ServicioSales.Dtos.Search.DateRange;
 using ServicioSales.Service;
 
 namespace ServicioSales.Controller
@@ -80,6 +81,26 @@ namespace ServicioSales.Controller
                 {
                     message = "Ocurrió un error al obtener las ventas del turno.",
                     detail = ex.Message
+                });
+            }
+        }
+
+        [Authorize]
+        [HttpGet("by-date-range")]
+        public async Task<IActionResult> GetSalesByDateRange([FromQuery] GetSalesByDateRangeRequestDto request)
+        {
+            try
+            {
+                var response = await _saleService.GetSalesByDateRangeAsync(request);
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    Error = ex.Message,
+                    InnerError = ex.InnerException?.Message,
+                    Stack = ex.StackTrace
                 });
             }
         }
