@@ -21,6 +21,8 @@ class _ShiftManagementPageState extends State<ShiftManagementPage> {
   Map<String, dynamic>? _zCutData;
   bool _loadingCut = false;
   double _lastInitialCash = 0.0;
+  double? _cashSalesTotal;
+  String? _cashSalesError;
 
   @override
   void initState() {
@@ -44,8 +46,9 @@ class _ShiftManagementPageState extends State<ShiftManagementPage> {
 
     if (!mounted) return;
 
-    if (shiftProvider.hasActiveShift) {
-      await shiftProvider.refreshSalesSummary(authProvider.token!);
+    final token = authProvider.token;
+    if (shiftProvider.hasActiveShift && token != null) {
+      await shiftProvider.refreshSalesSummary(token);
       if (!mounted) return;
       setState(() {
         _lastInitialCash = shiftProvider.initialCash;
@@ -63,7 +66,11 @@ class _ShiftManagementPageState extends State<ShiftManagementPage> {
 
   Future<void> _fetchZCut(int shiftId, String token) async {
     if (!mounted) return;
-    setState(() => _loadingCut = true);
+    setState(() {
+      _loadingCut = true;
+      _cashSalesTotal = null;
+      _cashSalesError = null;
+    });
 
     try {
       final response = await http.get(
@@ -78,16 +85,28 @@ class _ShiftManagementPageState extends State<ShiftManagementPage> {
 
       if (!mounted) return;
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        final cuts = data['cuts'];
-        final firstCut = cuts is List && cuts.isNotEmpty ? cuts.first : null;
-        if (firstCut is Map) {
-          setState(() => _zCutData = Map<String, dynamic>.from(firstCut));
-        }
+      if (response.statusCode != 200) {
+        throw Exception('Error del servidor (${response.statusCode}).');
+      }
+
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final cuts = data['cuts'];
+      final firstCut = cuts is List && cuts.isNotEmpty ? cuts.first : null;
+      if (firstCut is! Map) {
+        throw const FormatException('La API no devolvió el corte del turno.');
+      }
+      setState(() => _zCutData = Map<String, dynamic>.from(firstCut));
+
+      final sales = await SaleService.getSales(shiftId: shiftId);
+      final cashSalesTotal = SaleService.cashSalesTotal(sales);
+      if (mounted) {
+        setState(() => _cashSalesTotal = cashSalesTotal);
       }
     } catch (e) {
       debugPrint('Error obteniendo Corte Z: $e');
+      if (mounted) {
+        setState(() => _cashSalesError = e.toString());
+      }
     } finally {
       if (mounted) {
         setState(() => _loadingCut = false);
@@ -157,7 +176,7 @@ class _ShiftManagementPageState extends State<ShiftManagementPage> {
       backgroundColor: const Color(0xFFF3E7DF),
       appBar: AppBar(
         title: const Text(
-          'Gestión de Turno',
+          'Gestion de Turno',
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
         backgroundColor: orangeColor,
@@ -413,7 +432,20 @@ class _ShiftManagementPageState extends State<ShiftManagementPage> {
                   child: CircularProgressIndicator(),
                 ),
               ),
-            if (_zCutData != null) ...[
+            if (_zCutData != null && _cashSalesTotal == null) ...[
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Text(
+                  'No se pudo calcular el efectivo esperado. '
+                  '${_cashSalesError ?? ''}',
+                  style: const TextStyle(
+                    color: Colors.red,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+            if (_zCutData != null && _cashSalesTotal != null) ...[
               const SizedBox(height: 24),
               const Text(
                 'Resumen Corte Z',
@@ -426,16 +458,8 @@ class _ShiftManagementPageState extends State<ShiftManagementPage> {
                   child: Builder(
                     builder: (context) {
                       final double initialCash = _extractInitialCash();
-                      final double totalSales =
-                          double.tryParse(
-                            (_zCutData!['totalSales'] ??
-                                    _zCutData!['total_sales'] ??
-                                    shiftProvider.totalSales)
-                                .toString(),
-                          ) ??
-                          0.0;
-
-                      final double expectedCash = initialCash + totalSales;
+                      final double cashSales = _cashSalesTotal!;
+                      final double expectedCash = initialCash + cashSales;
                       final double actualCash =
                           double.tryParse(
                             (_zCutData!['actualCash'] ??
@@ -500,11 +524,11 @@ class _ShiftManagementPageState extends State<ShiftManagementPage> {
                             _formatMoney(initialCash),
                           ),
                           _buildCutRow(
-                            'Ventas del Turno:',
-                            _formatMoney(totalSales),
+                            'Ventas en efectivo:',
+                            _formatMoney(cashSales),
                           ),
                           _buildCutRow(
-                            'Monto esperado:',
+                            'Efectivo esperado:',
                             _formatMoney(expectedCash),
                           ),
                           _buildCutRow('Monto real:', _formatMoney(actualCash)),
