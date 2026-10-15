@@ -1,6 +1,7 @@
 using ServicioProducts.Dtos;
 using ServicioProducts.Dtos.Create;
 using ServicioProducts.Dtos.Delete;
+using ServicioProducts.Dtos.Products.Stock;
 using ServicioProducts.Dtos.Read;
 using ServicioProducts.Dtos.Search;
 using ServicioProducts.Dtos.Update;
@@ -15,5 +16,6 @@ namespace ServicioProducts.Services
         Task<SearchProductResponseDto> SearchProductsAsync(SearchProductRequestDto request);
         Task<DeleteProductResponseDto> DeleteProductAsync(int productId);
         Task<UpdateProductResponseDto> UpdateProductAsync(int productId, UpdateProductRequestDto request);
+        Task<UpdateStockResponseDto> UpdateStockAsync(UpdateStockRequestDto request);
     }
 }

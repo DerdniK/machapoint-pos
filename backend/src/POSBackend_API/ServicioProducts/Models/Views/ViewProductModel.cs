@@ -20,5 +20,7 @@ namespace ServicioProducts.Models.Views
         public int Typeid { get; set; }
         [Column("typename")]
         public string Typename { get; set; }
+        [Column("stock")]
+        public int Stock { get; set; }
     }
 }

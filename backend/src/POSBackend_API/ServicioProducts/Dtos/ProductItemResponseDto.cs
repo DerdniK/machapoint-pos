@@ -8,5 +8,6 @@ namespace ServicioProducts.Dtos
         public ProductTypesResponseDTO Type { get; set; } = new();
         public double Price { get; set; }
         public string? ImageURL { get; set; }
+        public int Stock {get; set;}
     }
 }
