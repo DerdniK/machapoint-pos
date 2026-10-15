@@ -21,15 +21,30 @@ class ProductService {
 
   static List<Product> _productsFromResponse(String responseBody) {
     final dynamic decoded = jsonDecode(responseBody);
-    dynamic jsonList = decoded;
+    dynamic productData = decoded;
     if (decoded is Map<String, dynamic>) {
-      jsonList = decoded['product'] ?? decoded['products'] ?? decoded['data'];
+      final wrappedData =
+          decoded['product'] ?? decoded['products'] ?? decoded['data'];
+      if (wrappedData != null) {
+        productData = wrappedData;
+      } else if (decoded.containsKey('productid') ||
+          decoded.containsKey('productId')) {
+        productData = decoded;
+      } else {
+        return [];
+      }
     }
-    if (jsonList is! List) return [];
-    return jsonList
-        .whereType<Map>()
-        .map((json) => Product.fromJson(Map<String, dynamic>.from(json)))
-        .toList();
+
+    if (productData is Map) {
+      return [Product.fromJson(Map<String, dynamic>.from(productData))];
+    }
+    if (productData is List) {
+      return productData
+          .whereType<Map>()
+          .map((json) => Product.fromJson(Map<String, dynamic>.from(json)))
+          .toList();
+    }
+    return [];
   }
 
   static Future<List<Product>> _getProductsFrom(Uri url) async {
@@ -53,9 +68,12 @@ class ProductService {
     );
   }
 
-  static Future<List<Product>> getProducts() async {
+  static Future<List<Product>> getProducts({int? productId}) async {
     try {
-      final url = Uri.parse('$_baseUrl/api/products/product/Get');
+      final baseUrl = Uri.parse('$_baseUrl/api/products/product/Get');
+      final url = productId == null
+          ? baseUrl
+          : baseUrl.replace(queryParameters: {'productId': '$productId'});
       return await _getProductsFrom(url);
     } catch (e) {
       rethrow;
@@ -69,19 +87,42 @@ class ProductService {
     return _getProductsFrom(url);
   }
 
-  static List<Product> filterProductsByQuery(
-    List<Product> products,
-    String query,
-  ) {
-    final normalizedQuery = query.trim().toLowerCase();
-    if (normalizedQuery.isEmpty) return products;
-    return products
-        .where(
-          (product) =>
-              product.name.toLowerCase().contains(normalizedQuery) ||
-              product.sku.toLowerCase().contains(normalizedQuery),
-        )
-        .toList();
+  static Future<List<Product>> searchProducts(String query) async {
+    final normalizedQuery = query.trim();
+    if (normalizedQuery.isEmpty) return getProducts();
+
+    final productId = int.tryParse(normalizedQuery);
+    final results = await searchProductsByName(normalizedQuery);
+    if (productId != null && productId > 0) {
+      results.addAll(await getProducts(productId: productId));
+    }
+
+    final productsById = {
+      for (final product in results) product.productId: product,
+    };
+    if (productsById.values.any((product) => product.stock == null)) {
+      final catalog = await getProducts();
+      final stockById = {
+        for (final product in catalog)
+          if (product.stock != null) product.productId: product.stock!,
+      };
+      for (final entry in productsById.entries.toList()) {
+        final product = entry.value;
+        final stock = stockById[product.productId];
+        if (product.stock == null && stock != null) {
+          productsById[entry.key] = Product(
+            productId: product.productId,
+            name: product.name,
+            sku: product.sku,
+            type: product.type,
+            price: product.price,
+            imageUrl: product.imageUrl,
+            stock: stock,
+          );
+        }
+      }
+    }
+    return productsById.values.toList();
   }
 
   static Future<bool> updateProduct({
