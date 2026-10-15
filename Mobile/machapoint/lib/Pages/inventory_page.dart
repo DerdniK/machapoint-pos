@@ -22,14 +22,12 @@ class _InventoryPageState extends State<InventoryPage> {
   Timer? _searchDebounce;
   String _selectedMode = _createMode;
   String _searchQuery = '';
-  late Future<List<Product>> _allProductsFuture;
   late Future<List<Product>> _productsFuture;
 
   @override
   void initState() {
     super.initState();
-    _allProductsFuture = ProductService.getProducts();
-    _productsFuture = _allProductsFuture;
+    _productsFuture = ProductService.getProducts();
   }
 
   @override
@@ -41,11 +39,9 @@ class _InventoryPageState extends State<InventoryPage> {
 
   void _refreshProducts() {
     setState(() {
-      _allProductsFuture = ProductService.getProducts();
-      _productsFuture = _allProductsFuture.then(
-        (products) =>
-            ProductService.filterProductsByQuery(products, _searchQuery),
-      );
+      _productsFuture = _searchQuery.isEmpty
+          ? ProductService.getProducts()
+          : ProductService.searchProducts(_searchQuery);
     });
   }
 
@@ -55,10 +51,7 @@ class _InventoryPageState extends State<InventoryPage> {
       if (!mounted) return;
       setState(() {
         _searchQuery = query.trim();
-        _productsFuture = _allProductsFuture.then(
-          (products) =>
-              ProductService.filterProductsByQuery(products, _searchQuery),
-        );
+        _productsFuture = ProductService.searchProducts(_searchQuery);
       });
     });
   }
@@ -386,13 +379,29 @@ class InventoryProductTile extends StatelessWidget {
         ),
         subtitle: Padding(
           padding: const EdgeInsets.only(top: 4),
-          child: Text(
-            'SKU: ${product.sku}\n'
-            '${product.type?.typeNameResolved ?? 'Sin categoría'}'
-            ' · \$${product.price.toStringAsFixed(2)}',
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 12, height: 1.35),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'SKU: ${product.sku}\n'
+                '${product.type?.typeNameResolved ?? 'Sin categoría'}'
+                ' · \$${product.price.toStringAsFixed(2)}',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 12, height: 1.35),
+              ),
+              Text(
+                product.stock == 0
+                    ? 'No hay stock'
+                    : 'Disponible: ${product.stock ?? 'N/D'}',
+                style: TextStyle(
+                  color: product.stock == 0 ? Colors.red : Colors.black87,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ),
         ),
         trailing: IconButton(
