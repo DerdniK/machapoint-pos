@@ -1,10 +1,11 @@
-
 'use strict';
 const CARRITO_KEY = 'carrito';
 const REF_KEY = 'ventaRef';
-const MAX_CANTIDAD = 10;
+const MAX_CANTIDAD = 20;
+const API_PRODUCTOS_URL = 'https://4upkj2tafvod2ubwcsbnagviyu0feljy.lambda-url.us-east-1.on.aws/api/products/product/get';
+const CATALOGO_CACHE_KEY = 'catalogoCache';
 const BACKEND_VENTA_URL = 'https://6uxm3jz7xwth5cliak6zk6dudi0iseih.lambda-url.us-east-1.on.aws/api/sale';
- 
+
 const $ = id => document.getElementById(id);
 const listaCarrito = $('lista-carrito');
 const mensajeCarrito = $('mensaje-carrito');
@@ -17,15 +18,29 @@ const cambioResultado = $('cambio');
 const tipoTarjeta = $('tipo-tarjeta');
 const btnFinalizar = $('btn-finalizar');
 const btnVaciarCarrito = $('btn-vaciar-carrito');
- 
+
 // ---------- Estado en memoria (localStorage solo se escribe al cambiar) ----------
 let carrito = leerCarrito();
 let enviando = false;
- 
+let stockVerificado = false; // true cuando las existencias se confirmaron con el servidor
+
+// ---------- Stock ----------
+const stockDe = p => (p.stock == null || p.stock === '' || !Number.isFinite(Number(p.stock))) ? null : Number(p.stock);
+const limiteDe = p => { const s = stockDe(p); return s === null ? MAX_CANTIDAD : Math.min(MAX_CANTIDAD, s); };
+
+function problemaStock(p) {
+    const s = stockDe(p);
+    if (s === null) return null;
+    if (s <= 0) return 'Producto agotado. Elimínalo del carrito.';
+    if (p.cantidad > s) return `Stock insuficiente: solo hay ${s} disponible(s). Reduce la cantidad.`;
+    return null;
+}
+const hayProblemasStock = () => carrito.some(p => problemaStock(p));
+
 // Dinero en centavos enteros para evitar errores de punto flotante
 const aCentavos = n => Math.round((Number(n) || 0) * 100);
 const dinero = c => `$${(c / 100).toFixed(2)}`;
- 
+
 function leerCarrito() {
     try {
         const d = JSON.parse(localStorage.getItem(CARRITO_KEY) || '[]');
@@ -36,19 +51,19 @@ function leerCarrito() {
         }));
     } catch { return []; }
 }
- 
+
 function guardarCarrito() {
     localStorage.setItem(CARRITO_KEY, JSON.stringify(carrito));
 }
- 
+
 function totalCentavos() {
     return carrito.reduce((t, p) => t + aCentavos(p.price) * p.cantidad, 0);
 }
- 
+
 function obtenerUsuario() {
     try { return JSON.parse(localStorage.getItem('user') || 'null'); } catch { return null; }
 }
- 
+
 // ---------- Render (sin innerHTML: nombres/SKU se muestran como texto) ----------
 function el(tag, clase, texto) {
     const e = document.createElement(tag);
@@ -56,7 +71,7 @@ function el(tag, clase, texto) {
     if (texto != null) e.textContent = texto;
     return e;
 }
- 
+
 function boton(clase, texto, index, accion, title) {
     const b = el('button', clase, texto);
     b.type = 'button';
@@ -65,10 +80,12 @@ function boton(clase, texto, index, accion, title) {
     if (title) b.title = title;
     return b;
 }
- 
+
 function crearArticulo(p, i) {
     const art = el('div', 'articulo-carrito');
- 
+    const problema = problemaStock(p);
+    const stock = stockDe(p);
+
     const info = el('div', 'info-articulo');
     info.append(
         el('h3', null, p.name),
@@ -76,14 +93,24 @@ function crearArticulo(p, i) {
         el('p', null, `Tipo: ${p.typeName ?? 'Sin tipo'}`),
         el('p', null, `Precio: ${dinero(aCentavos(p.price))}`)
     );
- 
+    if (stock !== null) info.append(el('p', null, `Disponibles: ${stock}`));
+    if (problema) {
+        const aviso = el('p', 'aviso-stock', problema);
+        aviso.style.color = '#d9534f';
+        aviso.style.fontWeight = '600';
+        info.append(aviso);
+    }
+
+    const mas = boton('boton-aumentar', '+', i, 'aumentar');
+    if (p.cantidad >= limiteDe(p)) {
+        mas.disabled = true;
+        mas.title = stock !== null && stock < MAX_CANTIDAD
+            ? `Solo hay ${stock} disponible(s)` : `Máximo ${MAX_CANTIDAD} por producto`;
+    }
+
     const cant = el('div', 'cantidad-articulo');
-    cant.append(
-        boton('boton-disminuir', '-', i, 'disminuir'),
-        el('span', null, String(p.cantidad)),
-        boton('boton-aumentar', '+', i, 'aumentar')
-    );
- 
+    cant.append(boton('boton-disminuir', '-', i, 'disminuir'), el('span', null, String(p.cantidad)), mas);
+
     art.append(
         info, cant,
         el('div', 'precio-articulo', dinero(aCentavos(p.price) * p.cantidad)),
@@ -91,7 +118,7 @@ function crearArticulo(p, i) {
     );
     return art;
 }
- 
+
 function render() {
     if (!listaCarrito) return;
     if (carrito.length === 0) {
@@ -108,14 +135,18 @@ function render() {
     calcularCambio();
     validarBotonFinalizar();
 }
- 
+
 // ---------- Acciones ----------
 function actualizarCantidad(index, accion) {
     const p = carrito[index];
     if (!p) return;
     if (accion === 'aumentar') {
-        if (p.cantidad >= MAX_CANTIDAD) {
-            alert(`No puedes agregar más de ${MAX_CANTIDAD} unidades del mismo producto.`);
+        const limite = limiteDe(p);
+        if (p.cantidad >= limite) {
+            const s = stockDe(p);
+            alert(s !== null && s < MAX_CANTIDAD
+                ? `Solo hay ${s} unidad(es) disponibles de "${p.name}".`
+                : `No puedes agregar más de ${MAX_CANTIDAD} unidades del mismo producto.`);
             return;
         }
         p.cantidad += 1;
@@ -125,20 +156,20 @@ function actualizarCantidad(index, accion) {
     guardarCarrito();
     render();
 }
- 
+
 function eliminarProducto(index) {
     if (index < 0 || index >= carrito.length) return;
     carrito.splice(index, 1);
     guardarCarrito();
     render();
 }
- 
+
 function limpiarCarrito() {
     carrito = [];
     localStorage.removeItem(CARRITO_KEY);
     render();
 }
- 
+
 function resetFormularioPago() {
     if (metodoPago) metodoPago.value = '';
     if (seccionEfectivo) seccionEfectivo.style.display = 'none';
@@ -148,7 +179,7 @@ function resetFormularioPago() {
     if (tipoTarjeta) tipoTarjeta.value = '';
     validarBotonFinalizar();
 }
- 
+
 if (listaCarrito) {
     listaCarrito.addEventListener('click', (e) => {
         const b = e.target.closest('button');
@@ -159,7 +190,7 @@ if (listaCarrito) {
         else if (b.classList.contains('boton-eliminar')) eliminarProducto(index);
     });
 }
- 
+
 if (btnVaciarCarrito) {
     btnVaciarCarrito.addEventListener('click', () => {
         if (carrito.length === 0) { alert('El carrito ya está vacío.'); return; }
@@ -169,12 +200,12 @@ if (btnVaciarCarrito) {
         }
     });
 }
- 
+
 // ---------- Pago ----------
 function dineroRecibidoCentavos() {
     return inputEfectivo ? aCentavos(parseFloat(inputEfectivo.value)) : 0;
 }
- 
+
 function calcularCambio() {
     if (!inputEfectivo || !cambioResultado) return;
     const recibido = parseFloat(inputEfectivo.value);
@@ -184,11 +215,12 @@ function calcularCambio() {
         cambioResultado.textContent = `Cambio: ${dinero(aCentavos(recibido) - totalCentavos())}`;
     }
 }
- 
+
 function validarBotonFinalizar() {
     if (!btnFinalizar) return;
     const metodo = metodoPago ? metodoPago.value : '';
-    let ok = carrito.length > 0 && !!metodo && !enviando;
+    // No se puede vender si el stock no está verificado o alguna línea excede las existencias
+    let ok = carrito.length > 0 && !!metodo && !enviando && stockVerificado && !hayProblemasStock();
     if (ok && metodo === 'tarjeta') ok = !!(tipoTarjeta && tipoTarjeta.value);
     if (ok && metodo === 'efectivo') {
         const r = parseFloat(inputEfectivo ? inputEfectivo.value : NaN);
@@ -196,7 +228,7 @@ function validarBotonFinalizar() {
     }
     btnFinalizar.disabled = !ok;
 }
- 
+
 if (metodoPago) {
     metodoPago.addEventListener('change', () => {
         const m = metodoPago.value;
@@ -208,14 +240,14 @@ if (metodoPago) {
 }
 if (tipoTarjeta) tipoTarjeta.addEventListener('change', validarBotonFinalizar);
 if (inputEfectivo) inputEfectivo.addEventListener('input', () => { calcularCambio(); validarBotonFinalizar(); });
- 
+
 function obtenerMetodoPagoBD() {
     const m = metodoPago.value;
     if (m === 'efectivo') return 'EFECTIVO';
     if (m === 'tarjeta') return ['TARJETA_CREDITO', 'TARJETA_DEBITO'].includes(tipoTarjeta.value) ? tipoTarjeta.value : null;
     return null;
 }
- 
+
 // La MISMA referencia se reutiliza mientras la cuenta no cambie. Si la respuesta se pierde
 // por mala conexión y el usuario reintenta, el backend recibe la misma clave y puede
 // rechazar el duplicado (requiere restricción UNIQUE en transaction_reference).
@@ -230,30 +262,31 @@ function referenciaTransaccion(firma) {
     sessionStorage.setItem(REF_KEY, JSON.stringify({ firma, ref }));
     return ref;
 }
- 
+
 async function procesarVentaBackend() {
     if (carrito.length === 0) return null;
- 
+    if (!stockVerificado || hayProblemasStock()) { alert('Hay productos sin stock suficiente. Ajusta las cantidades.'); return null; }
+
     const paymentMethod = obtenerMetodoPagoBD();
     if (!paymentMethod) { alert('Verifica el método de pago seleccionado.'); return null; }
- 
+
     const total = totalCentavos();
     let given = total;
     if (metodoPago.value === 'efectivo') {
         given = dineroRecibidoCentavos();
         if (given < total) { alert('Dinero insuficiente para cubrir el total.'); return null; }
     }
- 
+
     const shiftId = localStorage.getItem('shiftId');
     const cashierId = localStorage.getItem('cashierId');
     if (!shiftId || !cashierId) { alert('No hay un turno activo. Abre turno en Ventas antes de vender.'); return null; }
- 
+
     const user = obtenerUsuario();
     if (user && user.id && String(user.id) !== String(cashierId)) {
         alert('El turno abierto pertenece a otro cajero. Debe cerrarlo ese usuario.');
         return null;
     }
- 
+
     const firma = JSON.stringify([carrito.map(p => [p.productId, p.cantidad]), paymentMethod, given]);
     // NOTA: el backend debe recalcular precios/totales y tomar el cajero del JWT;
     // estos campos se envían solo por compatibilidad con el contrato actual.
@@ -272,31 +305,93 @@ async function procesarVentaBackend() {
             subtotal: (aCentavos(p.price) * p.cantidad) / 100
         }))
     };
- 
+
     try {
         const res = await Api.request(BACKEND_VENTA_URL, { method: 'POST', body: JSON.stringify(payload), timeout: 20000 });
         if (!res.ok) throw new Error(await Api.errorDe(res));
         const data = await res.json().catch(() => ({}));
         sessionStorage.removeItem(REF_KEY);
+        sessionStorage.removeItem(CATALOGO_CACHE_KEY); // el stock cambió: el catálogo debe recargarse
         alert(`Venta procesada correctamente.\n\nTotal: ${dinero(total)}`);
         limpiarCarrito();
         resetFormularioPago();
         return data;
     } catch (error) {
         alert(`No se pudo confirmar la venta: ${error.message}\n\nSi el problema fue de conexión, vuelve a pulsar "Finalizar": se reutiliza la misma referencia para evitar cobros duplicados. Revisa también la lista de ventas del turno.`);
+        refrescarStock(); // por si el error fue de existencias
         return null;
     }
 }
- 
+
+// ---------- Verificación de existencias con el servidor ----------
+const avisoStock = el('div', 'aviso-stock-global');
+avisoStock.setAttribute('role', 'status');
+if (mensajeCarrito) mensajeCarrito.after(avisoStock);
+
+function setAvisoStock(texto, onReintentar) {
+    avisoStock.replaceChildren();
+    if (!texto) return;
+    avisoStock.append(el('span', null, texto));
+    if (onReintentar) {
+        const b = el('button', null, 'Reintentar');
+        b.type = 'button';
+        b.style.marginLeft = '8px';
+        b.addEventListener('click', onReintentar);
+        avisoStock.append(b);
+    }
+}
+
+async function refrescarStock() {
+    if (carrito.length === 0) { stockVerificado = true; setAvisoStock(''); return true; }
+    setAvisoStock('Verificando existencias...');
+    try {
+        const res = await Api.request(API_PRODUCTOS_URL, { method: 'GET', retries: 2, timeout: 15000 });
+        if (!res.ok) throw new Error(await Api.errorDe(res));
+        const data = await res.json();
+        const lista = data.product || data.products || (Array.isArray(data) ? data : []);
+        const mapa = new Map(lista.map(p => [String(p.productid ?? p.productId), Number(p.stock)]));
+
+        // Producto ausente o sin stock numérico = sin existencias
+        carrito.forEach(p => {
+            const s = mapa.get(String(p.productId));
+            p.stock = Number.isFinite(s) ? s : 0;
+        });
+        guardarCarrito();
+        stockVerificado = true;
+        setAvisoStock('');
+        render();
+        return true;
+    } catch (err) {
+        stockVerificado = false;
+        setAvisoStock(`No se pudo verificar el stock: ${err.message}`, refrescarStock);
+        validarBotonFinalizar();
+        return false;
+    }
+}
+
 if (btnFinalizar) {
     btnFinalizar.addEventListener('click', async () => {
         if (enviando || carrito.length === 0) return;
-        if (!confirm(`¿Confirmas finalizar la venta por ${dinero(totalCentavos())}?`)) return;
         enviando = true;
         btnFinalizar.disabled = true;
-        try { await procesarVentaBackend(); } finally { enviando = false; validarBotonFinalizar(); }
+        try {
+            // Se vuelve a consultar el stock justo antes de cobrar
+            if (!(await refrescarStock())) {
+                alert('No se pudo verificar el stock. Revisa tu conexión e intenta de nuevo.');
+                return;
+            }
+            if (hayProblemasStock()) {
+                alert('Hay productos sin stock suficiente. Ajusta las cantidades o elimina los agotados.');
+                return;
+            }
+            if (!confirm(`¿Confirmas finalizar la venta por ${dinero(totalCentavos())}?`)) return;
+            await procesarVentaBackend();
+        } finally {
+            enviando = false;
+            validarBotonFinalizar();
+        }
     });
 }
- 
+
 render();
- 
+refrescarStock();

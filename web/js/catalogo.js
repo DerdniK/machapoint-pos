@@ -3,7 +3,7 @@ const API_URL = 'https://4upkj2tafvod2ubwcsbnagviyu0feljy.lambda-url.us-east-1.o
 const CARRITO_KEY = 'carrito';
 const CACHE_KEY = 'catalogoCache';
 const CACHE_MS = 60 * 1000;
-const MAX_CANTIDAD = 10; // misma regla que en carrito.js
+const MAX_CANTIDAD = 20; // misma regla que en carrito.js
 const IMG_FALLBACK = '/img/product.jpg';
 
 const productosContainer = document.getElementById('productos');
@@ -21,6 +21,13 @@ function mostrarMensajeGeneral(texto, tipo = 'info') {
 
 function normalizar(texto) {
     return String(texto ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+}
+
+// null si el dato no viene o no es numérico
+function stockDe(p) {
+    if (p == null || p.stock == null || p.stock === '') return null;
+    const n = Number(p.stock);
+    return Number.isFinite(n) ? n : null;
 }
 
 function aplicarFiltro() {
@@ -53,7 +60,10 @@ function leerCache(aunVencida = false) {
 }
 
 function usarLista(lista) {
-    productosActuales = lista.map(p => ({ ...p, _q: normalizar(`${p.name} ${p.sku}`) }));
+    // Los productos con stock = 0 no se muestran en el catálogo
+    productosActuales = lista
+        .filter(p => { const s = stockDe(p); return s === null || s > 0; })
+        .map(p => ({ ...p, _q: normalizar(`${p.name} ${p.sku}`) }));
     aplicarFiltro();
 }
 
@@ -101,13 +111,17 @@ function crearTarjeta(p) {
     precio.textContent = `$${Number(p.price).toFixed(2)}`;
     const sku = document.createElement('p'); sku.textContent = `SKU: ${p.sku}`;
     const tipo = document.createElement('p'); tipo.textContent = `Tipo: ${p.type?.typeName ?? 'Sin tipo'}`;
+    const stockActual = stockDe(p);
+    const stock = document.createElement('p');
+    stock.className = 'producto-stock';
+    stock.textContent = stockActual === null ? 'Disponibilidad no informada' : `Disponibles: ${stockActual}`;
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'boton-agregar';
     btn.dataset.id = p.productid;
     btn.textContent = 'Agregar al carrito';
 
-    info.append(h3, precio, sku, tipo, btn);
+    info.append(h3, precio, sku, tipo, stock, btn);
     article.append(img, info);
     return article;
 }
@@ -141,14 +155,24 @@ function leerCarrito() {
 
 function agregarAlCarrito(producto) {
     const carrito = leerCarrito();
+    const stock = stockDe(producto);
+    const limite = stock === null ? MAX_CANTIDAD : Math.min(MAX_CANTIDAD, stock);
     const existente = carrito.find(i => String(i.productId) === String(producto.productid));
+    const actual = existente ? (Number(existente.cantidad) || 0) : 0;
+
+    if (actual >= limite) {
+        mostrarMensajeGeneral(
+            stock !== null && stock < MAX_CANTIDAD
+                ? `Solo hay ${stock} unidad(es) disponibles de "${producto.name}".`
+                : `No puedes agregar más de ${MAX_CANTIDAD} unidades de "${producto.name}".`,
+            'error'
+        );
+        return;
+    }
 
     if (existente) {
-        if ((Number(existente.cantidad) || 0) >= MAX_CANTIDAD) {
-            mostrarMensajeGeneral(`No puedes agregar más de ${MAX_CANTIDAD} unidades de "${producto.name}".`, 'error');
-            return;
-        }
-        existente.cantidad = (Number(existente.cantidad) || 0) + 1;
+        existente.cantidad = actual + 1;
+        existente.stock = stock; // referencia; el carrito vuelve a verificarlo con el servidor
     } else {
         carrito.push({
             productId: producto.productid,
@@ -157,6 +181,7 @@ function agregarAlCarrito(producto) {
             name: producto.name,
             sku: producto.sku,
             price: producto.price,
+            stock,
             cantidad: 1
         });
     }
