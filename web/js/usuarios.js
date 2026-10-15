@@ -257,7 +257,8 @@ function crearFila(u) {
         eliminar.setAttribute('aria-label', `Eliminar ${u.username}`);
         eliminar.addEventListener('click', () => eliminarUsuario(u));
 
-        tdAcc.append(editar, ' ', eliminar);
+        // tdAcc.append(editar, ' ', eliminar);
+        tdAcc.append(editar);
     }
 
     tr.append(celda(u.username), celda(u.firstName), celda(u.lastName),
