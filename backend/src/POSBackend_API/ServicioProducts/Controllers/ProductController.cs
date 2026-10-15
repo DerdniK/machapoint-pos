@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ServicioProducts.Dtos.Create;
+using ServicioProducts.Dtos.Products.Stock;
 using ServicioProducts.Dtos.Read;
 using ServicioProducts.Dtos.Search;
 using ServicioProducts.Dtos.Update;
@@ -169,6 +170,32 @@ namespace ServicioProducts.Controllers
             catch (Exception ex)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError, new
+                {
+                    Error = ex.Message,
+                    InnerError = ex.InnerException?.Message,
+                    Stack = ex.StackTrace
+                });
+            }
+        }
+
+        [Authorize]
+        [HttpPatch("stock")]
+        public async Task<IActionResult> UpdateStock([FromBody] UpdateStockRequestDto request)
+        {
+            try
+            {
+                var response = await _productService.UpdateStockAsync(request);
+
+                if (!response.Success)
+                {
+                    return BadRequest(response);
+                }
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
                 {
                     Error = ex.Message,
                     InnerError = ex.InnerException?.Message,
