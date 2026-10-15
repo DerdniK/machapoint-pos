@@ -5,6 +5,7 @@ using NpgsqlTypes;
 using ServicioSales.Data;
 using ServicioSales.Dtos;
 using ServicioSales.Dtos.Search;
+using ServicioSales.Dtos.Search.DateRange;
 
 namespace ServicioSales.Service
 {
@@ -68,6 +69,37 @@ namespace ServicioSales.Service
                     param
                 )
                 .ToListAsync();
+        }
+
+        public async Task<IEnumerable<SaleItemResponseDto>> GetSalesByDateRangeAsync(GetSalesByDateRangeRequestDto request)
+        {
+            var sql = "SELECT * FROM public.sp_sales_by_date_range(@start_date, @end_date)";
+
+            var parameters = new[]
+            {
+                new NpgsqlParameter("start_date", NpgsqlTypes.NpgsqlDbType.Date)
+                {
+                    Value = request.StartDate
+                },
+                new NpgsqlParameter("end_date", NpgsqlTypes.NpgsqlDbType.Date)
+                {
+                    Value = request.EndDate
+                }
+            };
+
+            var rawSales = await _context.Database
+                .SqlQueryRaw<ViewSaleByDateRangeModel>(sql, parameters)
+                .ToListAsync();
+
+            return rawSales.Select(s => new SaleItemResponseDto
+            {
+                SaleId = s.SaleId,
+                ShiftId = s.ShiftId,
+                CashierId = s.CashierId,
+                Total = s.Total,
+                Status = s.Status,
+                CreatedAt = s.CreatedAt
+            }).ToList();
         }
     }
 }
