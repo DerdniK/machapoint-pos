@@ -106,29 +106,38 @@ class _CheckoutPageState extends State<CheckoutPage> {
       final double changeGiven = _paymentMethod == 'Efectivo'
           ? amountGiven - total
           : 0.0;
-      final transactionReference = _paymentMethod == 'Tarjeta'
-          ? _cardType
-          : 'Efectivo';
-
+      if (_paymentMethod == 'Efectivo' &&
+          (changeGiven * 100).round() > (shift.expectedCash * 100).round()) {
+        _showSnackBar(
+          'No hay suficiente efectivo en caja para dar '
+          '\$${changeGiven.toStringAsFixed(2)}. '
+          'Disponible para cambio: \$${shift.expectedCash.toStringAsFixed(2)}.',
+          Colors.red,
+        );
+        return;
+      }
+      final paymentMethod = _paymentMethod == 'Efectivo'
+          ? 'Efectivo'
+          : _cardType == 'CREDIT'
+          ? 'TARJETA_CREDITO'
+          : 'TARJETA_DEBITO';
       final result = await SaleService.processSale(
         shiftId: shift.activeShiftId!,
         cashierId: auth.cashierId ?? auth.userUuid ?? '',
         total: total,
-        paymentMethod: _paymentMethod,
+        paymentMethod: paymentMethod,
         amountGiven: amountGiven,
         changeGiven: changeGiven,
-        transactionReference: transactionReference,
         products: cart.items,
       );
 
       if (!mounted) return;
 
       if (result['success'] == true) {
-        await shift.refreshSalesSummary(auth.token!);
-        if (mounted) {
-          final shiftMgmt = context.read<ShiftProvider>();
-          await shiftMgmt.refreshSalesSummary(auth.token!);
-        }
+        shift.registerSuccessfulSale(
+          total: total,
+          paidInCash: _paymentMethod == 'Efectivo',
+        );
         cart.clearCart();
         Navigator.of(context).pop();
         _showSnackBar(
@@ -154,6 +163,32 @@ class _CheckoutPageState extends State<CheckoutPage> {
     ).showSnackBar(SnackBar(content: Text(text), backgroundColor: bg));
   }
 
+  Future<void> _confirmClearCart(CartProvider cart) async {
+    final shouldClear = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Vaciar carrito'),
+        content: const Text('¿Quieres quitar todos los productos del carrito?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Vaciar'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldClear == true && mounted) {
+      cart.clearCart();
+      _amountGivenController.clear();
+      setState(() {});
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     const orangeColor = Color(0xFFF2B04E);
@@ -166,6 +201,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
     final double change = amountGiven > cart.total
         ? amountGiven - cart.total
         : 0.0;
+    final bool changeExceedsCash =
+        (change * 100).round() > (shift.expectedCash * 100).round();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF3E7DF),
@@ -179,247 +216,330 @@ class _CheckoutPageState extends State<CheckoutPage> {
         centerTitle: true,
         iconTheme: const IconThemeData(color: Colors.black),
       ),
-      body: cart.items.isEmpty
-          ? const Center(child: Text('El carrito esta vacio'))
-          : AbsorbPointer(
-              absorbing: _isLoading,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Text(
-                      'Resumen del Pedido',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+      body: SafeArea(
+        bottom: true,
+        child: cart.items.isEmpty
+            ? const Center(child: Text('El carrito esta vacio'))
+            : AbsorbPointer(
+                absorbing: _isLoading,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const Text(
+                        'Resumen del Pedido',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Card(
-                      elevation: 1,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: cart.items.length,
-                        separatorBuilder: (_, __) => const Divider(height: 1),
-                        itemBuilder: (context, index) {
-                          final item = cart.items[index];
-                          return ListTile(
-                            title: Text(
-                              item.productName ?? 'Producto #${item.productId}',
-                            ),
-                            subtitle: Text(
-                              '${item.quantity} x \$${item.unitPrice.toStringAsFixed(2)}',
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  '\$${item.subtotal.toStringAsFixed(2)}',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 15,
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.remove_circle_outline,
-                                    color: Colors.red,
-                                  ),
-                                  onPressed: _isLoading
-                                      ? null
-                                      : () => cart.decrementQuantity(
-                                          item.productId,
+                      const SizedBox(height: 8),
+                      Card(
+                        elevation: 1,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: cart.items.length,
+                          separatorBuilder: (_, __) => const Divider(height: 1),
+                          itemBuilder: (context, index) {
+                            final item = cart.items[index];
+                            return ListTile(
+                              leading: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: SizedBox(
+                                  width: 52,
+                                  height: 52,
+                                  child: item.imageUrl.isEmpty
+                                      ? const ColoredBox(
+                                          color: Color(0xFFF3E7DF),
+                                          child: Icon(
+                                            Icons.inventory_2,
+                                            color: Colors.grey,
+                                          ),
+                                        )
+                                      : Image.network(
+                                          item.imageUrl,
+                                          fit: BoxFit.contain,
+                                          errorBuilder: (_, _, _) =>
+                                              const ColoredBox(
+                                                color: Color(0xFFF3E7DF),
+                                                child: Icon(
+                                                  Icons.image_not_supported,
+                                                  color: Colors.grey,
+                                                ),
+                                              ),
                                         ),
                                 ),
-                                IconButton(
-                                  tooltip: 'Aumentar cantidad',
-                                  icon: const Icon(
-                                    Icons.add_circle_outline,
-                                    color: Colors.green,
+                              ),
+                              title: Text(
+                                item.productName ??
+                                    'Producto #${item.productId}',
+                              ),
+                              subtitle: Text(
+                                '${item.quantity} x \$${item.unitPrice.toStringAsFixed(2)}',
+                              ),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    '\$${item.subtotal.toStringAsFixed(2)}',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                    ),
                                   ),
-                                  onPressed: _isLoading
-                                      ? null
-                                      : () => cart.addProduct(
-                                          id: item.productId,
-                                          name: item.productName,
-                                          price: item.unitPrice,
-                                        ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.remove_circle_outline,
+                                      color: Colors.red,
+                                    ),
+                                    onPressed: _isLoading
+                                        ? null
+                                        : () => cart.decrementQuantity(
+                                            item.productId,
+                                          ),
+                                  ),
+                                  IconButton(
+                                    tooltip: 'Aumentar cantidad',
+                                    icon: const Icon(
+                                      Icons.add_circle_outline,
+                                      color: Colors.green,
+                                    ),
+                                    onPressed: _isLoading
+                                        ? null
+                                        : () {
+                                            final added = cart.addProduct(
+                                              id: item.productId,
+                                              name: item.productName,
+                                              imageUrl: item.imageUrl,
+                                              availableStock:
+                                                  item.availableStock,
+                                              price: item.unitPrice,
+                                            );
+                                            if (!added) {
+                                              _showSnackBar(
+                                                CartProvider.quantityLimitMessageForStock(
+                                                  item.availableStock,
+                                                ),
+                                                Colors.red,
+                                              );
+                                            }
+                                          },
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 20),
-                    const Text(
-                      'Método de Pago',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                      const SizedBox(height: 8),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton.icon(
+                          onPressed: cart.items.isEmpty || _isLoading
+                              ? null
+                              : () => _confirmClearCart(cart),
+                          icon: const Icon(
+                            Icons.delete_outline,
+                            color: Colors.red,
+                          ),
+                          label: const Text(
+                            'Vaciar carrito',
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 10),
-                    SegmentedButton<String>(
-                      segments: const [
-                        ButtonSegment(
-                          value: 'Efectivo',
-                          label: Text('Efectivo'),
-                          icon: Icon(Icons.payments),
+                      const SizedBox(height: 20),
+                      const Text(
+                        'Método de Pago',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
                         ),
-                        ButtonSegment(
-                          value: 'Tarjeta',
-                          label: Text('Tarjeta'),
-                          icon: Icon(Icons.credit_card),
-                        ),
-                      ],
-                      selected: {_paymentMethod},
-                      onSelectionChanged: (Set<String> newSelection) {
-                        setState(() => _paymentMethod = newSelection.first);
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    if (_paymentMethod == 'Efectivo') ...[
-                      TextField(
-                        controller: _amountGivenController,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        inputFormatters: [
-                          TextInputFormatter.withFunction((oldValue, newValue) {
-                            final validFormat = RegExp(r'^\d*(\.\d{0,2})?$');
-                            return validFormat.hasMatch(newValue.text)
-                                ? newValue
-                                : oldValue;
-                          }),
-                        ],
-                        decoration: const InputDecoration(
-                          labelText: 'Monto Recibido',
-                          prefixText: '\$ ',
-                          border: OutlineInputBorder(),
-                          fillColor: Colors.white,
-                          filled: true,
-                        ),
-                        onChanged: (_) => setState(() {}),
                       ),
                       const SizedBox(height: 10),
+                      SegmentedButton<String>(
+                        segments: const [
+                          ButtonSegment(
+                            value: 'Efectivo',
+                            label: Text('Efectivo'),
+                            icon: Icon(Icons.payments),
+                          ),
+                          ButtonSegment(
+                            value: 'Tarjeta',
+                            label: Text('Tarjeta'),
+                            icon: Icon(Icons.credit_card),
+                          ),
+                        ],
+                        selected: {_paymentMethod},
+                        onSelectionChanged: (Set<String> newSelection) {
+                          setState(() => _paymentMethod = newSelection.first);
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      if (_paymentMethod == 'Efectivo') ...[
+                        Text(
+                          'Efectivo disponible para cambio: '
+                          '\$${shift.expectedCash.toStringAsFixed(2)}',
+                          style: const TextStyle(color: Colors.black54),
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _amountGivenController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          inputFormatters: [
+                            TextInputFormatter.withFunction((
+                              oldValue,
+                              newValue,
+                            ) {
+                              final validFormat = RegExp(r'^\d*(\.\d{0,2})?$');
+                              return validFormat.hasMatch(newValue.text)
+                                  ? newValue
+                                  : oldValue;
+                            }),
+                          ],
+                          decoration: const InputDecoration(
+                            labelText: 'Monto Recibido',
+                            prefixText: '\$ ',
+                            border: OutlineInputBorder(),
+                            fillColor: Colors.white,
+                            filled: true,
+                          ),
+                          onChanged: (_) => setState(() {}),
+                        ),
+                        const SizedBox(height: 10),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'Cambio:',
+                                style: TextStyle(fontSize: 16),
+                              ),
+                              Text(
+                                '\$${change.toStringAsFixed(2)}',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: changeExceedsCash
+                                      ? Colors.red
+                                      : change >= 0
+                                      ? Colors.green[700]
+                                      : Colors.red,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (changeExceedsCash) ...[
+                          const SizedBox(height: 6),
+                          const Text(
+                            'El cambio no puede ser mayor al efectivo disponible en caja.',
+                            style: TextStyle(
+                              color: Colors.red,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ] else ...[
+                        DropdownButtonFormField<String>(
+                          value: _cardType,
+                          decoration: const InputDecoration(
+                            labelText: 'Tipo de Tarjeta',
+                            border: OutlineInputBorder(),
+                            fillColor: Colors.white,
+                            filled: true,
+                          ),
+                          items: const [
+                            DropdownMenuItem(
+                              value: 'DEBIT',
+                              child: Text('Debito'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'CREDIT',
+                              child: Text('Credito'),
+                            ),
+                          ],
+                          onChanged: (value) {
+                            if (value != null)
+                              setState(() => _cardType = value);
+                          },
+                        ),
+                      ],
+                      const SizedBox(height: 24),
                       Container(
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             const Text(
-                              'Cambio:',
-                              style: TextStyle(fontSize: 16),
+                              'TOTAL:',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             Text(
-                              '\$${change.toStringAsFixed(2)}',
-                              style: TextStyle(
-                                fontSize: 18,
+                              '\$${cart.total.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                fontSize: 24,
                                 fontWeight: FontWeight.bold,
-                                color: change >= 0
-                                    ? Colors.green[700]
-                                    : Colors.red,
+                                color: Colors.black,
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ] else ...[
-                      DropdownButtonFormField<String>(
-                        value: _cardType,
-                        decoration: const InputDecoration(
-                          labelText: 'Tipo de Tarjeta',
-                          border: OutlineInputBorder(),
-                          fillColor: Colors.white,
-                          filled: true,
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: orangeColor,
+                          foregroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
-                        items: const [
-                          DropdownMenuItem(
-                            value: 'DEBIT',
-                            child: Text('Debito'),
-                          ),
-                          DropdownMenuItem(
-                            value: 'CREDIT',
-                            child: Text('Credito'),
-                          ),
-                        ],
-                        onChanged: (value) {
-                          if (value != null) setState(() => _cardType = value);
-                        },
+                        onPressed: _isLoading
+                            ? null
+                            : () => _processPayment(cart, shift, auth),
+                        child: _isLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.black,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text(
+                                'CONFIRMAR Y COBRAR',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                       ),
                     ],
-                    const SizedBox(height: 24),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'TOTAL:',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            '\$${cart.total.toStringAsFixed(2)}',
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: orangeColor,
-                        foregroundColor: Colors.black,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      onPressed: _isLoading
-                          ? null
-                          : () => _processPayment(cart, shift, auth),
-                      child: _isLoading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                color: Colors.black,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : const Text(
-                              'CONFIRMAR Y COBRAR',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
-            ),
+      ),
     );
   }
 }
