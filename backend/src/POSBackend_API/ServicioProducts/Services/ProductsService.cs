@@ -5,6 +5,7 @@ using ServicioProducts.Data;
 using ServicioProducts.Dtos;
 using ServicioProducts.Dtos.Create;
 using ServicioProducts.Dtos.Delete;
+using ServicioProducts.Dtos.Products.Stock;
 using ServicioProducts.Dtos.Read;
 using ServicioProducts.Dtos.Search;
 using ServicioProducts.Dtos.Update;
@@ -84,7 +85,8 @@ namespace ServicioProducts.Services
                     TypeName = p.Typename
                 },
                 Price = (double)p.Price,
-                ImageURL = p.ImageURL ?? "https://images.vexels.com/media/users/3/144131/isolated/preview/29576a7e0442960346703d3ecd6bac04-icono-de-producto.png"
+                ImageURL = p.ImageURL ?? "https://images.vexels.com/media/users/3/144131/isolated/preview/29576a7e0442960346703d3ecd6bac04-icono-de-producto.png",
+                Stock = p.Stock
             }).ToList();
         }
 
@@ -198,6 +200,51 @@ namespace ServicioProducts.Services
             {
                 Success = true,
                 Message = "Producto actualizado con éxito."
+            };
+        }
+
+        public async Task<UpdateStockResponseDto> UpdateStockAsync(UpdateStockRequestDto request)
+        {
+            var sql = "SELECT public.sp_c_update_stock(@p_productid, @p_stock, @p_is_adjustment)";
+
+            var parameters = new[]
+            {
+                new NpgsqlParameter("p_productid", NpgsqlTypes.NpgsqlDbType.Integer)
+                {
+                    Value = request.ProductId
+                },
+                new NpgsqlParameter("p_stock", NpgsqlTypes.NpgsqlDbType.Integer)
+                {
+                    Value = request.Stock
+                },
+                new NpgsqlParameter("p_is_adjustment", NpgsqlTypes.NpgsqlDbType.Boolean)
+                {
+                    // Si viene null, mandamos DBNull.Value para que Postgres use el valor por defecto
+                    Value = (object?)request.IsAdjustment ?? DBNull.Value
+                }
+            };
+
+            var resultList = await _context.Database
+                .SqlQueryRaw<bool>(sql, parameters)
+                .ToListAsync();
+
+            bool wasUpdated = resultList.FirstOrDefault();
+
+            if (!wasUpdated)
+            {
+                return new UpdateStockResponseDto
+                {
+                    Success = false,
+                    Message = "No se pudo actualizar el stock del producto o no fue encontrado.",
+                    ProductId = request.ProductId
+                };
+            }
+
+            return new UpdateStockResponseDto
+            {
+                Success = true,
+                Message = "Stock actualizado exitosamente.",
+                ProductId = request.ProductId
             };
         }
     }
