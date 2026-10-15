@@ -7,6 +7,7 @@ using ServicioUsers.Services;
 using ServicioUsers.Dtos.Auth.Delete;
 using ServicioUsers.Dtos.Auth.Update;
 using Microsoft.AspNetCore.Authorization;
+using ServicioUsersById.Dtos.Auth.Read;
 
 namespace ServicioUsers.Controllers
 {
@@ -124,6 +125,45 @@ namespace ServicioUsers.Controllers
                 });
             }
         }
+
+        [Authorize] //TODO: (Roles = "Admin")
+        [HttpGet("view")]
+        public async Task<IActionResult> GetUsers([FromQuery] GetUsersByIdRequestDto request)
+        {
+            try
+            {
+                var response = await _authService.GetUsersAsync(request);
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    Error = ex.Message,
+                    InnerError = ex.InnerException?.Message,
+                    Stack = ex.StackTrace
+                });
+            }
+        }
+
+        // [HttpPost("handle-new-user")]
+        // public async Task<IActionResult> HandleNewUser()
+        // {
+        //     try
+        //     {
+        //         var response = await _authService.HandleNewUserAsync();
+        //         return Ok(response);
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         return StatusCode(500, new
+        //         {
+        //             Error = ex.Message,
+        //             InnerError = ex.InnerException?.Message,
+        //             Stack = ex.StackTrace
+        //         });
+        //     }
+        // }
 
         
     }
