@@ -284,9 +284,7 @@ formEditar.addEventListener('submit', async (e) => {
         && !confirm(`"${original.name}" quedará sin stock y dejará de mostrarse en el catálogo. ¿Continuar?`)) return;
 
     // Sin isAdjustment el SP SUMA; con isAdjustment: false REEMPLAZA el valor
-    const payload = { 
-        productId: Number(original.id), 
-        stock: cantidad,
+    const payload = { productId: Number(original.id), stock: cantidad,
         isAdjustment: modo === 'sumar' // Enviará true si es sumar si o si, false si es establecer
     };  
 
