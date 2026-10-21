@@ -72,6 +72,8 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: var(--space-6);
+  padding: calc(var(--header-height)) 0 4px;
+
 }
 .encabezado h1 {
   font-size: 1.9rem;

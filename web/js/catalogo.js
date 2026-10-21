@@ -86,9 +86,10 @@ async function cargarProductos() {
         if (vieja) {
             usarLista(vieja);
             mostrarMensajeGeneral('Sin conexión estable: mostrando el último catálogo guardado.', 'error');
-        } else {
-            mostrarMensajeGeneral('No se pudieron cargar los productos: ' + err.message, 'error');
-        }
+        } 
+        // else {
+        //     mostrarMensajeGeneral('No se pudieron cargar los productos: ' + err.message, 'error');
+        // }
     }
 }
 
