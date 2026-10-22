@@ -4,6 +4,24 @@ const API_USERS_URL = 'https://tmvksz56enigo6ojk25lfvg6x40vigzo.lambda-url.us-ea
 const formulario = document.getElementById('login');
 const mensaje = document.getElementById('mensaje');
 const loginButton = document.getElementById('loginButton');
+// Toggle para mostrar/ocultar contraseña
+const togglePassword = document.getElementById('togglePassword');
+const passwordInput = document.getElementById('password');
+
+if (togglePassword && passwordInput) {
+    togglePassword.addEventListener('click', () => {
+        // Alternar el tipo de input
+        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordInput.setAttribute('type', type);
+        
+        // Efecto visual opcional en el icono cuando la contraseña es visible
+        if (type === 'text') {
+            togglePassword.style.color = 'var(--color-primary)';
+        } else {
+            togglePassword.style.color = 'var(--color-ink-soft)';
+        }
+    });
+}
 
 function setLoading(isLoading) {
     if (!loginButton) return;

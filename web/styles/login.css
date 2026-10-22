@@ -349,3 +349,45 @@ form#login {
     opacity: 1;
   }
 }
+
+/* Contenedor relativo para posicionar el botón encima del input */
+.password-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-container input {
+  width: 100%;
+  padding-right: 2.8rem; /* Espacio para que el texto no choque con el icono */
+}
+
+/* Estilos del botón del ojo personalizado */
+.toggle-password {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--color-ink-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.toggle-password:hover {
+  color: var(--color-primary);
+}
+
+.toggle-password:focus-visible {
+  outline: 2px solid var(--color-primary);
+  border-radius: 4px;
+}
+
+/* Ocultar el ojo predeterminado de Windows/Edge/IE */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
+}
