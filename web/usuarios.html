@@ -1,13 +1,14 @@
 <!DOCTYPE html>
 <html lang="es">
-    <link rel="icon" type="image/png" href="img/logoo.png">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="img/logoo.png">
     <title>MachaPoint - Usuarios</title>
-    <link rel="stylesheet" href="styles/productos.css">
+    <link rel="stylesheet" href="styles/global.css">
     <link rel="stylesheet" href="styles/role.css">
+    <link rel="stylesheet" href="styles/productos.css">
     <!-- Solo administradores -->
     <script src="js/role.js" data-require="admin"></script>
 </head>
@@ -16,27 +17,21 @@
 
     <header class="mp-header">
         <h1>MachaPoint</h1>
-        <nav id="mp-nav">
-            <ul>
-                <li><a href="catalogo.html">Catálogo</a></li>
-                <li><a href="ventas.html">Ventas</a></li>
-                <li><a href="carrito.html">Carrito</a></li>
-                <li><a href="productos.html" data-role="admin">Productos</a></li>
-                <li><a href="usuarios.html" class="activo" aria-current="page">Usuarios</a></li>
-                <li><a href="historial.html">Historial</a></li>
-            </ul>
+        <nav>
+            <ul data-mp-nav></ul>
         </nav>
+        <script src="js/icon-map.js" defer></script>
     </header>
 
     <main class="pp-container">
 
         <!-- AGREGAR USUARIO -->
         <section class="mp-card">
-            <h2 class="mp-card__title">Agregar usuario</h2>
+            <h2 class="mp-card__title">Crear Usuario</h2>
 
             <form id="form-crear-usuario" class="pp-form" novalidate>
                 <div class="mp-field">
-                    <label for="reg-username">Username (4 a 20 caracteres)</label>
+                    <label for="reg-username">Nombre de usuario (4 a 20 caracteres)</label>
                     <input type="text" id="reg-username" placeholder="Ej: Conan_01" maxlength="20" autocomplete="off" required>
                 </div>
 
@@ -46,12 +41,12 @@
                 </div>
 
                 <div class="mp-field">
-                    <label for="reg-firstname">Nombre (máx. 10 caracteres)</label>
+                    <label for="reg-firstname">Nombre(s) (máx. 10 caracteres)</label>
                     <input type="text" id="reg-firstname" placeholder="Ej: Big" maxlength="10" autocomplete="off" required>
                 </div>
 
                 <div class="mp-field">
-                    <label for="reg-lastname">Apellido (máx. 10 caracteres)</label>
+                    <label for="reg-lastname">Apellido(s) (máx. 10 caracteres)</label>
                     <input type="text" id="reg-lastname" placeholder="Ej: Pérez" maxlength="10" autocomplete="off" required>
                 </div>
 
@@ -59,8 +54,8 @@
                     <label for="reg-roleid">Rol</label>
                     <select id="reg-roleid" required>
                         <option value="" disabled selected>Selecciona un rol</option>
-                        <option value="1">1 - Administrador</option>
-                        <option value="2">2 - Trabajador</option>
+                        <option value="1">Rol 1  (Administrador)</option>
+                        <option value="2">Rol 2  (Trabajador)</option>
                     </select>
                 </div>
 

@@ -1,58 +1,12 @@
-/* =========================================================
-   MachaPoint POS — Catálogo
-   Carga: 00-tokens.css → 01-base.css → 02-components.css → catalogo.css
-   ========================================================= */
-@import url('global.css');
 
 /* =========================================================
-   BARRA SUPERIOR / NAVBAR
+   MachaPoint POS — Catálogo
+   Carga: global.css → catalogo.css
    ========================================================= */
+@import url('global.css');
 .barra-superior-container {
   width: 100%;
 }
-#barra-superior {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: var(--header-height);
-  padding: 0 30px;
-  background: linear-gradient(160deg, var(--color-primary), var(--color-primary-dark));
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
-  z-index: 1000;
-}
-#barra-superior h1 {
-  color: var(--color-white);
-  font-size: 1.8rem;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-}
-.nav-menu ul {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.nav-menu a {
-  display: block;
-  padding: 9px 16px;
-  color: var(--color-white);
-  text-decoration: none;
-  font-weight: 600;
-  border-radius: 10px;
-  transition: background var(--transition-fast), transform var(--transition-fast);
-}
-.nav-menu a:hover {
-  background: rgba(255, 255, 255, 0.18);
-  transform: translateY(-1px);
-}
-
-
 /* =========================================================
    CONTENIDO PRINCIPAL (INVENTARIO)
    ========================================================= */
@@ -60,7 +14,7 @@
   width: 90%;
   max-width: var(--container-max);
   margin: 0 auto;
-  padding: calc(var(--header-height) + 24px) 0 50px;  /* espacio para la barra fija */
+  padding: calc(var(--header-height) + 24px) 0 50px; /* espacio para la barra fija */
 }
 .contenido h1 {
   font-size: 1.5rem;
@@ -75,7 +29,6 @@
   font-size: 0.95rem;
   font-weight: 600;
 }
-
 /* =========================================================
    GRID Y TARJETA DE PRODUCTO
    ========================================================= */
@@ -134,62 +87,11 @@
   font-weight: 800;
   color: var(--color-primary-dark) !important;
 }
-
-/* =========================================================
-   BOTÓN CERRAR SESIÓN
-   ========================================================= */
-
-.mp-btn--danger,
-.btn-logout {
-  background: var(--color-error);
-  color: var(--color-white);
-
-  padding: 9px 30px;
-
-  border: none;
-  border-radius: var(--radius-md);
-
-  font-family: var(--font-body);
-  font-size: 0.9rem;
-  font-weight: 700;
-
-  cursor: pointer;
-
-  box-shadow: var(--shadow-sm);
-
-  transition:
-    background var(--transition-fast),
-    transform var(--transition-fast),
-    box-shadow var(--transition-fast);
-}
-
-.mp-btn--danger:not(:disabled),
-.btn-logout:not(:disabled) {
-  background: #a5311f;
-  color: var(--color-white);
-
-  transform: translateY(-1px);
-
-  box-shadow: var(--shadow-md);
-}
-
-.mp-btn--danger:active:not(:disabled),
-.btn-logout:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.mp-btn--danger:disabled,
-.btn-logout:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
- 
 /* --- BUSCADOR --- */
 .buscador-container {
   width: 100%;
   margin: 0 0 var(--space-4);
 }
-
 .buscador-container input {
   width: 100%;
   max-width: 600px;
@@ -204,7 +106,6 @@
   box-sizing: border-box;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
-
 .buscador-container input:focus {
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.25);
@@ -225,7 +126,7 @@
   font-family: var(--font-body);
   font-size: 0.9rem;
   font-weight: 700;
-  /* cursor: pointer; */
+  cursor: pointer;
   transition: background var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
 }
 .btn-agregar:hover,
@@ -238,48 +139,8 @@
 .boton-agregar:active {
   transform: translateY(0);
 }
-
-/* =========================================================
-   HAMBURGUESA / MENÚ MÓVIL
-   ========================================================= */
-.hamburger {
-  display: none;
-  flex-direction: column;
-  justify-content: center;
-  gap: 5px;
-  width: 40px;
-  height: 40px;
-  padding: 8px;
-  cursor: pointer;
-  border-radius: 8px;
-}
-.bar {
-  width: 25px;
-  height: 3px;
-  background: var(--color-white);
-  border-radius: 5px;
-  transition: all var(--transition-base);
-}
-
 @media (max-width: 768px) {
-  .hamburger { display: flex; }
-  .nav-menu {
-    position: absolute;
-    top: 65px;
-    left: -100%;
-    width: 100%;
-    background: var(--color-primary-dark);
-    transition: left var(--transition-base);
-    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
-  }
-  .nav-menu.active { left: 0; }
-  .nav-menu ul {
-    flex-direction: column;
-    padding: 15px 0;
-  }
   #form-crear-producto {
     grid-template-columns: 1fr;
   }
-  
 }
-

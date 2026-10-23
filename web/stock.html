@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="img/logoo.png">
+    <title>MachaPoint - Stock</title>
+    <link rel="stylesheet" href="styles/global.css">
+    <link rel="stylesheet" href="styles/role.css">
+    <link rel="stylesheet" href="styles/productos.css">
+    <!-- Solo administradores -->
+    <script src="js/role.js" data-require="admin"></script>
+</head>
+<body>
+    <header class="mp-header">
+        <h1>MachaPoint</h1>
+        <nav>
+            <ul data-mp-nav></ul>
+        </nav>
+        <script src="js/icon-map.js" defer></script>
+    </header>
+    <main class="pp-container">
+        <!-- LISTA / EDITAR STOCK -->
+        <section class="mp-card">
+            <h2 class="mp-card__title">Editar stock</h2>
+            <div class="pp-buscador">
+                <input type="search" id="buscador" placeholder="Buscar por nombre o SKU..."
+                       autocomplete="off" aria-label="Buscar productos">
+            </div>
+            <p id="mensaje" class="mp-inline-msg" role="status"></p>
+            <div class="pp-tabla-wrap">
+                <table class="pp-tabla">
+                    <thead>
+                        <tr>
+                            <th scope="col">Imagen</th>
+                            <th scope="col">Nombre</th>
+                            <th scope="col">SKU</th>
+                            <th scope="col">Tipo</th>
+                            <th scope="col" class="num">Stock</th>
+                            <th scope="col"><span class="sr-only">Acciones</span></th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-stock">
+                        <!-- Las filas se generan mediante JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <!-- DIÁLOGO DE EDICIÓN -->
+    <dialog id="dialogo-editar" class="pp-dialog" aria-labelledby="titulo-edicion">
+        <form id="form-editar" class="pp-form" novalidate>
+            <h2 id="titulo-edicion" class="mp-card__title pp-full">Editar stock</h2>
+            <div class="mp-field">
+                <label for="ed-actual">Stock actual</label>
+                <input type="text" id="ed-actual" readonly tabindex="-1">
+            </div>
+            <div class="mp-field">
+                <label for="ed-modo">Tipo de ajuste</label>
+                <select id="ed-modo" required>
+                    <option value="sumar">Sumar al stock actual</option>
+                    <option value="establecer">Establecer cantidad exacta</option>
+                </select>
+            </div>
+            <div class="mp-field pp-full">
+                <label for="ed-cantidad" id="lbl-cantidad">Cantidad a sumar (entero, mayor a 0)</label>
+                <input type="text" id="ed-cantidad" inputmode="numeric" maxlength="5" placeholder="0" autocomplete="off" required>
+            </div>
+            <p id="ed-resultado" class="mp-inline-msg pp-full" aria-live="polite"></p>
+            <p id="ed-aviso" class="mp-inline-msg pp-full"></p>
+            <p id="mensaje-edicion" class="mp-inline-msg pp-full" role="status"></p>
+            <div class="pp-actions">
+                <button type="button" class="mp-btn pp-btn-secondary" id="btn-cancelar-edicion">Cancelar</button>
+                <button type="submit" class="mp-btn mp-btn--primary" id="btn-guardar-edicion">Guardar cambios</button>
+            </div>
+        </form>
+    </dialog>
+    <script src="js/api.js"></script>
+    <script src="js/stock.js"></script>
+</body>
+</html>

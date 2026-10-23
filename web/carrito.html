@@ -1,51 +1,31 @@
 <!DOCTYPE html>
 <html lang="es">
-    <link rel="icon" type="image/png" href="img/logoo.png">
-
-<link rel="stylesheet" href="styles/role.css">
-<script src="js/role.js"></script>
-
 <head>
-
     <meta charset="UTF-8">
-    <meta 
-        name="viewport" 
-        content="width=device-width, initial-scale=1.0"
-    >
-    <link 
-        rel="stylesheet" 
-        href="styles/carrito.css"
-    >
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="img/logoo.png">
     <title>MachaPoint - Carrito</title>
+    <link rel="stylesheet" href="styles/global.css">
+    <link rel="stylesheet" href="styles/role.css">
+    <link rel="stylesheet" href="styles/carrito.css">
+    <script src="js/role.js"></script>
 </head>
-
 <body>
         <header class="mp-header">
             <h1>MachaPoint</h1>
-            <nav id="mp-nav">
-                <ul>
-                    <li><a href="catalogo.html">Catálogo</a></li>
-                    <li><a href="ventas.html">Ventas</a></li>
-                    <li><a href="carrito.html" class="activo" aria-current="page">Carrito</a></li>
-                    <li><a href="productos.html" data-role="admin">Productos</a></li>
-                    <li><a href="usuarios.html" data-role="admin">Usuarios</a></li>
-                    <li><a href="historial.html" data-role="admin">Historial</a></li>
-                </ul>
+            <nav>
+                <ul data-mp-nav></ul>
             </nav>
+            <script src="js/icon-map.js" defer></script>
         </header>
-
     <main class="carrito-container">
         <section class="carrito">
-
             <h2>Carrito</h2>
-
             <!-- NUEVO BOTÓN: Vaciar todo el carrito -->
             <button id="btn-vaciar-carrito" class="btn-vaciar" style="margin-bottom: 15px; cursor: pointer;">
                 Vaciar todo el carrito
             </button>
-
             <p id="mensaje-carrito">El carrito esta vacio</p>
-
             <div id="lista-carrito">
 
                 <!-- Los productos se generan mediante JavaScript -->
@@ -90,6 +70,7 @@
                         <option value="TARJETA_DEBITO"> Débito </option>
                     </select> 
                 </div> 
+
                 <!-- ================================= --> <!-- FINALIZAR --> <!-- ================================= --> 
                  <button id="btn-finalizar" class="btn-finalizar" > Finalizar cuenta </button> 
                 </aside> 

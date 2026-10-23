@@ -1,39 +1,28 @@
 <!DOCTYPE html>
 <html lang="es">
-    <link rel="icon" type="image/png" href="img/logoo.png">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="img/logoo.png">
     <title>MachaPoint - Historial de ventas</title>
-    <link rel="stylesheet" href="styles/productos.css">
+    <link rel="stylesheet" href="styles/global.css">
     <link rel="stylesheet" href="styles/role.css">
+    <link rel="stylesheet" href="styles/productos.css">
     <link rel="stylesheet" href="styles/historial.css">
     <!-- Requiere sesión (cualquier rol) -->
     <script src="js/role.js"></script>
 </head>
-
 <body>
-
     <header class="mp-header">
         <h1>MachaPoint</h1>
-        <nav id="mp-nav">
-            <ul>
-                <li><a href="catalogo.html">Catálogo</a></li>
-                <li><a href="ventas.html">Ventas</a></li>
-                <li><a href="carrito.html">Carrito</a></li>
-                <li><a href="productos.html" data-role="admin">Productos</a></li>
-                <li><a href="usuarios.html">Usuarios</a></li>
-                <li><a href="historial.html" class="activo" aria-current="page">Historial</a></li>
-            </ul>
+        <nav>
+            <ul data-mp-nav></ul>
         </nav>
+        <script src="js/icon-map.js" defer></script>
     </header>
-
     <main class="pp-container">
-
         <section class="mp-card">
             <h2 class="mp-card__title">Historial de ventas</h2>
-
             <!-- ========================= -->
             <!-- FILTROS -->
             <!-- ========================= -->
@@ -42,25 +31,20 @@
                 <button type="button" class="mp-btn pp-btn-secondary" data-rango="semana">1 Semana</button>
                 <button type="button" class="mp-btn pp-btn-secondary" data-rango="mes">1 Mes</button>
             </div>
-
             <form id="form-filtros" class="hv-filtros" novalidate>
                 <div class="mp-field">
                     <label for="fecha-inicio">Fecha inicio</label>
                     <input type="date" id="fecha-inicio" required>
                 </div>
-
                 <div class="mp-field">
                     <label for="fecha-fin">Fecha fin</label>
                     <input type="date" id="fecha-fin" required>
                 </div>
-
                 <div class="hv-buscar">
                     <button type="submit" class="mp-btn mp-btn--primary" id="btn-buscar">Consultar</button>
                 </div>
             </form>
-
             <p id="mensaje-fechas" class="mp-inline-msg" role="alert"></p>
-
             <!-- ========================= -->
             <!-- RESUMEN -->
             <!-- ========================= -->
@@ -68,12 +52,10 @@
                 <div class="hv-dato"><span>Ventas</span><strong id="resumen-cantidad">0</strong></div>
                 <div class="hv-dato"><span>Total vendido</span><strong id="resumen-total">$0.00</strong></div>
             </div>
-
             <!-- ========================= -->
             <!-- RESULTADOS -->
             <!-- ========================= -->
             <div id="estado" class="hv-estado" role="status" aria-live="polite"></div>
-
             <div class="pp-tabla-wrap">
                 <table class="pp-tabla" id="tabla-ventas" aria-busy="false">
                     <thead>
@@ -90,16 +72,12 @@
                     </tbody>
                 </table>
             </div>
-
             <div class="pp-actions">
                 <button type="button" class="mp-btn pp-btn-secondary oculto" id="btn-mas">Mostrar más</button>
             </div>
         </section>
-
     </main>
-
     <script src="js/api.js"></script>
     <script src="js/historial.js"></script>
 </body>
-
 </html>
