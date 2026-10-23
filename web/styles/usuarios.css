@@ -1,66 +1,9 @@
 /* =========================================================
    MachaPoint POS — Usuarios
-   Carga: 00-tokens.css → 01-base.css → 02-components.css → usuarios.css
+   Carga: global.css → usuarios.css
+   El header y menú de navegación usan .mp-header / .nav-principal en global.css.
    ========================================================= */
 @import url('global.css');
-
-/* =========================================================
-   BARRA SUPERIOR (NAVBAR)
-   Antes: altura 115px y color #ffbd59 hardcoded.
-   Ahora usa var(--color-primary) para quedar alineado con
-   carrito/catálogo/ventas.
-   ========================================================= */
-.navbar {
-  height: 100px;
-  background: linear-gradient(160deg, var(--color-primary), var(--color-primary-dark));
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 50px;
-}
-.navbar h1 {
-  color: var(--color-white);
-  font-size: 1.8rem;
-  font-weight: 800;
-}
-.navbar div {
-  display: flex;
-  align-items: center;
-  gap: var(--space-5);
-}
-#health-status {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--color-ink);
-  background: rgba(255, 255, 255, 0.7);
-  padding: 8px 15px;
-  border-radius: var(--radius-pill);
-}
-.navbar a {
-  color: var(--color-ink);
-  text-decoration: none;
-  font-size: 1rem;
-  font-weight: 700;
-  background: var(--color-white);
-  padding: 10px 20px;
-  border-radius: var(--radius-md);
-  transition: background var(--transition-fast), transform var(--transition-fast);
-}
-.navbar a:hover {
-  background: var(--color-cream);
-  transform: scale(1.03);
-}
-
-/* =========================================================
-   CONTENEDOR PRINCIPAL
-   ========================================================= */
-.container {
-  max-width: 800px;
-  margin: 90px auto;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-8);
-}
 
 /* =========================================================
    TARJETAS (CARDS) Y FORMULARIOS
@@ -198,12 +141,6 @@
    RESPONSIVO
    ========================================================= */
 @media (max-width: 700px) {
-  .navbar {
-    height: auto;
-    padding: 15px 20px;
-    flex-direction: column;
-    gap: var(--space-3);
-  }
   .container {
     width: 92%;
   }

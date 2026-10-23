@@ -1,61 +1,9 @@
 /* =========================================================
    MachaPoint POS — Carrito de Compras
-   Carga: 00-tokens.css → 01-base.css → 02-components.css → carrito.css
+   Carga: global.css → carrito.css
+   El header y menú de navegación usan .mp-header / .nav-principal en global.css.
    ========================================================= */
 @import url('global.css');
-
-/* =========================================================
-   BARRA SUPERIOR
-   (usa el patrón compartido .mp-header; se mantiene el
-   selector header/#barra-superior por compatibilidad con tu HTML actual)
-   ========================================================= */
-header,
-#barra-superior {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: var(--header-height);
-  padding: 0 30px;
-  background: linear-gradient(160deg, var(--color-primary), var(--color-primary-dark));
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
-  z-index: 1000;
-}
-header h1,
-#barra-superior h1 {
-  color: var(--color-white);
-  font-size: 1.8rem;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-}
-nav,
-.nav-menu ul {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-header a,
-.nav-menu a {
-  display: inline-block;
-  padding: 9px 16px;
-  color: var(--color-white);
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 0.95rem;
-  border-radius: 10px;
-  transition: background var(--transition-fast), transform var(--transition-fast);
-}
-header a:hover,
-.nav-menu a:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: translateY(-1px);
-}
 
 /* =========================================================
    CONTENEDOR PRINCIPAL DEL CARRITO
@@ -102,9 +50,6 @@ header a:hover,
 
 /* =========================================================
    FILA DE PRODUCTO EN CARRITO
-   NOTA: .producto-carrito y .articulo-carrito parecen ser
-   dos nombres para el mismo componente — confirmar cuál usa
-   el HTML/JS y eliminar el que sobre.
    ========================================================= */
 .producto-carrito,
 .articulo-carrito {
@@ -160,9 +105,7 @@ header a:hover,
   font-size: 0.95rem;
 }
 
-/* Botones stepper (+/-). IMPORTANTE: aquí .btn-agregar/.btn-eliminar
-   son botones cuadrados de icono — NO confundir con el .btn-agregar
-   de catalogo.css, que es un botón ancho. Ver README. */
+/* Botones stepper (+/-) */
 .producto-cantidad button,
 .btn-agregar,
 .btn-eliminar,
@@ -219,7 +162,7 @@ header a:hover,
   padding: var(--space-4);
   margin-bottom: var(--space-6);
   background: var(--color-cream);
-  border: 1.5px solid var(--color-line); /* antes: "1.5 solid" (inválido, sin unidad) */
+  border: 1.5px solid var(--color-line);
   border-radius: var(--radius-md);
   font-family: var(--font-display);
   font-size: 1.15rem;
@@ -350,52 +293,4 @@ input:focus {
   .cantidad-articulo {
     width: fit-content;
   }
-}
-/* =========================================================
-   BOTÓN CERRAR SESIÓN
-   ========================================================= */
-
-.mp-btn--danger,
-.btn-logout {
-  background: var(--color-error);
-  color: var(--color-white);
-
-  padding: 9px 30px;
-
-  border: none;
-  border-radius: var(--radius-md);
-
-  font-family: var(--font-body);
-  font-size: 0.9rem;
-  font-weight: 700;
-
-  cursor: pointer;
-
-  box-shadow: var(--shadow-sm);
-
-  transition:
-    background var(--transition-fast),
-    transform var(--transition-fast),
-    box-shadow var(--transition-fast);
-}
-
-.mp-btn--danger:not(:disabled),
-.btn-logout:not(:disabled) {
-  background: #a5311f;
-  color: var(--color-white);
-
-  transform: translateY(-1px);
-
-  box-shadow: var(--shadow-md);
-}
-
-.mp-btn--danger:active:not(:disabled),
-.btn-logout:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.mp-btn--danger:disabled,
-.btn-logout:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
 }

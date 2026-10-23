@@ -1,13 +1,14 @@
 <!DOCTYPE html>
 <html lang="es">
-    <link rel="icon" type="image/png" href="img/logoo.png">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="img/logoo.png">
     <title>MachaPoint - Usuarios</title>
-    <link rel="stylesheet" href="styles/productos.css">
+    <link rel="stylesheet" href="styles/global.css">
     <link rel="stylesheet" href="styles/role.css">
+    <link rel="stylesheet" href="styles/productos.css">
     <!-- Solo administradores -->
     <script src="js/role.js" data-require="admin"></script>
 </head>
@@ -16,17 +17,10 @@
 
     <header class="mp-header">
         <h1>MachaPoint</h1>
-        <nav id="mp-nav">
-            <ul>
-                <li><a href="catalogo.html">Catálogo</a></li>
-                <li><a href="ventas.html">Ventas</a></li>
-                <li><a href="carrito.html">Carrito</a></li>
-                <li><a href="productos.html" data-role="admin">Productos</a></li>
-                <li><a href="usuarios.html" class="activo" aria-current="page">Usuarios</a></li>
-                <li><a href="historial.html">Historial</a></li>
-                <li><a href="stock.html" data-role="admin">Stock</a></li>
-            </ul>
+        <nav>
+            <ul data-mp-nav></ul>
         </nav>
+        <script src="js/icon-map.js" defer></script>
     </header>
 
     <main class="pp-container">

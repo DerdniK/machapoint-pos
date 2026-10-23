@@ -1,59 +1,9 @@
 /* =========================================================
    MachaPoint POS — Ventas
-   Carga: 00-tokens.css → 01-base.css → 02-components.css → ventas.css
-   Antes este archivo usaba Arial y una paleta gris/azul
-   independiente. Se migró a los tokens de marca para que
-   coincida visualmente con carrito/catálogo/usuarios.
-   Si el gris "neutral" era intencional (p.ej. para diferenciar
-   el módulo de ventas), dímelo y lo revertimos solo a él.
+   Carga: global.css → ventas.css
+   El header y menú de navegación usan .mp-header / .nav-principal en global.css.
    ========================================================= */
 @import url('global.css');
-
-/* =========================================================
-   NAVBAR
-   ========================================================= */
-.navbar {
-  height: var(--header-height);
-  background: linear-gradient(160deg, var(--color-primary), var(--color-primary-dark));
-  border-bottom: none;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 40px;
-}
-.navbar-logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 1.2rem;
-  font-weight: 800;
-  color: var(--color-white);
-}
-.navbar-logo img {
-  width: 42px;
-  height: 42px;
-  object-fit: contain;
-}
-.navbar nav {
-  display: flex;
-  gap: var(--space-5);
-}
-.navbar nav a {
-  color: var(--color-white);
-  text-decoration: none;
-  font-size: 0.95rem;
-  font-weight: 600;
-  padding: 9px 16px;
-  border-radius: 10px;
-  transition: background var(--transition-fast);
-}
-.navbar nav a:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
-.navbar nav a.activo {
-  background: rgba(255, 255, 255, 0.28);
-  font-weight: 700;
-}
 
 /* =========================================================
    CONTENEDOR
@@ -73,7 +23,6 @@
   justify-content: space-between;
   margin-bottom: var(--space-6);
   padding: calc(var(--header-height)) 0 4px;
-
 }
 .encabezado h1 {
   font-size: 1.9rem;
@@ -407,8 +356,6 @@ textarea {
    RESPONSIVO
    ========================================================= */
 @media (max-width: 800px) {
-  .navbar { padding: 0 20px; }
-  .navbar nav { gap: 12px; }
   .contenedor { width: 94%; }
   .formulario { grid-template-columns: 1fr; }
   .resumen-grid { grid-template-columns: repeat(2, 1fr); }
@@ -421,12 +368,6 @@ textarea {
     align-items: flex-start;
     gap: var(--space-4);
   }
-  .navbar {
-    height: auto;
-    padding: 15px;
-    flex-direction: column;
-    gap: var(--space-4);
-  }
   .resumen-grid,
   .corte-grid {
     grid-template-columns: 1fr;
@@ -435,46 +376,46 @@ textarea {
   .btn { width: 100%; }
 }
 
-/*Tabla de Ventas del turno*/
-
+/* Tabla de Ventas del turno */
 .ventas-container {
-    margin-top: 20px;
-    background: #ffffff;
-    padding: 15px;
-    border-radius: 8px;
-    border: 1px solid #e0e0e0;
+  margin-top: 20px;
+  background: #ffffff;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
 }
 
 .resumen-ventas-cards {
-    display: flex;
-    gap: 15px;
-    margin-bottom: 15px;
+  display: flex;
+  gap: 15px;
+  margin-bottom: 15px;
 }
 
 .card-metrica {
-    background: #f8f9fa;
-    padding: 10px 15px;
-    border-radius: 6px;
+  background: #f8f9fa;
+  padding: 10px 15px;
+  border-radius: 6px;
 }
 
 .tabla-ventas {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.9em;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9em;
 }
 
-.tabla-ventas th, .tabla-ventas td {
-    padding: 10px;
-    text-align: left;
-    border-bottom: 1px solid #ddd;
+.tabla-ventas th,
+.tabla-ventas td {
+  padding: 10px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
 }
 
 .tabla-ventas th {
-    background-color: #f4f4f4;
+  background-color: #f4f4f4;
 }
 
 .texto-vacio {
-    text-align: center;
-    color: #777;
-    font-style: italic;
+  text-align: center;
+  color: #777;
+  font-style: italic;
 }

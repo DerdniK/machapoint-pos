@@ -1,67 +1,6 @@
 @import url('global.css');
 
 /* =========================================================
-   HEADER (extras sobre .mp-header)
-   ========================================================= */
-
-/* Controles de sesión que inyecta role.js dentro del header */
-.mp-header .user-badge {
-  color: var(--color-white);
-  font-size: 0.9rem;
-  font-weight: 600;
-  opacity: 1;
-}
-
-/* =========================================================
-   BOTÓN CERRAR SESIÓN
-   ========================================================= */
-
-.mp-btn--danger,
-.btn-logout {
-  background: var(--color-error);
-  color: var(--color-white);
-
-  padding: 9px 30px;
-
-  border: none;
-  border-radius: var(--radius-md);
-
-  font-family: var(--font-body);
-  font-size: 0.9rem;
-  font-weight: 700;
-
-  cursor: pointer;
-
-  box-shadow: var(--shadow-sm);
-
-  transition:
-    background var(--transition-fast),
-    transform var(--transition-fast),
-    box-shadow var(--transition-fast);
-}
-
-.mp-btn--danger:not(:disabled),
-.btn-logout:not(:disabled) {
-  background: #a5311f;
-  color: var(--color-white);
-
-  transform: translateY(-1px);
-
-  box-shadow: var(--shadow-md);
-}
-
-.mp-btn--danger:active:not(:disabled),
-.btn-logout:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.mp-btn--danger:disabled,
-.btn-logout:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-/* =========================================================
    LAYOUT
    ========================================================= */
 .pp-container {
@@ -231,12 +170,8 @@
   max-height: calc(100vh - 32px);
   overflow-y: auto;
   padding: var(--space-8);
-  background: var(--color-white);
+  background: rgb(249, 249, 248);
   color: var(--color-ink);
   border: 2px solid var(--color-line);
   border-radius: var(--radius-lg);
-  /* box-shadow: var(--shadow-md); */
-}
-.pp-dialog {
-  background: rgb(249, 249, 248);
 }
