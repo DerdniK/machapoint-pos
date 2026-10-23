@@ -3,7 +3,6 @@
    Complementa global.css sin sobrescribir el menú de navegación.
    ========================================================= */
 @import url('global.css');
-
 .auth-toast {
   position: fixed;
   z-index: 10000;

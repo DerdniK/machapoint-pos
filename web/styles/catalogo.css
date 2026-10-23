@@ -1,13 +1,12 @@
+
 /* =========================================================
    MachaPoint POS — Catálogo
    Carga: global.css → catalogo.css
    ========================================================= */
 @import url('global.css');
-
 .barra-superior-container {
   width: 100%;
 }
-
 /* =========================================================
    CONTENIDO PRINCIPAL (INVENTARIO)
    ========================================================= */
@@ -30,7 +29,6 @@
   font-size: 0.95rem;
   font-weight: 600;
 }
-
 /* =========================================================
    GRID Y TARJETA DE PRODUCTO
    ========================================================= */
@@ -89,13 +87,11 @@
   font-weight: 800;
   color: var(--color-primary-dark) !important;
 }
-
 /* --- BUSCADOR --- */
 .buscador-container {
   width: 100%;
   margin: 0 0 var(--space-4);
 }
-
 .buscador-container input {
   width: 100%;
   max-width: 600px;
@@ -110,7 +106,6 @@
   box-sizing: border-box;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
-
 .buscador-container input:focus {
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.25);
@@ -144,7 +139,6 @@
 .boton-agregar:active {
   transform: translateY(0);
 }
-
 @media (max-width: 768px) {
   #form-crear-producto {
     grid-template-columns: 1fr;

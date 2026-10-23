@@ -4,7 +4,6 @@
    El header y menú de navegación usan .mp-header / .nav-principal en global.css.
    ========================================================= */
 @import url('global.css');
-
 /* =========================================================
    CONTENEDOR PRINCIPAL DEL CARRITO
    ========================================================= */
@@ -17,7 +16,6 @@
   padding: 0 20px;
   align-items: start;
 }
-
 /* =========================================================
    TARJETAS PRINCIPALES (SECCIONES)
    ========================================================= */
@@ -38,7 +36,6 @@
   padding-bottom: 6px;
   display: inline-block;
 }
-
 /* Mensaje carrito vacío */
 #mensaje-carrito {
   color: var(--color-ink-soft);
@@ -47,7 +44,6 @@
   text-align: center;
   padding: var(--space-5) 0;
 }
-
 /* =========================================================
    FILA DE PRODUCTO EN CARRITO
    ========================================================= */
@@ -65,7 +61,6 @@
 .articulo-carrito:last-child {
   border-bottom: none;
 }
-
 .producto-info,
 .info-articulo {
   display: flex;
@@ -85,7 +80,6 @@
   font-size: 0.85rem;
   line-height: 1.4;
 }
-
 /* Controles de cantidad */
 .producto-cantidad,
 .cantidad-articulo {
@@ -140,7 +134,6 @@
 .boton-disminuir:active {
   transform: scale(0.95);
 }
-
 /* Precio unitario / Subtotal por producto */
 .producto-precio,
 .precio-articulo {
@@ -151,7 +144,6 @@
   min-width: 95px;
   text-align: right;
 }
-
 /* =========================================================
    RESUMEN & TOTALES
    ========================================================= */
@@ -173,7 +165,6 @@
   font-weight: 800;
   color: var(--color-primary-dark);
 }
-
 /* =========================================================
    PAGO
    ========================================================= */
@@ -212,7 +203,6 @@ input:focus {
   background: var(--color-white);
   box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.2);
 }
-
 .cambio-container {
   display: flex;
   justify-content: space-between;
@@ -232,7 +222,6 @@ input:focus {
   font-weight: 800;
   color: var(--color-mint-dark);
 }
-
 /* =========================================================
    BOTÓN FINALIZAR COMPRA
    ========================================================= */
@@ -265,7 +254,6 @@ input:focus {
   cursor: not-allowed;
   box-shadow: none;
 }
-
 /* =========================================================
    RESPONSIVO
    ========================================================= */

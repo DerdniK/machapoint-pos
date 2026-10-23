@@ -11,7 +11,6 @@
   display: grid;
   gap: var(--space-6);
 }
-
 .sr-only {
   position: absolute;
   width: 1px;
@@ -20,7 +19,6 @@
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
-
 /* =========================================================
    FORMULARIOS (alta y edición)
    ========================================================= */
@@ -30,18 +28,15 @@
   gap: var(--space-4);
   align-items: end;
 }
-
 .pp-full {
   grid-column: 1 / -1;
 }
-
 .pp-actions {
   grid-column: 1 / -1;
   display: flex;
   justify-content: flex-end;
   gap: var(--space-3);
 }
-
 /* Botón secundario (global.css no tiene variante neutra) */
 .pp-btn-secondary {
   background: var(--color-surface);
@@ -51,12 +46,10 @@
 .pp-btn-secondary:hover:not(:disabled) {
   background: var(--color-line-light);
 }
-
 .pp-btn-sm {
   padding: 8px 14px;
   font-size: 0.85rem;
 }
-
 /* Mensajes en línea: se ocultan cuando no tienen texto */
 .mp-inline-msg:empty {
   display: none;
@@ -101,13 +94,11 @@
   border: 1px solid var(--color-line-light);
   border-radius: var(--radius-md);
 }
-
 .pp-tabla {
   width: 100%;
   min-width: 640px;
   border-collapse: collapse;
 }
-
 .pp-tabla th {
   padding: var(--space-3) var(--space-4);
   text-align: left;
@@ -119,7 +110,6 @@
   background: var(--color-surface);
   border-bottom: 2px solid var(--color-line);
 }
-
 .pp-tabla td {
   padding: var(--space-3) var(--space-4);
   font-size: 0.95rem;
@@ -127,19 +117,16 @@
   border-bottom: 1px solid var(--color-line-light);
   vertical-align: middle;
 }
-
 .pp-tabla tbody tr:last-child td {
   border-bottom: none;
 }
 .pp-tabla tbody tr:hover {
   background: var(--color-cream);
 }
-
 /* SKU en texto secundario */
 .pp-tabla td:nth-child(3) {
   color: var(--color-ink-soft);
 }
-
 /* Precio, igual que en las tarjetas del catálogo */
 .pp-tabla th.num,
 .pp-tabla td.num {
@@ -151,7 +138,6 @@
   font-weight: 800;
   color: var(--color-primary-dark);
 }
-
 .pp-miniatura {
   display: block;
   width: 56px;
