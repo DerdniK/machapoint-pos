@@ -3,6 +3,8 @@ using Npgsql;
 using NpgsqlTypes;
 using ServicioCut.Data;
 using ServicioCut.Dtos;
+using ServicioCut.Dtos.DateRange;
+using ServicioCut.models.Views;
 using ServicioCut.Models.Views;
 
 namespace ServicioCut.Services;
@@ -36,4 +38,45 @@ public class CutService : ICutService
             Cuts = cuts
         };
     }
+
+    public async Task<IEnumerable<ZCutItemResponseDto>> GetZCutsByDateRangeAsync(GetZCutsByDateRangeRequestDto request)
+        {
+            var sql = "SELECT * FROM public.sp_zcuts_by_date_range(@start_date, @end_date)";
+
+            var parameters = new[]
+            {
+                new NpgsqlParameter("start_date", NpgsqlTypes.NpgsqlDbType.Date)
+                {
+                    Value = request.StartDate
+                },
+                new NpgsqlParameter("end_date", NpgsqlTypes.NpgsqlDbType.Date)
+                {
+                    Value = request.EndDate
+                }
+            };
+
+            var rawCuts = await _context.Database
+                .SqlQueryRaw<ViewZCutByDateRangeModel>(sql, parameters)
+                .ToListAsync();
+
+            return rawCuts.Select(c => new ZCutItemResponseDto
+            {
+                ZCutId = c.ZCutId,
+                ShiftId = c.ShiftId,
+                CashierId = c.CashierId,
+                OpenedAt = c.OpenedAt,
+                ClosedAt = c.ClosedAt,
+                FirstSaleId = c.FirstSaleId,
+                LastSaleId = c.LastSaleId,
+                OpeningCash = c.OpeningCash,
+                TotalSales = c.TotalSales,
+                TotalSalesCount = c.TotalSalesCount,
+                ExpectedCash = c.ExpectedCash,
+                ExpectedCard = c.ExpectedCard,
+                ExpectedTransfer = c.ExpectedTransfer,
+                ActualCash = c.ActualCash,
+                CashDifference = c.CashDifference,
+                Notes = c.Notes
+            }).ToList();
+        }
 }
