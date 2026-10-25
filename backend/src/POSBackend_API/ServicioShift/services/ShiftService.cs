@@ -5,9 +5,11 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using ServicioShift.Data;
+using ServicioShift.dtos.GetShift;
 using ServicioShift.Dtos;
 using ServicioShift.Dtos.Close;
 using ServicioShift.Dtos.Open;
+using ServicioShift.Models;
 
 namespace ServicioShift.Services
 {
@@ -60,6 +62,35 @@ namespace ServicioShift.Services
                 ActualCash = request.ActualCash,
                 Notes = request.Notes
 
+            };
+        }
+
+        public async Task<ShiftItemResponseDto?> GetActiveShiftByCashierIdAsync(GetShiftRequestDto request)
+        {
+            var sql = "SELECT * FROM public.sp_get_shift(@p_cashierid)";
+
+            var parameter = new NpgsqlParameter("p_cashierid", NpgsqlTypes.NpgsqlDbType.Uuid)
+            {
+                Value = request.CashierId
+            };
+
+            var rawShifts = await _context.Database
+                .SqlQueryRaw<ViewShiftModel>(sql, parameter)
+                .ToListAsync();
+
+            var shift = rawShifts.FirstOrDefault();
+
+            if (shift is null)
+            {
+                return null;
+            }
+
+            return new ShiftItemResponseDto
+            {
+                ShiftId = shift.ShiftId,
+                OpeningAmount = shift.OpeningAmount,
+                OpenedAt = shift.OpenedAt,
+                Status = shift.Status
             };
         }
     }
