@@ -11,7 +11,7 @@ const API_USERS_URL = 'https://tmvksz56enigo6ojk25lfvg6x40vigzo.lambda-url.us-ea
 const URL_LISTAR = `${API_USERS_URL}/auth/view`;
 
 const PAGE_SIZE = 100;
-const COLUMNAS_CORTES = 11;
+const COLUMNAS_CORTES = 9;
 
 const $ = id => document.getElementById(id);
 const form = $('form-filtros');
@@ -245,6 +245,8 @@ function crearFilaCorte(c) {
     const grid = document.createElement('div');
     grid.className = 'hv-detalle';
     grid.append(
+        dato('Total ventas', dinero(c.totalSales)),
+        dato('Efectivo esperado', dinero(c.expectedCash)),
         dato('Fondo inicial', dinero(c.openingCash)),
         dato('Tarjeta esperada', dinero(c.expectedCard)),
         dato('Transferencia esperada', dinero(c.expectedTransfer)),
@@ -271,8 +273,7 @@ function crearFilaCorte(c) {
 
     tr.append(tdCorte, td(`#${c.shiftId}`), tdCajero,
               td(formatoFechaHora(c.openedAt)), td(formatoFechaHora(c.closedAt)),
-              td(String(c.totalSalesCount), 'num'), td(dinero(c.totalSales), 'num'),
-              td(dinero(c.expectedCash), 'num'), td(dinero(c.actualCash), 'num'),
+              td(String(c.totalSalesCount), 'num'), td(dinero(c.actualCash), 'num'),
               celdaDiferencia(c), tdAcc);
     return [tr, detalle];
 }
