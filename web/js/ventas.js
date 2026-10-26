@@ -191,6 +191,89 @@ document.addEventListener("visibilitychange", () => {
     if (!document.hidden && pollShiftId) { clearTimeout(pollTimer); cicloPolling(); }
 });
 
+// ---------- Turno activo en el servidor (sp_get_shift) ----------
+// GET /api/shift/active?cashierId=<uuid>  ->  shiftid, opening_amount, opened_at, status (si hay turno abierto)
+function esEstadoAbierto(status) {
+    if (status == null || status === "") return true;          // el endpoint ya es "active"
+    const t = String(status).toLowerCase();
+    if (/close|cerrad/.test(t)) return false;
+    return true;
+}
+
+function extraerTurno(data) {
+    const candidatos = [data, data && data.data, data && data.shift, data && data.activeShift, data && data.turno];
+    for (let c of candidatos) {
+        if (Array.isArray(c)) c = c[0];
+        if (!c || typeof c !== "object") continue;
+        const id = c.shiftId ?? c.shiftid ?? c.id;
+        if (id == null || id === "") continue;
+        const turno = {
+            shiftId: id,
+            openingAmount: Number(c.openingAmount ?? c.opening_amount ?? c.openingamount ?? 0) || 0,
+            openedAt: c.openedAt ?? c.opened_at ?? c.openedat ?? null,
+            status: c.status ?? null
+        };
+        return esEstadoAbierto(turno.status) ? turno : null;
+    }
+    return null; // sin turno abierto
+}
+
+// Devuelve el turno abierto del cajero o null. LANZA error si no se pudo consultar (estado desconocido).
+async function consultarTurnoActivo(cashierId) {
+    const res = await Api.request(
+        `${API_SHIFT_URL}/api/shift/active?cashierId=${encodeURIComponent(cashierId)}`,
+        { method: "GET", retries: 2, timeout: 10000 });
+    if (res.status === 404) return null; // sin turno abierto
+    if (!res.ok) throw new Error(await Api.errorDe(res));
+    const data = await res.json().catch(() => null);
+    return extraerTurno(data);
+}
+
+// El servidor es la fuente de verdad: se alinea lo guardado en el navegador con su turno abierto
+function sincronizarTurnoLocal(turno, usuario) {
+    localStorage.setItem("shiftId", turno.shiftId);
+    localStorage.setItem("cashierId", usuario.id);
+    localStorage.setItem("cashierUsername", usuario.username);
+    localStorage.setItem("openingAmount", turno.openingAmount);
+}
+
+let verificandoTurno = false;
+
+// Al cargar la pantalla: confirma con el servidor si el cajero tiene un turno abierto
+async function verificarTurnoConServidor() {
+    const usuario = obtenerUsuarioActual();
+    if (!usuario || !usuario.id) return;
+
+    verificandoTurno = true;
+    btnAbrir.disabled = true;
+    try {
+        const turno = await consultarTurnoActivo(usuario.id);
+        const idLocal = localStorage.getItem("shiftId");
+
+        if (turno) {
+            if (String(turno.shiftId) !== String(idLocal)) {
+                sincronizarTurnoLocal(turno, usuario);
+                mostrarTurnoAbierto(turno.shiftId, usuario.username, turno.openingAmount, turno.openedAt);
+                mostrarMensaje(`Se encontró tu turno abierto #${turno.shiftId} y se restauró.`, "info");
+            } else {
+                setText("resumen-apertura-hora", turno.openedAt ? formatoFecha(turno.openedAt) : "-");
+            }
+        } else if (idLocal) {
+            // El navegador cree que hay turno, pero en el servidor ya no está abierto (cerrado en otro equipo, etc.)
+            volverAApertura();
+            mostrarMensaje("El turno guardado ya no está abierto en el servidor. Puedes abrir uno nuevo.", "info");
+        }
+    } catch (error) {
+        mostrarMensaje(localStorage.getItem("shiftId")
+            ? "No se pudo verificar el turno con el servidor; se muestra el último estado guardado."
+            : "No se pudo verificar si tienes un turno abierto: " + error.message,
+            localStorage.getItem("shiftId") ? "info" : "error");
+    } finally {
+        verificandoTurno = false;
+        btnAbrir.disabled = false;
+    }
+}
+
 // ---------- Abrir turno ----------
 async function abrirTurno() {
     ocultarMensaje();
@@ -203,16 +286,39 @@ async function abrirTurno() {
     if (errorMonto) { mostrarMensaje(errorMonto, "error"); openingAmount.focus(); return; }
     const amount = Number(openingAmount.value);
 
+    if (verificandoTurno) return;
     btnAbrir.disabled = true;
-    btnAbrir.textContent = "Abriendo turno...";
+    btnAbrir.textContent = "Verificando turno...";
     try {
+        // Confirmar en el servidor que este cajero NO tenga ya un turno abierto
+        const activo = await consultarTurnoActivo(usuario.id);
+        if (activo) {
+            sincronizarTurnoLocal(activo, usuario);
+            mostrarTurnoAbierto(activo.shiftId, usuario.username, activo.openingAmount, activo.openedAt);
+            mostrarMensaje(`Ya tienes un turno abierto (#${activo.shiftId}). Se restauró en lugar de abrir uno nuevo.`, "info");
+            return;
+        }
+
+        btnAbrir.textContent = "Abriendo turno...";
         const res = await Api.request(`${API_SHIFT_URL}/api/shift/open`, {
             method: "POST",
             body: JSON.stringify({ cashierid: usuario.id, openingamount: amount }),
             timeout: 20000
         });
         const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(await Api.errorDe(res));
+        if (!res.ok) {
+            // Conflicto: otro equipo pudo abrir el turno en este instante; se recupera el que existe
+            if (res.status === 409) {
+                const existente = await consultarTurnoActivo(usuario.id).catch(() => null);
+                if (existente) {
+                    sincronizarTurnoLocal(existente, usuario);
+                    mostrarTurnoAbierto(existente.shiftId, usuario.username, existente.openingAmount, existente.openedAt);
+                    mostrarMensaje(`Ya existía un turno abierto (#${existente.shiftId}). Se restauró.`, "info");
+                    return;
+                }
+            }
+            throw new Error(await Api.errorDe(res));
+        }
 
         const shiftId = data.shiftId || data.shiftid || data.id;
         if (!shiftId) {
@@ -234,7 +340,7 @@ async function abrirTurno() {
     }
 }
 
-function mostrarTurnoAbierto(shiftId, cashierUsername, amount) {
+function mostrarTurnoAbierto(shiftId, cashierUsername, amount, openedAt) {
     seccionApertura.classList.add("oculto");
     seccionTurno.classList.remove("oculto");
     seccionCorte.classList.add("oculto");
@@ -246,6 +352,7 @@ function mostrarTurnoAbierto(shiftId, cashierUsername, amount) {
     setText("resumen-shift", `#${shiftId}`);
     setText("resumen-apertura", formatoDinero(amount));
     setText("turno-info", `Turno #${shiftId}`);
+    setText("resumen-apertura-hora", openedAt ? formatoFecha(openedAt) : "-");
 
     actualCash.value = "";
     closeNotes.value = "";
@@ -396,4 +503,5 @@ function restaurarTurno() {
 if (btnAbrir) btnAbrir.addEventListener("click", abrirTurno);
 if (btnCerrar) btnCerrar.addEventListener("click", cerrarTurno);
 
-restaurarTurno();
+restaurarTurno();            // pinta de inmediato lo guardado en el navegador
+verificarTurnoConServidor(); // y lo confirma con el servidor (sp_get_shift)
