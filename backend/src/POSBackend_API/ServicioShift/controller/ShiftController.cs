@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ServicioShift.dtos.GetShift;
 using ServicioShift.Dtos.Close;
 using ServicioShift.Dtos.Open;
 using ServicioShift.Services;
@@ -72,6 +73,32 @@ namespace ServicioShift.Controller
             catch (Exception ex)
             {
                 
+                return StatusCode(500, new
+                {
+                    Error = ex.Message,
+                    InnerError = ex.InnerException?.Message,
+                    Stack = ex.StackTrace
+                });
+            }
+        }
+
+        [Authorize]
+        [HttpGet("active")]
+        public async Task<IActionResult> GetActiveShift([FromQuery] GetShiftRequestDto request)
+        {
+            try
+            {
+                var response = await _shiftService.GetActiveShiftByCashierIdAsync(request);
+
+                if (response is null)
+                {
+                    return NotFound(new { message = "No se encontró ningún turno abierto para el cajero especificado." });
+                }
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
                 return StatusCode(500, new
                 {
                     Error = ex.Message,
