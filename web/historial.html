@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" href="img/logoo.png">
-    <title>MachaPoint - Historial de ventas</title>
+    <title>MachaPoint - Historial</title>
     <link rel="stylesheet" href="styles/global.css">
     <link rel="stylesheet" href="styles/role.css">
     <link rel="stylesheet" href="styles/productos.css">
@@ -22,9 +22,20 @@
     </header>
     <main class="pp-container">
         <section class="mp-card">
-            <h2 class="mp-card__title">Historial de ventas</h2>
+            <h2 class="mp-card__title">Historial</h2>
+
             <!-- ========================= -->
-            <!-- FILTROS -->
+            <!-- SECCIONES -->
+            <!-- ========================= -->
+            <div class="hv-tabs" role="tablist" aria-label="Secciones del historial">
+                <button type="button" class="mp-btn pp-btn-secondary activo" role="tab" id="tab-ventas"
+                        aria-selected="true" aria-controls="panel-ventas" data-vista="ventas">Ventas</button>
+                <button type="button" class="mp-btn pp-btn-secondary" role="tab" id="tab-cortes"
+                        aria-selected="false" aria-controls="panel-cortes" data-vista="cortes" tabindex="-1">Cortes Z</button>
+            </div>
+
+            <!-- ========================= -->
+            <!-- FILTROS (compartidos) -->
             <!-- ========================= -->
             <div class="hv-atajos" role="group" aria-label="Rangos rápidos">
                 <button type="button" class="mp-btn pp-btn-secondary" data-rango="dia">1 Día</button>
@@ -45,35 +56,63 @@
                 </div>
             </form>
             <p id="mensaje-fechas" class="mp-inline-msg" role="alert"></p>
+
             <!-- ========================= -->
-            <!-- RESUMEN -->
+            <!-- PANEL: VENTAS -->
             <!-- ========================= -->
-            <div id="resumen" class="hv-resumen oculto">
-                <div class="hv-dato"><span>Ventas</span><strong id="resumen-cantidad">0</strong></div>
-                <div class="hv-dato"><span>Total vendido</span><strong id="resumen-total">$0.00</strong></div>
+            <div id="panel-ventas" role="tabpanel" aria-labelledby="tab-ventas">
+                <div id="resumen" class="hv-resumen oculto"></div>
+                <div id="estado" class="hv-estado" role="status" aria-live="polite"></div>
+                <div class="pp-tabla-wrap">
+                    <table class="pp-tabla" id="tabla-ventas" aria-busy="false">
+                        <thead>
+                            <tr>
+                                <th scope="col">Venta</th>
+                                <th scope="col">Fecha y hora</th>
+                                <th scope="col">Turno</th>
+                                <th scope="col">Cajero</th>
+                                <th scope="col" class="num">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-ventas-body">
+                            <!-- Las filas se generan mediante JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pp-actions">
+                    <button type="button" class="mp-btn pp-btn-secondary oculto" id="btn-mas">Mostrar más</button>
+                </div>
             </div>
+
             <!-- ========================= -->
-            <!-- RESULTADOS -->
+            <!-- PANEL: CORTES Z -->
             <!-- ========================= -->
-            <div id="estado" class="hv-estado" role="status" aria-live="polite"></div>
-            <div class="pp-tabla-wrap">
-                <table class="pp-tabla" id="tabla-ventas" aria-busy="false">
-                    <thead>
-                        <tr>
-                            <th scope="col">Venta</th>
-                            <th scope="col">Fecha y hora</th>
-                            <th scope="col">Turno</th>
-                            <th scope="col">Cajero</th>
-                            <th scope="col" class="num">Total</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tabla-ventas-body">
-                        <!-- Las filas se generan mediante JavaScript -->
-                    </tbody>
-                </table>
-            </div>
-            <div class="pp-actions">
-                <button type="button" class="mp-btn pp-btn-secondary oculto" id="btn-mas">Mostrar más</button>
+            <div id="panel-cortes" role="tabpanel" aria-labelledby="tab-cortes" hidden>
+                <div id="resumen-cortes" class="hv-resumen oculto"></div>
+                <div id="estado-cortes" class="hv-estado" role="status" aria-live="polite"></div>
+                <div class="pp-tabla-wrap">
+                    <table class="pp-tabla" id="tabla-cortes" aria-busy="false">
+                        <thead>
+                            <tr>
+                                <th scope="col">Corte</th>
+                                <th scope="col">Turno</th>
+                                <th scope="col">Cajero</th>
+                                <th scope="col">Apertura</th>
+                                <th scope="col">Cierre</th>
+                                <th scope="col" class="num">Ventas</th>
+                                <th scope="col" class="num">Efectivo contado</th>
+                                <th scope="col" class="num">Diferencia</th>
+                                <th scope="col"><span class="sr-only">Detalle</span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-cortes-body">
+                            <!-- Las filas se generan mediante JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pp-actions">
+                    <button type="button" class="mp-btn pp-btn-secondary oculto" id="btn-mas-cortes">Mostrar más</button>
+                </div>
             </div>
         </section>
     </main>
