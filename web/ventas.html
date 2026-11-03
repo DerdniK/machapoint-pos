@@ -31,8 +31,19 @@
                 <p>Administración de caja y cierre de turno</p>
             </div>
 
-            <div id="estado-turno" class="estado cerrado">
-                ● Turno cerrado
+            <div class="encabezado-acciones">
+                <button
+                    id="btn-actualizar"
+                    class="btn btn-secundario"
+                    type="button"
+                    title="Actualizar información del turno"
+                >
+                    <span class="icono-actualizar">🔄</span> Actualizar
+                </button>
+
+                <div id="estado-turno" class="estado cerrado">
+                    ● Turno cerrado
+                </div>
             </div>
         </section>
 
@@ -229,9 +240,6 @@
                     <span>Resultado del turno</span>
                 </div>
 
-                <div class="estado cerrado">
-                    ● Turno cerrado
-                </div>
             </div>
 
 
@@ -300,6 +308,16 @@
                 <p id="corte-notes">
                     Sin observaciones
                 </p>
+            </div>
+
+            <div class="acciones corte-acciones">
+                <button
+                    id="btn-nuevo-turno"
+                    class="btn btn-principal"
+                    type="button"
+                >
+                    Actualizar y abrir nuevo turno
+                </button>
             </div>
 
         </section>
