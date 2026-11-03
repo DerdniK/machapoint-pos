@@ -32,6 +32,13 @@
   color: var(--color-ink-soft);
 }
 
+.encabezado-acciones {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
 /* =========================================================
    ESTADO (badge)
    ========================================================= */
@@ -46,6 +53,10 @@
   color: var(--color-mint-dark);
 }
 .estado.cerrado {
+  background: var(--color-surface);
+  color: var(--color-ink-muted);
+}
+.estado.sin-turno {
   background: var(--color-surface);
   color: var(--color-ink-muted);
 }
@@ -78,6 +89,9 @@
   color: var(--color-ink-soft);
   font-size: 0.9rem;
 }
+.tarjeta-header .estado {
+  white-space: nowrap;
+}
 
 /* =========================================================
    FORMULARIO
@@ -105,12 +119,10 @@
   font-size: 0.75rem;
 }
 
-select,
-input,
-textarea {
+select, input, textarea {
   width: 100%;
   padding: 12px 14px;
-  border: 1px solid var(--color-line);
+  border: 6px solid var(--color-line);
   border-radius: var(--radius-md);
   font-family: var(--font-body);
   font-size: 0.95rem;
@@ -140,15 +152,33 @@ textarea {
   border-radius: var(--radius-md);
   overflow: hidden;
   background: var(--color-surface);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.input-moneda:focus-within {
+  border-color: var(--color-primary-dark);
+  background: var(--color-white);
+  box-shadow: 0 0 0 3px rgba(245, 166, 35, 0.2);
 }
 .input-moneda span {
-  padding-left: 12px;
+  flex: 0 0 auto;
+  padding: 0 4px 0 14px;
   color: var(--color-ink-soft);
   font-weight: 700;
 }
 .input-moneda input {
+  flex: 1 1 auto;
+  min-width: 0;          /* permite que el input se encoja y no pise el "$" */
+  width: auto;
+  padding: 12px 14px 12px 4px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.input-moneda input:focus {
   border: none;
   background: transparent;
+  box-shadow: none;      /* el aro de foco lo muestra el contenedor */
 }
 
 /* =========================================================
@@ -168,6 +198,7 @@ textarea {
   font-weight: 700;
   cursor: pointer;
   transition: background var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
+  white-space: nowrap;
 }
 .btn:hover {
   transform: translateY(-2px);
@@ -192,6 +223,51 @@ textarea {
 }
 .btn-danger:hover {
   background: #a5311f;
+}
+
+.btn-secundario {
+  background: var(--color-white);
+  color: var(--color-ink);
+  border: 1px solid var(--color-line);
+  box-shadow: var(--shadow-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+}
+.btn-secundario:hover {
+  background: var(--color-surface);
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-md);
+}
+.btn-secundario:active {
+  transform: translateY(0);
+}
+
+.icono-actualizar {
+  display: inline-block;
+  transition: transform var(--transition-base);
+}
+
+.btn.cargando {
+  pointer-events: none;
+  opacity: 0.7;
+}
+.btn.cargando .icono-actualizar {
+  animation: girar 1s linear infinite;
+}
+
+@keyframes girar {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.corte-acciones {
+  margin-top: var(--space-6);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--color-line-light);
+  display: flex;
+  justify-content: flex-end;
 }
 
 /* =========================================================
@@ -367,6 +443,10 @@ textarea {
     flex-direction: column;
     align-items: flex-start;
     gap: var(--space-4);
+  }
+  .encabezado-acciones {
+    width: 100%;
+    justify-content: space-between;
   }
   .resumen-grid,
   .corte-grid {

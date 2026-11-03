@@ -85,7 +85,7 @@ async function cargarProductos() {
         const vieja = leerCache(true);
         if (vieja) {
             usarLista(vieja);
-            mostrarMensajeGeneral('Sin conexión estable: mostrando el último catálogo guardado.', 'error');
+            // mostrarMensajeGeneral('Sin conexión estable: mostrando el último catálogo guardado.', 'error');
         } 
         // else {
         //     mostrarMensajeGeneral('No se pudieron cargar los productos: ' + err.message, 'error');

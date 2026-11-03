@@ -18,6 +18,8 @@ const actualCash = $("actual-cash");
 const closeNotes = $("close-notes");
 const btnAbrir = $("btn-abrir-turno");
 const btnCerrar = $("btn-cerrar-turno");
+const btnActualizar = $("btn-actualizar");
+const btnNuevoTurno = $("btn-nuevo-turno");
 
 const SHIFT_KEYS = ["shiftId", "cashierId", "cashierUsername", "openingAmount"];
 const POLL_BASE_MS = 10000;
@@ -245,7 +247,7 @@ async function verificarTurnoConServidor() {
     if (!usuario || !usuario.id) return;
 
     verificandoTurno = true;
-    btnAbrir.disabled = true;
+    if (btnAbrir) btnAbrir.disabled = true;
     try {
         const turno = await consultarTurnoActivo(usuario.id);
         const idLocal = localStorage.getItem("shiftId");
@@ -270,7 +272,33 @@ async function verificarTurnoConServidor() {
             localStorage.getItem("shiftId") ? "info" : "error");
     } finally {
         verificandoTurno = false;
-        btnAbrir.disabled = false;
+        if (btnAbrir) btnAbrir.disabled = false;
+    }
+}
+
+// ---------- Actualizar pantalla manualmente ----------
+async function actualizarPantalla() {
+    if (btnActualizar) {
+        btnActualizar.disabled = true;
+        btnActualizar.classList.add("cargando");
+    }
+    ocultarMensaje();
+    try {
+        await verificarTurnoConServidor();
+        const shiftId = localStorage.getItem("shiftId");
+        if (shiftId) {
+            await cargarVentasTurno(shiftId);
+            mostrarMensaje("Información del turno actualizada.", "exito");
+        } else {
+            mostrarMensaje("Estado de turno actualizado.", "info");
+        }
+    } catch (error) {
+        mostrarMensaje("Error al actualizar información: " + error.message, "error");
+    } finally {
+        if (btnActualizar) {
+            btnActualizar.disabled = false;
+            btnActualizar.classList.remove("cargando");
+        }
     }
 }
 
@@ -363,9 +391,46 @@ function mostrarTurnoAbierto(shiftId, cashierUsername, amount, openedAt) {
 function volverAApertura() {
     finalizarTurnoLocal();
     seccionTurno.classList.add("oculto");
+    seccionCorte.classList.add("oculto");
     seccionApertura.classList.remove("oculto");
     estadoTurno.textContent = "● Sin turno activo";
     estadoTurno.className = "estado sin-turno";
+}
+
+// ---------- Actualizar y abrir nuevo turno ----------
+async function actualizarYAbrirNuevoTurno() {
+    ocultarMensaje();
+    if (btnNuevoTurno) {
+        btnNuevoTurno.disabled = true;
+        btnNuevoTurno.textContent = "Verificando...";
+    }
+    try {
+        finalizarTurnoLocal();
+        const usuario = obtenerUsuarioActual();
+        if (usuario && usuario.id) {
+            const activo = await consultarTurnoActivo(usuario.id).catch(() => null);
+            if (activo) {
+                sincronizarTurnoLocal(activo, usuario);
+                mostrarTurnoAbierto(activo.shiftId, usuario.username, activo.openingAmount, activo.openedAt);
+                mostrarMensaje(`Se encontró un turno abierto (#${activo.shiftId}) y se restauró.`, "info");
+                return;
+            }
+        }
+        volverAApertura();
+        if (openingAmount) {
+            openingAmount.value = "";
+            openingAmount.focus();
+        }
+        mostrarMensaje("Listo para iniciar un nuevo turno. Ingresa el fondo inicial.", "info");
+    } catch (error) {
+        volverAApertura();
+        mostrarMensaje("Listo para abrir un nuevo turno.", "info");
+    } finally {
+        if (btnNuevoTurno) {
+            btnNuevoTurno.disabled = false;
+            btnNuevoTurno.textContent = "Actualizar y abrir nuevo turno";
+        }
+    }
 }
 
 async function cerrarTurno() {
@@ -489,6 +554,7 @@ function restaurarTurno() {
             finalizarTurnoLocal();
             seccionApertura.classList.remove("oculto");
             seccionTurno.classList.add("oculto");
+            seccionCorte.classList.add("oculto");
             mostrarMensaje("Había un turno local de otro cajero. Ese turno debe cerrarlo su titular al iniciar sesión.", "error");
             return;
         }
@@ -497,11 +563,14 @@ function restaurarTurno() {
     } else {
         seccionApertura.classList.remove("oculto");
         seccionTurno.classList.add("oculto");
+        seccionCorte.classList.add("oculto");
     }
 }
 
 if (btnAbrir) btnAbrir.addEventListener("click", abrirTurno);
 if (btnCerrar) btnCerrar.addEventListener("click", cerrarTurno);
+if (btnActualizar) btnActualizar.addEventListener("click", actualizarPantalla);
+if (btnNuevoTurno) btnNuevoTurno.addEventListener("click", actualizarYAbrirNuevoTurno);
 
 restaurarTurno();            // pinta de inmediato lo guardado en el navegador
 verificarTurnoConServidor(); // y lo confirma con el servidor (sp_get_shift)
