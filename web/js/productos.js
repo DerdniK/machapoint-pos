@@ -1,10 +1,23 @@
-// Administración de productos (alta y edición)
 
 const API_URL = 'https://4upkj2tafvod2ubwcsbnagviyu0feljy.lambda-url.us-east-1.on.aws';
-
 const UPDATE_METHOD = 'PATCH';
-
 const IMG_FALLBACK = '/img/product.jpg';
+
+const CACHE_KEY = 'catalogoCache';   // misma que catalogo.js
+const CACHE_MS = 10 * 60 * 1000;
+const lblActualizado = document.getElementById('ultima-actualizacion');
+
+function leerCache() {
+    try {
+        const c = JSON.parse(sessionStorage.getItem(CACHE_KEY) || 'null');
+        if (c && Array.isArray(c.lista) && Date.now() - c.t < CACHE_MS) {
+            RefreshBtn.marcar(lblActualizado, c.t);
+            return c.lista;
+        }
+    } catch { /* ignorar */ }
+    return null;
+}
+const invalidarCache = () => { try { sessionStorage.removeItem(CACHE_KEY); } catch { /* ignorar */ } };
 
 // Mismos tipos que catalogo.html
 const TIPOS = [
@@ -258,7 +271,11 @@ if (precio < PRECIO_MIN) { // Cambio de = a <
 
 // ---------- Listado ----------
 
-async function cargarProductos() {
+async function cargarProductos(forzar = false) {
+    if (!forzar) {
+        const cache = leerCache();
+        if (cache) { productos = cache.map(normalizarProducto); renderTabla(); return; }
+    }
     setMsg(msgLista, 'Cargando productos...');
     try {
         const res = await authFetch(`${API_URL}/api/products/product/get`);
@@ -270,8 +287,10 @@ async function cargarProductos() {
 
         const data = await res.json();
         const lista = data.product || data.products || (Array.isArray(data) ? data : []);
+        try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ t: Date.now(), lista })); } catch { /* sin espacio */ }
         productos = lista.map(normalizarProducto);
         renderTabla();
+        RefreshBtn.marcar(lblActualizado);
     } catch (err) {
         console.error('Error al cargar productos:', err);
         setMsg(msgLista, 'No se pudieron cargar los productos: ' + err.message, 'error');
@@ -469,8 +488,15 @@ formEditar.addEventListener('submit', async (e) => {
             throw new Error(data.message || data.Message || data.error || `Error HTTP ${res.status}`);
         }
 
+        Object.assign(original, {
+            name, sku, price, typeId,
+            typeName: nombreTipo(typeId),
+            imageURL: img,
+            _q: normalizarTexto(`${name} ${sku}`)
+        });
+        invalidarCache();            // el catálogo pedirá datos nuevos la próxima vez
         cerrarEdicion();
-        await cargarProductos();
+        renderTabla();
         setMsg(msgLista, data.message || 'Producto actualizado con éxito.', 'exito');
     } catch (err) {
         console.error('Error al actualizar producto:', err);
@@ -492,6 +518,6 @@ formEditar.addEventListener('submit', async (e) => {
         select.appendChild(option);
     });
 });
-
+RefreshBtn.bind(document.getElementById('btn-refrescar'), () => cargarProductos(true));
 aplicarBloqueos();
 cargarProductos();

@@ -58,9 +58,18 @@
         <!-- ========================= -->
         <section class="mp-card">
             <h2 class="mp-card__title">Editar productos</h2>
-            <div class="pp-buscador">
-                <input type="search" id="buscador" placeholder="Buscar por nombre o SKU..."
-                       autocomplete="off" aria-label="Buscar productos">
+            <div class="mp-toolbar">
+                <div class="pp-buscador">
+                    <input type="search" id="buscador" placeholder="Buscar por nombre o SKU..."
+                        autocomplete="off" aria-label="Buscar productos">
+                </div>
+                <div class="mp-refresh">
+                    <button type="button" id="btn-refrescar" class="mp-btn-refresh">
+                        <span class="mp-btn-refresh__icon" aria-hidden="true">↻</span>
+                        <span class="mp-btn-refresh__text">Actualizar</span>
+                    </button>
+                    <span id="ultima-actualizacion" class="mp-refresh-info"></span>
+                </div>
             </div>
             <p id="mensaje" class="mp-inline-msg" role="status"></p>
             <div class="pp-tabla-wrap">
@@ -116,6 +125,7 @@
         </form>
     </dialog>
     <script src="js/api.js"></script>
+    <script src="js/refresh-btn.js"></script>
     <script src="js/productos.js"></script>
 </body>
 </html>

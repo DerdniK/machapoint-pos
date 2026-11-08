@@ -24,8 +24,17 @@
         <div class="contenido">
             <h2>Buscar productos</h2>
 
-            <div class="buscador-container">
-                <input type="search" id="buscador" placeholder="Buscar por nombre o SKU..." autocomplete="off" aria-label="Buscar productos">
+            <div class="mp-toolbar">
+                <div class="buscador-container">
+                    <input type="search" id="buscador" placeholder="Buscar por nombre o SKU..." autocomplete="off" aria-label="Buscar productos">
+                </div>
+                <div class="mp-refresh">
+                    <button type="button" id="btn-refrescar" class="mp-btn-refresh">
+                        <span class="mp-btn-refresh__icon" aria-hidden="true">↻</span>
+                        <span class="mp-btn-refresh__text">Actualizar</span>
+                    </button>
+                    <span id="ultima-actualizacion" class="mp-refresh-info"></span>
+                </div>
             </div>
 
             <div id="mensaje"></div>
@@ -39,6 +48,7 @@
     </main>
 
     <script src="js/api.js"></script>
+    <script src="js/refresh-btn.js"></script>
     <script src="js/catalogo.js"></script>
 
 </body>

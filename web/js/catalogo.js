@@ -2,7 +2,8 @@
 const API_URL = 'https://4upkj2tafvod2ubwcsbnagviyu0feljy.lambda-url.us-east-1.on.aws';
 const CARRITO_KEY = 'carrito';
 const CACHE_KEY = 'catalogoCache';
-const CACHE_MS = 60 * 1000;
+const CACHE_MS = 10 * 60 * 1000; // antes 60 s
+const lblActualizado = document.getElementById('ultima-actualizacion');
 const MAX_CANTIDAD = 20; // misma regla que en carrito.js
 const IMG_FALLBACK = '/img/product.jpg';
 
@@ -54,7 +55,10 @@ if (buscador) {
 function leerCache(aunVencida = false) {
     try {
         const c = JSON.parse(sessionStorage.getItem(CACHE_KEY) || 'null');
-        if (c && Array.isArray(c.lista) && (aunVencida || Date.now() - c.t < CACHE_MS)) return c.lista;
+        if (c && Array.isArray(c.lista) && (aunVencida || Date.now() - c.t < CACHE_MS)) {
+            RefreshBtn.marcar(lblActualizado, c.t);
+            return c.lista;
+        }
     } catch { /* cache corrupta: se ignora */ }
     return null;
 }
@@ -67,29 +71,30 @@ function usarLista(lista) {
     aplicarFiltro();
 }
 
-async function cargarProductos() {
-    const fresca = leerCache();
-    if (fresca) { usarLista(fresca); return; }
-
+async function cargarProductos(forzar = false) {
+    if (!forzar) {
+        const fresca = leerCache();
+        if (fresca) { usarLista(fresca); return; }
+    }
     try {
         mostrarMensajeGeneral('Cargando productos...');
-        const res = await Api.request(`${API_URL}/api/products/product/get`, { method: 'GET', retries: 2 });
+        const res = await Api.request(`${API_URL}/api/products/product/get`, { method: 'GET', retries: 1 });
         if (!res.ok) throw new Error(await Api.errorDe(res));
 
         const data = await res.json();
         const lista = data.product || data.products || (Array.isArray(data) ? data : []);
         try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ t: Date.now(), lista })); } catch { /* sin espacio */ }
-        mensaje.textContent = '';
         usarLista(lista);
+        mensaje.textContent = '';
+        RefreshBtn.marcar(lblActualizado);
     } catch (err) {
         const vieja = leerCache(true);
         if (vieja) {
             usarLista(vieja);
-            // mostrarMensajeGeneral('Sin conexión estable: mostrando el último catálogo guardado.', 'error');
-        } 
-        // else {
-        //     mostrarMensajeGeneral('No se pudieron cargar los productos: ' + err.message, 'error');
-        // }
+            mostrarMensajeGeneral('No se pudo actualizar; se muestra el último catálogo guardado.', 'error');
+        } else {
+            mostrarMensajeGeneral('No se pudieron cargar los productos: ' + err.message, 'error');
+        }
     }
 }
 
@@ -190,4 +195,5 @@ function agregarAlCarrito(producto) {
     mostrarMensajeGeneral(`Producto "${producto.name}" agregado al carrito.`, 'exito');
 }
 
+RefreshBtn.bind(document.getElementById('btn-refrescar'), () => cargarProductos(true));
 cargarProductos();
