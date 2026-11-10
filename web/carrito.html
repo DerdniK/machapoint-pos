@@ -4,78 +4,101 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" href="img/logoo.png">
-    <title>MachaPoint - Carrito</title>
+    <title>MachaPoint - Procesar cobro</title>
     <link rel="stylesheet" href="styles/global.css">
     <link rel="stylesheet" href="styles/role.css">
     <link rel="stylesheet" href="styles/carrito.css">
     <script src="js/role.js"></script>
 </head>
-<body>
-        <header class="mp-header">
-            <h1>MachaPoint</h1>
-            <nav>
-                <ul data-mp-nav></ul>
-            </nav>
-            <script src="js/icon-map.js" defer></script>
-        </header>
+<body class="pagina-carrito">
+    <header class="mp-header">
+        <h1>MachaPoint</h1>
+        <nav>
+            <ul data-mp-nav></ul>
+        </nav>
+        <script src="js/icon-map.js" defer></script>
+    </header>
+
     <main class="carrito-container">
+
+        <!-- ============ RESUMEN DEL PEDIDO ============ -->
         <section class="carrito">
-            <h2>Carrito</h2>
-            <!-- NUEVO BOTÓN: Vaciar todo el carrito -->
-            <button id="btn-vaciar-carrito" class="btn-vaciar" style="margin-bottom: 15px; cursor: pointer;">
-                Vaciar todo el carrito
-            </button>
-            <p id="mensaje-carrito">El carrito esta vacio</p>
-            <div id="lista-carrito">
+            <h2 class="titulo-seccion">Resumen del pedido</h2>
 
+            <p id="mensaje-carrito">El carrito está vacío.</p>
+            <div id="lista-carrito" class="lista-carrito">
                 <!-- Los productos se generan mediante JavaScript -->
+            </div>
 
+            <div class="acciones-carrito">
+                <button id="btn-vaciar-carrito" class="btn-vaciar" type="button">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor"
+                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 10v7M14 10v7"/>
+                    </svg>
+                    Vaciar carrito
+                </button>
             </div>
         </section>
 
-            <aside class="resumen-carrito">
+        <!-- ============ PAGO ============ -->
+        <aside class="resumen-carrito">
+            <h2 class="titulo-seccion">Método de pago</h2>
 
-                <h3>Resumen del carrito</h3>
-                <div class="total-container"> 
-                    <span> Total: </span> 
-                    <strong id="total-carrito"> $0.00 </strong> 
-                </div> 
-                
-<!-- ================================= --> <!-- MÉTODO DE PAGO --> <!-- ================================= --> 
-                <div class="pago-section"> 
-                    <h3> Método de pago </h3> 
-                    <select id="metodo-pago"> 
-                        <option value=""> Seleccionar método </option> 
-                        <option value="efectivo"> Efectivo </option> 
-                        <option value="tarjeta"> Tarjeta </option> 
-                    </select> 
-                </div> 
-                
-<!-- ================================= --> <!-- EFECTIVO --> <!-- ================================= --> 
-                <div id="seccion-efectivo" class="pago-detalle" style="display: none;" > 
-                    <h3> Pago en efectivo </h3> 
-                    <label for="dinero-recibido"> Dinero recibido: </label> 
-                    <input type="number" id="dinero-recibido" min="0" step="0.01" placeholder="0.00" > 
-                    <div class="cambio-container"> <span> Cambio: </span> 
-                        <strong id="cambio"> $0.00 </strong> 
-                    </div> 
-                </div> 
-                <!-- ================================= --> <!-- TARJETA --> <!-- ================================= --> 
-                 <div id="seccion-tarjeta" class="pago-detalle" style="display: none;" > 
-                    <h3> Pago con tarjeta </h3> 
-                    <label for="tipo-tarjeta"> Tipo de tarjeta: </label> 
-                    <select id="tipo-tarjeta"> 
-                        <option value=""> Seleccionar </option> 
-                        <option value="TARJETA_CREDITO"> Crédito </option> 
-                        <option value="TARJETA_DEBITO"> Débito </option>
-                    </select> 
-                </div> 
+            <!-- El select se conserva (oculto) como fuente de verdad para carrito.js -->
+            <select id="metodo-pago" class="oculto" aria-hidden="true" tabindex="-1">
+                <option value="">Seleccionar método</option>
+                <option value="efectivo">Efectivo</option>
+                <option value="tarjeta">Tarjeta</option>
+            </select>
 
-                <!-- ================================= --> <!-- FINALIZAR --> <!-- ================================= --> 
-                 <button id="btn-finalizar" class="btn-finalizar" > Finalizar cuenta </button> 
-                </aside> 
-            </main> 
-   <script src="js/api.js"></script>
-    <script src="js/carrito.js"></script> 
-</body> 
+            <div class="segmentado" role="group" aria-label="Método de pago">
+                <button type="button" class="segmento" data-metodo="efectivo" aria-pressed="false">
+                    <svg class="icono-check" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+                         stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M5 12.5l4.5 4.5L19 7.5"/>
+                    </svg>
+                    Efectivo
+                </button>
+                <button type="button" class="segmento" data-metodo="tarjeta" aria-pressed="false">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true">
+                        <path d="M3 5h18a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm1 3v1.5h16V8H4zm0 4v5h16v-5H4z"/>
+                    </svg>
+                    Tarjeta
+                </button>
+            </div>
+
+            <!-- EFECTIVO -->
+            <div id="seccion-efectivo" class="pago-detalle" style="display: none;">
+                <input type="number" id="dinero-recibido" min="0" step="0.01" inputmode="decimal"
+                       placeholder="Monto recibido" aria-label="Monto recibido">
+                <div class="tarjeta-blanca cambio-container">
+                    <span>Cambio:</span>
+                    <strong id="cambio">$0.00</strong>
+                </div>
+            </div>
+
+            <!-- TARJETA -->
+            <div id="seccion-tarjeta" class="pago-detalle" style="display: none;">
+                <label for="tipo-tarjeta" class="nota">Tipo de tarjeta</label>
+                <select id="tipo-tarjeta">
+                    <option value="">Seleccionar</option>
+                    <option value="TARJETA_CREDITO">Crédito</option>
+                    <option value="TARJETA_DEBITO">Débito</option>
+                </select>
+            </div>
+
+            <!-- TOTAL -->
+            <div class="tarjeta-blanca total-container">
+                <span>TOTAL:</span>
+                <strong id="total-carrito">$0.00</strong>
+            </div>
+
+            <button id="btn-finalizar" class="btn-finalizar" type="button">Confirmar y cobrar</button>
+        </aside>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script src="js/carrito.js"></script>
+</body>
 </html>

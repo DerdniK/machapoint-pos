@@ -4,6 +4,7 @@ const REF_KEY = 'ventaRef';
 const MAX_CANTIDAD = 20;
 const API_PRODUCTOS_URL = 'https://4upkj2tafvod2ubwcsbnagviyu0feljy.lambda-url.us-east-1.on.aws/api/products/product/get';
 const CATALOGO_CACHE_KEY = 'catalogoCache';
+const IMG_FALLBACK = '/img/product.jpg';
 const BACKEND_VENTA_URL = 'https://6uxm3jz7xwth5cliak6zk6dudi0iseih.lambda-url.us-east-1.on.aws/api/sale';
 
 const $ = id => document.getElementById(id);
@@ -18,6 +19,7 @@ const cambioResultado = $('cambio');
 const tipoTarjeta = $('tipo-tarjeta');
 const btnFinalizar = $('btn-finalizar');
 const btnVaciarCarrito = $('btn-vaciar-carrito');
+const segmentos = document.querySelectorAll('.segmento[data-metodo]');
 
 // ---------- Estado en memoria (localStorage solo se escribe al cambiar) ----------
 let carrito = leerCarrito();
@@ -64,7 +66,7 @@ function obtenerUsuario() {
     try { return JSON.parse(localStorage.getItem('user') || 'null'); } catch { return null; }
 }
 
-// ---------- Render (sin innerHTML: nombres/SKU se muestran como texto) ----------
+// ---------- Render (sin innerHTML para datos: nombres/SKU se muestran como texto) ----------
 function el(tag, clase, texto) {
     const e = document.createElement(tag);
     if (clase) e.className = clase;
@@ -72,13 +74,29 @@ function el(tag, clase, texto) {
     return e;
 }
 
-function boton(clase, texto, index, accion, title) {
-    const b = el('button', clase, texto);
+// Íconos circulares (SVG constante, sin datos del usuario)
+const ICONO_MENOS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M7.5 12h9"/></svg>';
+const ICONO_MAS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M7.5 12h9M12 7.5v9"/></svg>';
+
+function botonIcono(clase, svg, index, accion, label) {
+    const b = el('button', `btn-icono ${clase}`);
     b.type = 'button';
+    b.innerHTML = svg;
     b.dataset.index = index;
     b.dataset.accion = accion;
-    if (title) b.title = title;
+    b.setAttribute('aria-label', label);
     return b;
+}
+
+// Miniatura: misma lógica que el catálogo (imageURL validada + imagen por defecto)
+function crearMiniatura(p) {
+    const img = el('img', 'miniatura');
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    img.alt = p.name ?? '';
+    img.src = Api.urlSegura(p.imageURL) || IMG_FALLBACK;
+    img.addEventListener('error', () => { img.src = IMG_FALLBACK; }, { once: true });
+    return img;
 }
 
 function crearArticulo(p, i) {
@@ -89,32 +107,28 @@ function crearArticulo(p, i) {
     const info = el('div', 'info-articulo');
     info.append(
         el('h3', null, p.name),
-        el('p', null, `SKU: ${p.sku}`),
-        el('p', null, `Tipo: ${p.typeName ?? 'Sin tipo'}`),
-        el('p', null, `Precio: ${dinero(aCentavos(p.price))}`)
+        el('p', null, `${p.cantidad} x ${dinero(aCentavos(p.price))}`)
     );
-    if (stock !== null) info.append(el('p', null, `Disponibles: ${stock}`));
-    if (problema) {
-        const aviso = el('p', 'aviso-stock', problema);
-        aviso.style.color = '#d9534f';
-        aviso.style.fontWeight = '600';
-        info.append(aviso);
-    }
+    if (stock !== null && problema === null && stock <= 5) info.append(el('p', null, `Disponibles: ${stock}`));
+    if (problema) info.append(el('p', 'aviso-stock', problema));
 
-    const mas = boton('boton-aumentar', '+', i, 'aumentar');
+    const menos = botonIcono('boton-disminuir', ICONO_MENOS, i, 'disminuir',
+        p.cantidad <= 1 ? `Quitar ${p.name} del carrito` : `Disminuir cantidad de ${p.name}`);
+    const mas = botonIcono('boton-aumentar', ICONO_MAS, i, 'aumentar', `Aumentar cantidad de ${p.name}`);
     if (p.cantidad >= limiteDe(p)) {
         mas.disabled = true;
         mas.title = stock !== null && stock < MAX_CANTIDAD
             ? `Solo hay ${stock} disponible(s)` : `Máximo ${MAX_CANTIDAD} por producto`;
     }
 
-    const cant = el('div', 'cantidad-articulo');
-    cant.append(boton('boton-disminuir', '-', i, 'disminuir'), el('span', null, String(p.cantidad)), mas);
+    const controles = el('div', 'controles');
+    controles.append(menos, mas);
 
     art.append(
-        info, cant,
+        crearMiniatura(p),
+        info,
         el('div', 'precio-articulo', dinero(aCentavos(p.price) * p.cantidad)),
-        boton('boton-eliminar', 'Eliminar', i, 'eliminar', 'Eliminar producto')
+        controles
     );
     return art;
 }
@@ -124,7 +138,7 @@ function render() {
     if (carrito.length === 0) {
         listaCarrito.replaceChildren();
         mensajeCarrito.textContent = 'El carrito está vacío.';
-        totalCarrito.textContent = '';
+        totalCarrito.textContent = dinero(0);
     } else {
         mensajeCarrito.textContent = '';
         const frag = document.createDocumentFragment();
@@ -151,7 +165,9 @@ function actualizarCantidad(index, accion) {
         }
         p.cantidad += 1;
     } else if (accion === 'disminuir') {
-        p.cantidad = Math.max(1, p.cantidad - 1);
+        // Con 1 unidad, el botón "−" quita el producto (ya no hay botón "Eliminar" aparte)
+        if (p.cantidad <= 1) { eliminarProducto(index); return; }
+        p.cantidad -= 1;
     }
     guardarCarrito();
     render();
@@ -170,14 +186,20 @@ function limpiarCarrito() {
     render();
 }
 
-function resetFormularioPago() {
-    if (metodoPago) metodoPago.value = '';
-    if (seccionEfectivo) seccionEfectivo.style.display = 'none';
-    if (seccionTarjeta) seccionTarjeta.style.display = 'none';
-    if (inputEfectivo) inputEfectivo.value = '';
-    if (cambioResultado) cambioResultado.textContent = '';
-    if (tipoTarjeta) tipoTarjeta.value = '';
+// Selecciona el método de pago (sincroniza select oculto, segmentos y secciones)
+function aplicarMetodo(m) {
+    if (metodoPago) metodoPago.value = m;
+    segmentos.forEach(s => s.setAttribute('aria-pressed', String(s.dataset.metodo === m)));
+    if (seccionEfectivo) seccionEfectivo.style.display = m === 'efectivo' ? 'flex' : 'none';
+    if (seccionTarjeta) seccionTarjeta.style.display = m === 'tarjeta' ? 'flex' : 'none';
+    calcularCambio();
     validarBotonFinalizar();
+}
+
+function resetFormularioPago() {
+    if (inputEfectivo) inputEfectivo.value = '';
+    if (tipoTarjeta) tipoTarjeta.value = '';
+    aplicarMetodo('efectivo'); // como en la app: efectivo por defecto
 }
 
 if (listaCarrito) {
@@ -187,7 +209,6 @@ if (listaCarrito) {
         const index = Number(b.dataset.index);
         if (b.classList.contains('boton-aumentar')) actualizarCantidad(index, 'aumentar');
         else if (b.classList.contains('boton-disminuir')) actualizarCantidad(index, 'disminuir');
-        else if (b.classList.contains('boton-eliminar')) eliminarProducto(index);
     });
 }
 
@@ -209,10 +230,15 @@ function dineroRecibidoCentavos() {
 function calcularCambio() {
     if (!inputEfectivo || !cambioResultado) return;
     const recibido = parseFloat(inputEfectivo.value);
-    if (isNaN(recibido) || aCentavos(recibido) < totalCentavos()) {
+    if (isNaN(recibido)) {
+        cambioResultado.textContent = dinero(0);
+        cambioResultado.classList.remove('insuficiente');
+    } else if (aCentavos(recibido) < totalCentavos()) {
         cambioResultado.textContent = 'Dinero insuficiente';
+        cambioResultado.classList.add('insuficiente');
     } else {
-        cambioResultado.textContent = `Cambio: ${dinero(aCentavos(recibido) - totalCentavos())}`;
+        cambioResultado.textContent = dinero(aCentavos(recibido) - totalCentavos());
+        cambioResultado.classList.remove('insuficiente');
     }
 }
 
@@ -229,15 +255,7 @@ function validarBotonFinalizar() {
     btnFinalizar.disabled = !ok;
 }
 
-if (metodoPago) {
-    metodoPago.addEventListener('change', () => {
-        const m = metodoPago.value;
-        seccionEfectivo.style.display = m === 'efectivo' ? 'block' : 'none';
-        seccionTarjeta.style.display = m === 'tarjeta' ? 'block' : 'none';
-        calcularCambio();
-        validarBotonFinalizar();
-    });
-}
+segmentos.forEach(s => s.addEventListener('click', () => aplicarMetodo(s.dataset.metodo)));
 if (tipoTarjeta) tipoTarjeta.addEventListener('change', validarBotonFinalizar);
 if (inputEfectivo) inputEfectivo.addEventListener('input', () => { calcularCambio(); validarBotonFinalizar(); });
 
@@ -317,7 +335,7 @@ async function procesarVentaBackend() {
         resetFormularioPago();
         return data;
     } catch (error) {
-        alert(`No se pudo confirmar la venta: ${error.message}\n\nSi el problema fue de conexión, vuelve a pulsar "Finalizar": se reutiliza la misma referencia para evitar cobros duplicados. Revisa también la lista de ventas del turno.`);
+        alert(`No se pudo confirmar la venta: ${error.message}\n\nSi el problema fue de conexión, vuelve a pulsar "Confirmar y cobrar": se reutiliza la misma referencia para evitar cobros duplicados. Revisa también la lista de ventas del turno.`);
         refrescarStock(); // por si el error fue de existencias
         return null;
     }
@@ -349,12 +367,13 @@ async function refrescarStock() {
         if (!res.ok) throw new Error(await Api.errorDe(res));
         const data = await res.json();
         const lista = data.product || data.products || (Array.isArray(data) ? data : []);
-        const mapa = new Map(lista.map(p => [String(p.productid ?? p.productId), Number(p.stock)]));
+        const mapa = new Map(lista.map(p => [String(p.productid ?? p.productId), { stock: Number(p.stock), imageURL: p.imageURL }]));
 
         // Producto ausente o sin stock numérico = sin existencias
         carrito.forEach(p => {
-            const s = mapa.get(String(p.productId));
-            p.stock = Number.isFinite(s) ? s : 0;
+            const info = mapa.get(String(p.productId));
+            p.stock = info && Number.isFinite(info.stock) ? info.stock : 0;
+            if (info && info.imageURL) p.imageURL = info.imageURL; // completa la foto de productos ya guardados
         });
         guardarCarrito();
         stockVerificado = true;
@@ -393,5 +412,6 @@ if (btnFinalizar) {
     });
 }
 
+aplicarMetodo('efectivo'); // efectivo seleccionado por defecto, como en la app
 render();
 refrescarStock();
