@@ -10,9 +10,13 @@
       '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
     ventas:
       '<path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/>',
+    turno:
+      '<path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/>',
     carrito:
       '<circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/>',
     productos:
+      '<path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/>',
+    inventario:
       '<path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/>',
     usuarios:
       '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
@@ -24,13 +28,12 @@
 
   // Definición del menú (única fuente de verdad)
   const MENU = [
-    { href: "catalogo.html",  texto: "Catálogo",  icono: "catalogo" },
-    { href: "ventas.html",    texto: "Ventas",    icono: "ventas" },
-    { href: "carrito.html",   texto: "Carrito",   icono: "carrito" },
-    { href: "productos.html", texto: "Productos", icono: "productos", admin: true },
-    { href: "usuarios.html",  texto: "Usuarios",  icono: "usuarios",  admin: true },
-    { href: "historial.html", texto: "Historial", icono: "historial", admin: true },
-    { href: "stock.html",     texto: "Stock",     icono: "stock",     admin: true }
+    { href: "catalogo.html",  texto: "Catálogo",   icono: "catalogo" },
+    { href: "productos.html", texto: "Inventario", icono: "inventario", admin: true },
+    { href: "usuarios.html",  texto: "Usuarios",   icono: "usuarios",   admin: true },
+    { href: "ventas.html",    texto: "Turno",      icono: "turno" },
+    { href: "historial.html", texto: "Historial",  icono: "historial",  admin: true },
+    { href: "stock.html",     texto: "Stock",      icono: "stock",      admin: true }
   ];
 
   const SVG_NS = "http://www.w3.org/2000/svg";
